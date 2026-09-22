@@ -138,3 +138,58 @@ export function CoinMark(props: IconProps) {
     </svg>
   )
 }
+
+/* Alias used by the auth form */
+export const CloverTicket = TicketMark
+
+/* User silhouette in a soft frame */
+export function UserMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="8.5" r="3.3" />
+      <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  )
+}
+
+/* Logout — door with arrow */
+export function LogoutMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M14 5.5H6.5a1.5 1.5 0 0 0-1.5 1.5v10a1.5 1.5 0 0 0 1.5 1.5H14" />
+      <path d="M17 8.5 20.5 12 17 15.5M20 12h-9" />
+    </svg>
+  )
+}
+
+/* Wallet with a coin slot */
+export function WalletMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 8a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v1" />
+      <path d="M4 8v9a2 2 0 0 0 2 2h12a1.5 1.5 0 0 0 1.5-1.5V11A1.5 1.5 0 0 0 18 9.5H6" />
+      <path d="M17 12.5h.01" />
+    </svg>
+  )
+}
+
+/* Shield for admin / trust */
+export function ShieldMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3 5 5.5v5.2c0 4.4 2.9 7.6 7 9.3 4.1-1.7 7-4.9 7-9.3V5.5L12 3Z" />
+      <path d="m9 12 2 2 4-4.5" />
+    </svg>
+  )
+}
+
+/* Gauge / dashboard */
+export function GaugeMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 15a8 8 0 0 1 16 0" />
+      <path d="M4 15h2M18 15h2M12 5v2M6.3 9.3l1.4 1.4" />
+      <path d="M12 15 15 11" />
+    </svg>
+  )
+}
