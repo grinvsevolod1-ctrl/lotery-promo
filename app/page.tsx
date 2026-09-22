@@ -5,6 +5,7 @@ import { WinnersMarquee } from '@/components/winners-marquee'
 import { PrizesSection } from '@/components/prizes-section'
 import { FortuneWheel } from '@/components/fortune-wheel'
 import { HowToSection } from '@/components/how-to-section'
+import { FaqSection } from '@/components/faq-section'
 import { TermsSection } from '@/components/terms-section'
 import { SiteFooter } from '@/components/site-footer'
 
@@ -19,6 +20,7 @@ export default function HomePage() {
         <PrizesSection />
         <FortuneWheel />
         <HowToSection />
+        <FaqSection />
         <TermsSection />
       </main>
       <SiteFooter />

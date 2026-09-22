@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { JackpotCounter } from '@/components/jackpot-counter'
+import { DrawCountdown } from '@/components/draw-countdown'
 import { BoltMark, BurstMark } from '@/components/icons'
 
 export function Hero() {
@@ -44,10 +45,11 @@ export function Hero() {
             Впервые играешь в государственную лотерею? Скорее регистрируйся, лови удачу и забирай бонус на первый билет!
           </p>
 
-          <div className="mt-7 flex justify-center md:justify-start">
+          <div className="mt-7 flex flex-col items-center gap-4 md:items-start">
             <div className="rounded-3xl border border-gold/30 bg-[oklch(0.22_0.1_300)]/70 px-8 py-5 backdrop-blur">
               <JackpotCounter />
             </div>
+            <DrawCountdown />
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:justify-start">

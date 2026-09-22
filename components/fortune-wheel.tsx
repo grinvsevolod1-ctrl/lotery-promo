@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { Reveal } from '@/components/reveal'
+import { Confetti } from '@/components/confetti'
 
 type Segment = {
   label: string
@@ -42,6 +43,7 @@ export function FortuneWheel() {
   const [rotation, setRotation] = useState(0)
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const [confettiKey, setConfettiKey] = useState(0)
   const spinsRef = useRef(0)
 
   const spin = () => {
@@ -62,11 +64,14 @@ export function FortuneWheel() {
     window.setTimeout(() => {
       setSpinning(false)
       setResult(SEGMENTS[winner].label)
+      // celebrate every prize with a burst; the wheel has no "lose" segment
+      setConfettiKey((k) => k + 1)
     }, 4200)
   }
 
   return (
     <section id="wheel" className="relative py-16 md:py-24">
+      <Confetti fireKey={confettiKey} />
       <div className="mx-auto max-w-6xl px-5">
         <Reveal>
           <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">

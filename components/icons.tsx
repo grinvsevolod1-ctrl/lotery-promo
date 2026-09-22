@@ -108,6 +108,26 @@ export function ArrowRightMark(props: IconProps) {
   )
 }
 
+/* Plus/cross toggle for the FAQ accordion */
+export function PlusMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
+/* Question glyph inside a rounded diamond — authorial FAQ marker */
+export function QueryMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 2.6 21.4 12 12 21.4 2.6 12 12 2.6Z" />
+      <path d="M9.8 9.6a2.2 2.2 0 0 1 4.3.6c0 1.5-2.1 1.8-2.1 3.2" />
+      <path d="M12 16.4h.01" />
+    </svg>
+  )
+}
+
 /* Coin with a ruble-ish glyph for the jackpot */
 export function CoinMark(props: IconProps) {
   return (
