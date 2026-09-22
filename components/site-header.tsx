@@ -9,7 +9,7 @@ export function SiteHeader() {
             <TicketMark className="h-6 w-6 text-primary-foreground" />
             <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-gold animate-twinkle" aria-hidden="true" />
           </span>
-          <span className="font-heading text-xl font-extrabold tracking-tight text-foreground">
+          <span className="font-display text-xl font-extrabold tracking-tight text-foreground">
             lotery<span className="text-gold">.by</span>
           </span>
         </a>

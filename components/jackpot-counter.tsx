@@ -29,7 +29,7 @@ export function JackpotCounter() {
       <span className="text-xs font-bold uppercase tracking-[0.25em] text-gold/90">
         Текущий джекпот
       </span>
-      <span className="font-heading text-4xl font-extrabold tabular-nums text-shimmer sm:text-5xl md:text-6xl">
+      <span className="font-display text-4xl font-extrabold tabular-nums text-shimmer sm:text-5xl md:text-6xl">
         {formatted}
       </span>
       <span className="text-sm font-bold uppercase tracking-widest text-foreground/80">

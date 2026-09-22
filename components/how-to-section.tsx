@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { CoinMark } from '@/components/icons'
+import { Reveal } from '@/components/reveal'
 
 const steps = [
   { n: '01', title: '1 Колесо Фортуны', desc: 'за покупку билета от 7 до 14 BYN' },
@@ -11,11 +12,13 @@ export function HowToSection() {
   return (
     <section id="how-to" className="relative py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-5">
-        <h2 className="text-center font-heading text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
-          Как получить бонус?
-        </h2>
+        <Reveal>
+          <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
+            Как получить бонус?
+          </h2>
+        </Reveal>
 
-        <div className="mt-12 grid items-center gap-8 rounded-4xl bg-gradient-to-br from-[oklch(0.4_0.2_305)] to-[oklch(0.3_0.14_302)] p-6 shadow-2xl shadow-black/30 md:grid-cols-2 md:p-12">
+        <div className="orbit-border mt-12 grid items-center gap-8 rounded-4xl bg-gradient-to-br from-[oklch(0.4_0.2_305)] to-[oklch(0.3_0.14_302)] p-6 shadow-2xl shadow-black/30 md:grid-cols-2 md:p-12">
           <div>
             <p className="font-heading text-xl font-bold leading-snug text-balance">
               Покупай билеты и получи до 7 Супер Колёс Фортуны и Колёс Фортуны:
@@ -44,7 +47,7 @@ export function HowToSection() {
             <img
               src="/promo-wheels.png"
               alt="Золотое и синее колёса фортуны"
-              className="mx-auto w-full max-w-sm drop-shadow-2xl"
+              className="mx-auto w-full max-w-sm drop-shadow-2xl animate-float"
             />
           </div>
         </div>

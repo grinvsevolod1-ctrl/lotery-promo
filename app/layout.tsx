@@ -1,6 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Inter, Manrope } from 'next/font/google'
+import { Inter, Manrope, Unbounded } from 'next/font/google'
 import './globals.css'
 
 const inter = Inter({
@@ -12,6 +12,13 @@ const inter = Inter({
 const manrope = Manrope({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-manrope',
+  display: 'swap',
+})
+
+const unbounded = Unbounded({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-display',
+  weight: ['600', '700', '800', '900'],
   display: 'swap',
 })
 
@@ -33,7 +40,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ru" className={`light ${inter.variable} ${manrope.variable}`}>
+    <html
+      lang="ru"
+      className={`light ${inter.variable} ${manrope.variable} ${unbounded.variable}`}
+    >
       <body className="bg-background font-sans antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

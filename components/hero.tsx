@@ -35,7 +35,7 @@ export function Hero() {
             <BoltMark className="size-4" />
             Тираж каждый день
           </span>
-          <h1 className="mt-5 font-heading text-4xl font-extrabold leading-[1.02] tracking-tight text-balance sm:text-5xl md:text-6xl">
+          <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.02] tracking-tight text-balance sm:text-5xl md:text-6xl">
             Получи супер-
             <br className="hidden sm:block" />{' '}
             <span className="text-shimmer">джекпот</span>

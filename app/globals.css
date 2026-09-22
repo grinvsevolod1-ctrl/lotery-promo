@@ -7,6 +7,7 @@
 @theme inline {
   --font-sans: var(--font-inter);
   --font-heading: var(--font-manrope);
+  --font-display: var(--font-display);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -181,6 +182,83 @@
     radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 100% 100%;
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
+}
+
+/* Bespoke display type for headings */
+.font-display {
+  font-family: var(--font-display), var(--font-manrope), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Scroll reveal — staggered entrance */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(34px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.reveal {
+  opacity: 0;
+}
+.reveal.is-visible {
+  animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+/* Pointer-follow aura — a soft magenta/gold light that trails the cursor */
+.cursor-aura {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  height: 460px;
+  width: 460px;
+  border-radius: 9999px;
+  pointer-events: none;
+  transform: translate3d(var(--mx, 50vw), var(--my, 30vh), 0) translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    oklch(0.66 0.27 350 / 0.16),
+    oklch(0.82 0.15 85 / 0.08) 45%,
+    transparent 70%
+  );
+  transition: opacity 0.4s ease;
+  will-change: transform;
+}
+
+/* Animated conic border for feature cards */
+@keyframes border-orbit {
+  to { transform: rotate(360deg); }
+}
+.orbit-border {
+  position: relative;
+}
+.orbit-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--a, 0deg),
+    transparent 0deg,
+    oklch(0.82 0.15 85 / 0.9) 40deg,
+    oklch(0.66 0.27 350 / 0.9) 80deg,
+    transparent 130deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-orbit 6s linear infinite;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.orbit-border:hover::before {
+  opacity: 1;
+}
+@property --a {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
 }
 
 @media (prefers-reduced-motion: reduce) {
