@@ -1,4 +1,4 @@
-import { Trophy } from 'lucide-react'
+import { TrophyMark } from '@/components/icons'
 
 const winners = [
   { name: 'Александр М.', city: 'Минск', amount: '250 000 BYN' },
@@ -17,7 +17,7 @@ export function WinnersMarquee() {
       <div className="flex w-max animate-marquee gap-10 pr-10">
         {items.map((w, i) => (
           <div key={i} className="flex shrink-0 items-center gap-2.5 text-sm">
-            <Trophy className="size-4 text-gold" aria-hidden="true" />
+            <TrophyMark className="size-4 text-gold" />
             <span className="font-bold text-foreground">{w.name}</span>
             <span className="text-muted-foreground">{w.city}</span>
             <span className="font-heading font-extrabold text-gold">+{w.amount}</span>

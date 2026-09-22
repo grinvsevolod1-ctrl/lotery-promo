@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeftMark, ArrowRightMark } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 
 const prizes = [
@@ -35,7 +35,7 @@ export function PrizesSection() {
             aria-label="Предыдущая лотерея"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40 transition-transform hover:scale-110"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ArrowLeftMark className="h-5 w-5" />
           </button>
 
           <div className="grid flex-1 items-center gap-6 overflow-hidden rounded-3xl bg-card p-6 shadow-2xl shadow-black/30 md:grid-cols-2 md:p-10">
@@ -78,7 +78,7 @@ export function PrizesSection() {
             aria-label="Следующая лотерея"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40 transition-transform hover:scale-110"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ArrowRightMark className="h-5 w-5" />
           </button>
         </div>
 

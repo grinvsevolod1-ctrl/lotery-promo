@@ -120,8 +120,72 @@
   animation: shimmer 3.5s linear infinite;
 }
 
+@keyframes conic-spin {
+  to { transform: rotate(-360deg); }
+}
+@keyframes sweep {
+  0% { transform: translateX(-140%) skewX(-20deg); }
+  60%, 100% { transform: translateX(240%) skewX(-20deg); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.animate-conic { animation: conic-spin 18s linear infinite; }
+.animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
+
+/* Fine grain overlay — bespoke texture, not a stock image */
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Conic aura ring used behind hero art */
+.aura {
+  background: conic-gradient(
+    from 0deg,
+    oklch(0.66 0.27 350 / 0.55),
+    oklch(0.82 0.15 85 / 0.55),
+    oklch(0.5 0.2 300 / 0.4),
+    oklch(0.66 0.27 350 / 0.55)
+  );
+}
+
+/* Sweep shine that runs across CTA / cards */
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+.shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.35), transparent);
+  animation: sweep 3.4s ease-in-out infinite;
+}
+
+/* Perforated ticket edge */
+.perforate {
+  --p: oklch(0.19 0.09 300);
+  -webkit-mask:
+    radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 100% 100%,
+    radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 100% 100%;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-float, .animate-spin-slow, .animate-glow, .animate-marquee, .text-shimmer, .animate-pop {
+  .animate-float, .animate-spin-slow, .animate-glow, .animate-marquee, .text-shimmer,
+  .animate-pop, .animate-conic, .animate-twinkle, .shine::before {
     animation: none !important;
   }
 }

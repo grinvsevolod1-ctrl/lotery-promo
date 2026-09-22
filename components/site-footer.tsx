@@ -1,9 +1,9 @@
-import { Send, MessageCircle, Share2 } from 'lucide-react'
+import { PlaneMark, OrbChatMark, ShareMark } from '@/components/icons'
 
 const socials = [
-  { label: 'Telegram', icon: Send },
-  { label: 'ВКонтакте', icon: MessageCircle },
-  { label: 'Поделиться', icon: Share2 },
+  { label: 'Telegram', icon: PlaneMark },
+  { label: 'ВКонтакте', icon: OrbChatMark },
+  { label: 'Поделиться', icon: ShareMark },
 ]
 
 export function SiteFooter() {

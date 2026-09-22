@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button'
+import { CoinMark } from '@/components/icons'
 
 const steps = [
-  { title: '1 Колесо Фортуны', desc: 'за покупку билета от 7 до 14 BYN' },
-  { title: '2 Супер Колеса Фортуны', desc: 'за покупку билета от 15 до 49 BYN' },
-  { title: '3 Супер Колеса + 1 Колесо', desc: 'за покупку билета от 50 BYN и более' },
+  { n: '01', title: '1 Колесо Фортуны', desc: 'за покупку билета от 7 до 14 BYN' },
+  { n: '02', title: '2 Супер Колеса Фортуны', desc: 'за покупку билета от 15 до 49 BYN' },
+  { n: '03', title: '3 Супер Колеса + 1 Колесо', desc: 'за покупку билета от 50 BYN и более' },
 ]
 
 export function HowToSection() {
@@ -23,17 +24,17 @@ export function HowToSection() {
               {steps.map((step) => (
                 <li
                   key={step.title}
-                  className="flex items-start gap-3 rounded-2xl bg-background/95 px-4 py-3 shadow-lg"
+                  className="flex items-center gap-4 rounded-2xl bg-background/95 px-4 py-3 shadow-lg"
                 >
-                  <span
-                    className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full bg-gradient-to-br from-primary to-accent shadow"
-                    aria-hidden="true"
-                  />
+                  <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent font-heading text-lg font-extrabold text-primary-foreground shadow">
+                    {step.n}
+                    <CoinMark className="absolute -right-2 -top-2 h-5 w-5 text-gold drop-shadow" />
+                  </span>
                   <span>
-                    <span className="block font-heading text-base font-bold text-card">
+                    <span className="block font-heading text-base font-bold text-foreground">
                       {step.title}
                     </span>
-                    <span className="block text-sm font-medium text-primary">{step.desc}</span>
+                    <span className="block text-sm font-medium text-gold">{step.desc}</span>
                   </span>
                 </li>
               ))}
