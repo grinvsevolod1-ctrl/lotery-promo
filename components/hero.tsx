@@ -5,30 +5,12 @@ import { BoltMark, BurstMark } from '@/components/icons'
 
 export function Hero() {
   return (
-    <section className="grain relative overflow-hidden bg-gradient-to-b from-[oklch(0.32_0.16_305)] via-[oklch(0.24_0.12_302)] to-background pt-28 pb-16 md:pt-32 md:pb-24">
-      {/* radial glows */}
+    <section className="relative overflow-hidden bg-gradient-to-b from-[oklch(0.32_0.16_305)] via-[oklch(0.24_0.12_302)] to-background pt-24 pb-14 md:pt-32 md:pb-24">
+      {/* single soft radial glow — light on the GPU, no heavy blur stacks */}
       <div
-        className="pointer-events-none absolute -right-24 -top-24 h-[36rem] w-[36rem] rounded-full bg-primary/25 blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-0 h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-primary/20 blur-2xl md:h-[34rem] md:w-[34rem] md:left-auto md:-right-20 md:translate-x-0"
         aria-hidden="true"
       />
-      <div
-        className="pointer-events-none absolute -left-32 top-40 h-[30rem] w-[30rem] rounded-full bg-gold/15 blur-3xl"
-        aria-hidden="true"
-      />
-      {/* scattered twinkles */}
-      {[
-        { t: '12%', l: '8%', d: '0s' },
-        { t: '22%', l: '46%', d: '1.1s' },
-        { t: '68%', l: '14%', d: '0.6s' },
-        { t: '40%', l: '90%', d: '1.6s' },
-        { t: '82%', l: '60%', d: '0.3s' },
-      ].map((s, i) => (
-        <BurstMark
-          key={i}
-          className="pointer-events-none absolute h-5 w-5 text-gold animate-twinkle"
-          style={{ top: s.t, left: s.l, animationDelay: s.d }}
-        />
-      ))}
 
       <div className="container-page relative grid max-w-6xl items-center gap-8 md:grid-cols-2">
         <div className="text-center md:text-left">
@@ -74,33 +56,14 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative">
-          {/* spinning wheel behind the phone */}
-          <img
-            src="/promo-wheels.png"
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-1/2 w-[26rem] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-40 blur-[1px] animate-spin-slow"
-          />
+        <div className="relative mx-auto w-full max-w-md md:max-w-lg">
+          {/* main art — square source is faded into the page with a radial mask
+              so it reads as a full-bleed element, not a boxed image */}
           <img
             src="/promo-hero.png"
             alt="Смартфон с приложением лотереи, золотые монеты и колёса фортуны"
-            className="relative mx-auto w-full max-w-lg drop-shadow-2xl animate-float"
-          />
-          {/* floating coins */}
-          <img
-            src="/promo-slot.png"
-            alt=""
-            aria-hidden="true"
-            className="absolute -bottom-4 -left-2 w-24 animate-float drop-shadow-xl [--r:-8deg]"
-            style={{ animationDelay: '0.6s' }}
-          />
-          <img
-            src="/promo-phone.png"
-            alt=""
-            aria-hidden="true"
-            className="absolute -right-2 top-4 w-20 animate-float drop-shadow-xl [--r:10deg]"
-            style={{ animationDelay: '1.2s' }}
+            fetchPriority="high"
+            className="w-full [mask-image:radial-gradient(ellipse_70%_70%_at_50%_47%,#000_56%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_70%_70%_at_50%_47%,#000_56%,transparent_100%)]"
           />
         </div>
       </div>

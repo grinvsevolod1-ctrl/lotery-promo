@@ -346,3 +346,26 @@
     animation: none !important;
   }
 }
+
+/* Weak-phone friendly: drop the repaint-heavy continuous effects on touch
+   devices (animated box-shadow, moving gradients, sweeping shine). Keep the
+   transform-based motion (float, marquee) — it runs on the GPU compositor and
+   is cheap even on low-end hardware. Static fallbacks preserve the look. */
+@media (pointer: coarse) {
+  .animate-glow {
+    animation: none;
+    box-shadow:
+      0 0 30px -6px oklch(0.66 0.27 350 / 0.7),
+      0 0 60px -14px oklch(0.66 0.27 350 / 0.45);
+  }
+  .animate-conic {
+    animation: none;
+  }
+  .text-shimmer {
+    animation: none;
+    background-position: center;
+  }
+  .shine::before {
+    display: none;
+  }
+}
