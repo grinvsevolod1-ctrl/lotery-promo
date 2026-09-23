@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import {
   TicketMark,
@@ -16,6 +15,8 @@ import {
   CoinMark,
 } from "@/components/icons"
 import { buyTicket, claimWelcomeBonus } from "@/app/actions/cabinet"
+import { signOutAction } from "@/app/actions/auth"
+import { formatPhone } from "@/lib/validation"
 
 type Ticket = {
   id: number
@@ -65,7 +66,7 @@ export function CabinetView({
   transactions,
   hasWelcome,
 }: {
-  user: { name: string; email: string; role: string }
+  user: { fullName: string; phone: string; role: string }
   balance: number
   tickets: Ticket[]
   transactions: Transaction[]
@@ -119,18 +120,15 @@ export function CabinetView({
                 Админка
               </Link>
             )}
-            <button
-              type="button"
-              onClick={async () => {
-                await authClient.signOut()
-                router.push("/")
-                router.refresh()
-              }}
-              className="flex items-center gap-2 rounded-full bg-foreground/10 px-4 py-2 text-sm font-semibold text-foreground/80 transition-colors hover:bg-foreground/15"
-            >
-              <LogoutMark className="size-4" />
-              Выйти
-            </button>
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="flex items-center gap-2 rounded-full bg-foreground/10 px-4 py-2 text-sm font-semibold text-foreground/80 transition-colors hover:bg-foreground/15"
+              >
+                <LogoutMark className="size-4" />
+                Выйти
+              </button>
+            </form>
           </div>
         </header>
 
@@ -141,9 +139,9 @@ export function CabinetView({
           </span>
           <div>
             <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-              Привет, {user.name.split(" ")[0] || "игрок"}!
+              Привет, {user.fullName.split(" ")[0] || "игрок"}!
             </h1>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <p className="text-sm text-muted-foreground">{formatPhone(user.phone)}</p>
           </div>
         </div>
 

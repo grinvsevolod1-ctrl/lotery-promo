@@ -167,6 +167,15 @@ export function FortuneWheel() {
           >
             {spinning ? 'Крутится…' : 'Крутить'}
           </button>
+
+          {result && !spinning && (
+            <a
+              href="/sign-up"
+              className="shine h-14 flex items-center rounded-full bg-gradient-to-br from-primary to-accent px-12 font-heading text-base font-bold uppercase tracking-wide text-primary-foreground shadow-xl shadow-primary/40 transition-transform hover:scale-[1.04]"
+            >
+              Забрать приз
+            </a>
+          )}
         </Reveal>
       </div>
     </section>

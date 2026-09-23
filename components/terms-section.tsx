@@ -40,10 +40,10 @@ export function TermsSection() {
           <Button
             size="lg"
             nativeButton={false}
-            render={<a href="#" />}
+            render={<a href="/sign-up" />}
             className="h-14 rounded-full px-10 text-base font-bold uppercase tracking-wide shadow-xl shadow-primary/40 transition-transform hover:scale-[1.03]"
           >
-            Скачать приложение
+            Зарегистрироваться
           </Button>
         </div>
       </div>

@@ -1,19 +1,12 @@
-"use client"
-
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { authClient, useSession } from "@/lib/auth-client"
+import { getCurrentUser } from "@/lib/session"
+import { signOutAction } from "@/app/actions/auth"
 import { UserMark, LogoutMark } from "@/components/icons"
 
-export function HeaderAuthNav() {
-  const router = useRouter()
-  const { data: session, isPending } = useSession()
+export async function HeaderAuthNav() {
+  const user = await getCurrentUser()
 
-  if (isPending) {
-    return <div className="h-9 w-24 rounded-full bg-foreground/10 animate-pulse" aria-hidden />
-  }
-
-  if (!session?.user) {
+  if (!user) {
     return (
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <Link
@@ -32,7 +25,8 @@ export function HeaderAuthNav() {
     )
   }
 
-  const isAdmin = (session.user as { role?: string }).role === "admin"
+  const isAdmin = user.role === "admin"
+  const firstName = user.fullName.split(" ")[0] || "Кабинет"
 
   return (
     <div className="flex items-center gap-2">
@@ -49,20 +43,17 @@ export function HeaderAuthNav() {
         className="flex items-center gap-2 rounded-full bg-foreground/10 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/15"
       >
         <UserMark className="size-4" />
-        <span className="max-w-24 truncate">{session.user.name || "Кабинет"}</span>
+        <span className="max-w-24 truncate">{firstName}</span>
       </Link>
-      <button
-        type="button"
-        onClick={async () => {
-          await authClient.signOut()
-          router.push("/")
-          router.refresh()
-        }}
-        className="grid size-9 place-items-center rounded-full text-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground"
-        aria-label="Выйти"
-      >
-        <LogoutMark className="size-4" />
-      </button>
+      <form action={signOutAction}>
+        <button
+          type="submit"
+          className="grid size-9 place-items-center rounded-full text-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground"
+          aria-label="Выйти"
+        >
+          <LogoutMark className="size-4" />
+        </button>
+      </form>
     </div>
   )
 }

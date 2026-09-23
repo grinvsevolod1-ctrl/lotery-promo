@@ -1,29 +1,19 @@
-import { redirect } from "next/navigation"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
-import { user } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
-import { getAdminStats, getAllTickets, getAllUsers } from "@/app/actions/admin"
+import { isAdmin, adminCredentialsConfigured } from "@/lib/admin-session"
+import { getAdminStats, getAllTickets, getAllUsers, getAuthRequests } from "@/app/actions/admin"
 import { AdminView } from "@/components/admin-view"
+import { AdminLogin } from "@/components/admin-login"
 
 export default async function AdminPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) redirect("/sign-in")
+  if (!(await isAdmin())) {
+    return <AdminLogin configured={adminCredentialsConfigured()} />
+  }
 
-  const rows = await db
-    .select({ role: user.role })
-    .from(user)
-    .where(eq(user.id, session.user.id))
-    .limit(1)
-
-  if (rows[0]?.role !== "admin") redirect("/cabinet")
-
-  const [stats, users, tickets] = await Promise.all([
+  const [stats, requests, users, tickets] = await Promise.all([
     getAdminStats(),
+    getAuthRequests(),
     getAllUsers(),
     getAllTickets(),
   ])
 
-  return <AdminView stats={stats} users={users} tickets={tickets} currentUserId={session.user.id} />
+  return <AdminView stats={stats} requests={requests} users={users} tickets={tickets} />
 }

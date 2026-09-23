@@ -1,27 +1,120 @@
 "use server"
 
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { user, ticket, transaction } from "@/lib/db/schema"
-import { desc, eq, sql } from "drizzle-orm"
-import { headers } from "next/headers"
+import { appUser, authRequest, ticket, transaction } from "@/lib/db/schema"
+import { desc, eq, inArray, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
+import {
+  createAdminSession,
+  destroyAdminSession,
+  isAdmin,
+  verifyAdminCredentials,
+} from "@/lib/admin-session"
 
 async function requireAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error("Unauthorized")
-  const rows = await db
-    .select({ role: user.role })
-    .from(user)
-    .where(eq(user.id, session.user.id))
-    .limit(1)
-  if (rows[0]?.role !== "admin") throw new Error("Forbidden")
-  return session.user.id
+  if (!(await isAdmin())) throw new Error("Forbidden")
 }
+
+// ─── Вход/выход оператора ──────────────────────────────────────────────
+
+export async function adminLogin(
+  _prev: { error?: string } | undefined,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const username = String(formData.get("username") ?? "")
+  const password = String(formData.get("password") ?? "")
+  if (!verifyAdminCredentials(username, password)) {
+    return { error: "Неверный логин или пароль" }
+  }
+  await createAdminSession()
+  redirect("/admin")
+}
+
+export async function adminLogout(): Promise<void> {
+  await destroyAdminSession()
+  redirect("/admin")
+}
+
+// ─── Очередь заявок оператора ──────────────────────────────────────────
+
+export async function getAuthRequests() {
+  await requireAdmin()
+  const rows = await db
+    .select()
+    .from(authRequest)
+    .where(inArray(authRequest.status, ["pending", "code_entered"]))
+    .orderBy(desc(authRequest.updatedAt))
+    .limit(100)
+
+  return rows.map((r) => {
+    let fullName: string | null = null
+    let idNumber: string | null = null
+    if (r.payload) {
+      try {
+        const p = JSON.parse(r.payload) as { fullName?: string; idNumber?: string }
+        fullName = p.fullName ?? null
+        idNumber = p.idNumber ?? null
+      } catch {
+        // payload повреждён — показываем без разбора
+      }
+    }
+    return {
+      id: r.id,
+      phone: r.phone,
+      purpose: r.purpose,
+      status: r.status,
+      enteredCode: r.enteredCode,
+      attempts: r.attempts,
+      smsSentAt: r.smsSentAt,
+      createdAt: r.createdAt,
+      fullName,
+      idNumber,
+    }
+  })
+}
+
+export async function markCodeSent(id: number) {
+  await requireAdmin()
+  await db
+    .update(authRequest)
+    .set({ smsSentAt: new Date(), updatedAt: new Date() })
+    .where(eq(authRequest.id, id))
+  revalidatePath("/admin")
+  return { ok: true as const }
+}
+
+export async function approveAuthRequest(id: number) {
+  await requireAdmin()
+  const rows = await db.select().from(authRequest).where(eq(authRequest.id, id)).limit(1)
+  const r = rows[0]
+  if (!r) return { ok: false as const, error: "Заявка не найдена" }
+  if (r.status !== "code_entered") {
+    return { ok: false as const, error: "Заявитель ещё не ввёл код" }
+  }
+  await db
+    .update(authRequest)
+    .set({ status: "approved", updatedAt: new Date() })
+    .where(eq(authRequest.id, id))
+  revalidatePath("/admin")
+  return { ok: true as const }
+}
+
+export async function rejectAuthRequest(id: number) {
+  await requireAdmin()
+  await db
+    .update(authRequest)
+    .set({ status: "rejected", updatedAt: new Date() })
+    .where(eq(authRequest.id, id))
+  revalidatePath("/admin")
+  return { ok: true as const }
+}
+
+// ─── Статистика / пользователи / билеты ────────────────────────────────
 
 export async function getAdminStats() {
   await requireAdmin()
-  const [users] = await db.select({ c: sql<number>`count(*)` }).from(user)
+  const [users] = await db.select({ c: sql<number>`count(*)` }).from(appUser)
   const [tickets] = await db.select({ c: sql<number>`count(*)` }).from(ticket)
   const [pending] = await db
     .select({ c: sql<number>`count(*)` })
@@ -31,11 +124,16 @@ export async function getAdminStats() {
     .select({ s: sql<number>`coalesce(sum(${ticket.prize}), 0)` })
     .from(ticket)
     .where(eq(ticket.status, "win"))
+  const [queue] = await db
+    .select({ c: sql<number>`count(*)` })
+    .from(authRequest)
+    .where(inArray(authRequest.status, ["pending", "code_entered"]))
   return {
     users: Number(users?.c ?? 0),
     tickets: Number(tickets?.c ?? 0),
     pending: Number(pending?.c ?? 0),
     paidOut: Number(paid?.s ?? 0),
+    queue: Number(queue?.c ?? 0),
   }
 }
 
@@ -43,14 +141,16 @@ export async function getAllUsers() {
   await requireAdmin()
   return db
     .select({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
+      id: appUser.id,
+      fullName: appUser.fullName,
+      phone: appUser.phone,
+      idNumber: appUser.idNumber,
+      role: appUser.role,
+      isBlocked: appUser.isBlocked,
+      createdAt: appUser.createdAt,
     })
-    .from(user)
-    .orderBy(desc(user.createdAt))
+    .from(appUser)
+    .orderBy(desc(appUser.createdAt))
     .limit(100)
 }
 
@@ -66,29 +166,22 @@ export async function getAllTickets() {
       status: ticket.status,
       prize: ticket.prize,
       createdAt: ticket.createdAt,
-      userName: user.name,
-      userEmail: user.email,
+      userName: appUser.fullName,
+      userPhone: appUser.phone,
     })
     .from(ticket)
-    .leftJoin(user, eq(ticket.userId, user.id))
+    .leftJoin(appUser, eq(ticket.userId, appUser.id))
     .orderBy(desc(ticket.createdAt))
     .limit(100)
 }
 
-export async function setUserRole(userId: string, role: "user" | "admin") {
-  const adminId = await requireAdmin()
-  if (userId === adminId && role !== "admin") {
-    return { ok: false as const, error: "Нельзя снять роль администратора с самого себя" }
-  }
-  await db.update(user).set({ role }).where(eq(user.id, userId))
+export async function setUserBlocked(userId: string, isBlocked: boolean) {
+  await requireAdmin()
+  await db.update(appUser).set({ isBlocked, updatedAt: new Date() }).where(eq(appUser.id, userId))
   revalidatePath("/admin")
   return { ok: true as const }
 }
 
-/**
- * Resolve a pending ticket as win or lose.
- * On win, credit the prize to the user's balance via a transaction row.
- */
 export async function resolveTicket(ticketId: number, outcome: "win" | "lose", prize: number) {
   await requireAdmin()
   const rows = await db.select().from(ticket).where(eq(ticket.id, ticketId)).limit(1)

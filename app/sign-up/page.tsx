@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
-import { AuthForm } from "@/components/auth-form"
+import { getCurrentUser } from "@/lib/session"
+import { PhoneAuthForm } from "@/components/phone-auth-form"
 
 export default async function SignUpPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (session?.user) redirect("/cabinet")
-  return <AuthForm mode="sign-up" />
+  const user = await getCurrentUser()
+  if (user) redirect("/cabinet")
+  return <PhoneAuthForm mode="sign-up" />
 }

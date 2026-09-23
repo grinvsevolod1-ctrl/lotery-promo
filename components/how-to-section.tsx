@@ -56,7 +56,7 @@ export function HowToSection() {
           <Button
             size="lg"
             nativeButton={false}
-            render={<a href="#terms" />}
+            render={<a href="/sign-up" />}
             className="h-14 rounded-full px-10 text-base font-bold uppercase tracking-wide shadow-xl shadow-primary/40 transition-transform hover:scale-[1.03]"
           >
             Получить бонус

@@ -1,66 +1,48 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  boolean,
-  serial,
-  integer,
-} from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core"
 
-// ─── Better Auth tables ───────────────────────────────────────────────
-
-export const user = pgTable("user", {
+// ─── Пользователи (телефон + идентификационный номер) ──────────────────
+// Регистрация и вход идут по номеру телефона и идентификационному номеру,
+// код подтверждения проверяет оператор вручную в админ-панели.
+export const appUser = pgTable("app_user", {
   id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("emailVerified").notNull().default(false),
-  image: text("image"),
-  role: text("role").notNull().default("user"),
+  phone: text("phone").notNull().unique(),
+  fullName: text("fullName").notNull().default(""),
+  idNumber: text("idNumber").notNull(), // идентификационный номер
+  role: text("role").notNull().default("user"), // 'user' | 'admin'
+  isBlocked: boolean("isBlocked").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
-export const session = pgTable("session", {
+// ─── Сессии (собственные, cookie-based) ────────────────────────────────
+// id = sha256(токен из cookie). Для оператора из ENV используется
+// userId = 'env-admin' — отдельной записи в app_user у него нет.
+export const appSession = pgTable("app_session", {
   id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
-  token: text("token").notNull().unique(),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   ipAddress: text("ipAddress"),
   userAgent: text("userAgent"),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
-export const account = pgTable("account", {
-  id: text("id").primaryKey(),
-  accountId: text("accountId").notNull(),
-  providerId: text("providerId").notNull(),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  accessToken: text("accessToken"),
-  refreshToken: text("refreshToken"),
-  idToken: text("idToken"),
-  accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
-  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
-  scope: text("scope"),
-  password: text("password"),
+// ─── Заявки на вход/регистрацию (код подтверждает оператор) ─────────────
+export const authRequest = pgTable("auth_request", {
+  id: serial("id").primaryKey(),
+  phone: text("phone").notNull(),
+  purpose: text("purpose").notNull(), // 'login' | 'register'
+  payload: text("payload"), // JSON с данными регистрации
+  clientToken: text("clientToken").notNull(), // привязка к заявителю
+  enteredCode: text("enteredCode"), // код, введённый заявителем
+  // 'pending' | 'code_entered' | 'approved' | 'rejected' | 'done' | 'expired'
+  status: text("status").notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  smsSentAt: timestamp("smsSentAt"), // отметка оператора «код отправлен»
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
-export const verification = pgTable("verification", {
-  id: text("id").primaryKey(),
-  identifier: text("identifier").notNull(),
-  value: text("value").notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-})
-
-// ─── App tables ───────────────────────────────────────────────────────
+// ─── App tables ────────────────────────────────────────────────────────
 
 export const ticket = pgTable("ticket", {
   id: serial("id").primaryKey(),
@@ -82,3 +64,6 @@ export const transaction = pgTable("transaction", {
   description: text("description").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
+
+export type AppUser = typeof appUser.$inferSelect
+export type AuthRequest = typeof authRequest.$inferSelect

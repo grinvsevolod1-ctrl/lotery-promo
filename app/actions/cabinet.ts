@@ -1,16 +1,15 @@
 "use server"
 
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { ticket, transaction } from "@/lib/db/schema"
 import { and, desc, eq, sql } from "drizzle-orm"
-import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
+import { getCurrentUser } from "@/lib/session"
 
 async function getUserId() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error("Unauthorized")
-  return session.user.id
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+  return user.id
 }
 
 export async function getBalance() {
@@ -42,9 +41,9 @@ export async function getTickets() {
 }
 
 const GAME_COST: Record<string, number> = {
-  "Суперлото": 3,
-  "Пятёрочка": 2,
-  "КЕНО": 1,
+  Суперлото: 3,
+  Пятёрочка: 2,
+  КЕНО: 1,
 }
 
 function randomNumbers(count: number, max: number) {

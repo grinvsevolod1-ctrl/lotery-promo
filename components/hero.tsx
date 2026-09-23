@@ -38,7 +38,7 @@ export function Hero() {
             <Button
               size="lg"
               nativeButton={false}
-              render={<a href="#how-to" />}
+              render={<a href="/sign-up" />}
               className="shine h-14 w-full rounded-full px-10 text-base font-bold uppercase tracking-wide animate-glow transition-transform hover:scale-[1.04] sm:w-auto"
             >
               <BurstMark className="size-5" />
