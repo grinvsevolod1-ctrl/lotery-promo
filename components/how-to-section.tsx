@@ -10,8 +10,8 @@ const steps = [
 
 export function HowToSection() {
   return (
-    <section id="how-to" className="relative py-16 md:py-24">
-      <div className="mx-auto max-w-6xl px-5">
+    <section id="how-to" className="section-y relative">
+      <div className="container-page max-w-6xl">
         <Reveal>
           <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
             Как получить бонус?

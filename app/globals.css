@@ -69,9 +69,78 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    /* Never let mobile browsers auto-inflate font sizes on rotation */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Smooth in-page anchor jumps used by the CTA buttons */
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
+    /* Hard guard against any element pushing horizontal scroll on mobile.
+       `clip` keeps position: sticky working, unlike overflow: hidden. */
+    overflow-x: clip;
+    /* Avoid long unbroken strings (URLs, numbers) blowing out narrow layouts */
+    overflow-wrap: break-word;
   }
+
+  /* Media never overflows its container by default */
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Layout containers + their grid children can shrink below content width.
+     Grid items default to `min-width: auto`, which lets wide content (images,
+     long numbers) blow the track past the viewport — this is the fix. */
+  :where(main, section, header, footer) {
+    min-width: 0;
+  }
+  :where(.grid) > * {
+    min-width: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive foundation utilities
+   Reuse these on every new section so spacing, width and safe-area handling
+   stay consistent automatically — no per-element breakpoint tuning needed.
+--------------------------------------------------------------------------- */
+
+/* Centered page gutter with fluid padding + notch-safe insets.
+   Compose with a max-w-* utility, e.g. `container-page max-w-6xl`. */
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: max(clamp(1rem, 5vw, 2rem), env(safe-area-inset-left), env(safe-area-inset-right));
+}
+
+/* Consistent vertical rhythm between sections (≈ py-16 → py-24). */
+@utility section-y {
+  padding-block: clamp(3.5rem, 9vw, 6rem);
+}
+
+/* Fluid display heading — scales smoothly from mobile to desktop with no jump. */
+@utility text-fluid-display {
+  font-size: clamp(2.25rem, 9vw, 3.75rem);
+  line-height: 1.03;
+}
+
+/* Fluid section heading. */
+@utility text-fluid-heading {
+  font-size: clamp(1.75rem, 6vw, 2.75rem);
+  line-height: 1.1;
 }
 
 @keyframes float-y {

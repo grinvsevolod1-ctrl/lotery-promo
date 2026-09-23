@@ -22,8 +22,8 @@ export function PrizesSection() {
   }
 
   return (
-    <section id="prizes" className="relative py-16 md:py-24">
-      <div className="mx-auto max-w-6xl px-5">
+    <section id="prizes" className="section-y relative">
+      <div className="container-page max-w-6xl">
         <Reveal>
           <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
             Присоединяйся ко вселенной

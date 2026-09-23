@@ -30,7 +30,7 @@ export function Hero() {
         />
       ))}
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-5 md:grid-cols-2">
+      <div className="container-page relative grid max-w-6xl items-center gap-8 md:grid-cols-2">
         <div className="text-center md:text-left">
           <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-gold animate-pop">
             <BoltMark className="size-4" />

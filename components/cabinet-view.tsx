@@ -98,7 +98,7 @@ export function CabinetView({
     <div className="relative min-h-svh overflow-hidden bg-background">
       <div className="pointer-events-none absolute inset-0 aura-bg opacity-40" aria-hidden />
 
-      <div className="relative mx-auto max-w-6xl px-5 py-8">
+      <div className="container-page relative max-w-6xl py-8">
         {/* Top bar */}
         <header className="mb-8 flex items-center justify-between">
           <Link href="/" className="group flex items-center gap-2.5" aria-label="lotery.by — на главную">

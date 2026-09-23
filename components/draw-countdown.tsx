@@ -29,7 +29,7 @@ function Digit({ value, label }: { value: number; label: string }) {
         {text.split('').map((d, i) => (
           <span
             key={`${i}-${d}`}
-            className="relative grid h-14 w-11 place-items-center overflow-hidden rounded-xl border border-gold/30 bg-[oklch(0.18_0.08_300)] font-display text-2xl font-extrabold text-gold shadow-inner sm:h-16 sm:w-12 sm:text-3xl"
+            className="relative grid h-12 w-8 place-items-center overflow-hidden rounded-xl border border-gold/30 bg-[oklch(0.18_0.08_300)] font-display text-lg font-extrabold text-gold shadow-inner sm:h-16 sm:w-12 sm:text-3xl"
           >
             {/* subtle mid seam like a flip clock */}
             <span
@@ -61,7 +61,7 @@ export function DrawCountdown() {
   const { hours, minutes, seconds } = split(ms ?? 0)
 
   return (
-    <div className="inline-flex flex-col items-center gap-3 rounded-3xl border border-gold/25 bg-[oklch(0.2_0.09_300)]/70 px-6 py-5 backdrop-blur md:items-start">
+    <div className="inline-flex flex-col items-center gap-3 rounded-3xl border border-gold/25 bg-[oklch(0.2_0.09_300)]/70 px-4 py-4 backdrop-blur sm:px-6 sm:py-5 md:items-start">
       <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold">
         <span className="relative flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
@@ -70,14 +70,14 @@ export function DrawCountdown() {
         До ближайшего тиража
       </span>
       <div
-        className="flex items-end gap-2"
+        className="flex items-end gap-1 sm:gap-2"
         role="timer"
         aria-label={`До розыгрыша ${hours} часов ${minutes} минут ${seconds} секунд`}
       >
         <Digit value={hours} label="часы" />
-        <span className="pb-6 font-display text-2xl font-extrabold text-gold/60">:</span>
+        <span className="pb-5 font-display text-lg font-extrabold text-gold/60 sm:pb-6 sm:text-2xl">:</span>
         <Digit value={minutes} label="минуты" />
-        <span className="pb-6 font-display text-2xl font-extrabold text-gold/60">:</span>
+        <span className="pb-5 font-display text-lg font-extrabold text-gold/60 sm:pb-6 sm:text-2xl">:</span>
         <Digit value={seconds} label="секунды" />
       </div>
     </div>

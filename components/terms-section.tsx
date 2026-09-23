@@ -2,8 +2,8 @@ import { Button } from '@/components/ui/button'
 
 export function TermsSection() {
   return (
-    <section id="terms" className="relative py-16 md:py-24">
-      <div className="mx-auto max-w-6xl px-5">
+    <section id="terms" className="section-y relative">
+      <div className="container-page max-w-6xl">
         <div className="grid items-center gap-8 md:grid-cols-2">
           <div className="rounded-3xl bg-card/60 p-6 text-sm leading-relaxed text-muted-foreground md:p-8">
             <p className="font-semibold text-foreground">

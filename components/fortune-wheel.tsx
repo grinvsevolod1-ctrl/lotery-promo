@@ -70,9 +70,9 @@ export function FortuneWheel() {
   }
 
   return (
-    <section id="wheel" className="relative py-16 md:py-24">
+    <section id="wheel" className="section-y relative">
       <Confetti fireKey={confettiKey} />
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="container-page max-w-6xl">
         <Reveal>
           <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
             Крути колесо фортуны

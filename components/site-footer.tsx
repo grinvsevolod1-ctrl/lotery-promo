@@ -9,7 +9,7 @@ const socials = [
 export function SiteFooter() {
   return (
     <footer className="relative border-t border-white/10 py-12">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5">
+      <div className="container-page flex max-w-6xl flex-col items-center gap-6">
         <div className="flex items-center gap-4">
           {socials.map(({ label, icon: Icon }) => (
             <a

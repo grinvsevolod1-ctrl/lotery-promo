@@ -31,8 +31,8 @@ export function FaqSection() {
   const [open, setOpen] = useState<number | null>(0)
 
   return (
-    <section id="faq" className="relative py-20 sm:py-28">
-      <div className="mx-auto w-full max-w-3xl px-4">
+    <section id="faq" className="section-y relative">
+      <div className="container-page max-w-3xl">
         <Reveal>
           <div className="mb-12 text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
