@@ -57,13 +57,13 @@ export function Hero() {
         </div>
 
         <div className="relative mx-auto w-full max-w-md md:max-w-lg">
-          {/* main art — square source is faded into the page with a radial mask
-              so it reads as a full-bleed element, not a boxed image */}
+          {/* Art is baked on a deep-violet gradient matching the section, and its
+              edges are faded with a radial mask so there is no visible box. */}
           <img
             src="/promo-hero.png"
             alt="Смартфон с приложением лотереи, золотые монеты и колёса фортуны"
             fetchPriority="high"
-            className="w-full [mask-image:radial-gradient(ellipse_70%_70%_at_50%_47%,#000_56%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_70%_70%_at_50%_47%,#000_56%,transparent_100%)]"
+            className="w-full [mask-image:radial-gradient(ellipse_72%_72%_at_50%_48%,#000_60%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_72%_72%_at_50%_48%,#000_60%,transparent_100%)]"
           />
         </div>
       </div>

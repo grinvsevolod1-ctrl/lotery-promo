@@ -1,4 +1,3 @@
-import { CursorAura } from '@/components/cursor-aura'
 import { SiteHeader } from '@/components/site-header'
 import { Hero } from '@/components/hero'
 import { WinnersMarquee } from '@/components/winners-marquee'
@@ -12,7 +11,6 @@ import { SiteFooter } from '@/components/site-footer'
 export default function HomePage() {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
-      <CursorAura />
       <SiteHeader />
       <main className="flex-1">
         <Hero />
