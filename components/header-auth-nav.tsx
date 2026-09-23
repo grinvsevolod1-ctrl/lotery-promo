@@ -15,16 +15,16 @@ export function HeaderAuthNav() {
 
   if (!session?.user) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <Link
           href="/sign-in"
-          className="rounded-full px-4 py-2 text-sm font-semibold text-foreground/80 transition-colors hover:text-foreground"
+          className="shrink-0 rounded-full px-2.5 py-1.5 text-[13px] font-semibold text-foreground/80 transition-colors hover:text-foreground sm:px-4 sm:py-2 sm:text-sm"
         >
           Войти
         </Link>
         <Link
           href="/sign-up"
-          className="rounded-full bg-gradient-to-br from-primary to-accent px-4 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-105"
+          className="shrink-0 whitespace-nowrap rounded-full bg-gradient-to-br from-primary to-accent px-3 py-1.5 text-[13px] font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-105 sm:px-5 sm:py-2 sm:text-sm"
         >
           Регистрация
         </Link>
