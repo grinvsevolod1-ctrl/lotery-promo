@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { user, ticket, transaction } from "@/lib/db/schema"
-import { desc, eq, sql } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 
@@ -91,27 +91,38 @@ export async function setUserRole(userId: string, role: "user" | "admin") {
  */
 export async function resolveTicket(ticketId: number, outcome: "win" | "lose", prize: number) {
   await requireAdmin()
-  const rows = await db.select().from(ticket).where(eq(ticket.id, ticketId)).limit(1)
-  const t = rows[0]
-  if (!t) return { ok: false as const, error: "Билет не найден" }
-  if (t.status !== "pending") return { ok: false as const, error: "Билет уже разыгран" }
 
   const safePrize = outcome === "win" ? Math.max(0, Math.floor(prize)) : 0
 
-  await db
-    .update(ticket)
-    .set({ status: outcome, prize: safePrize })
-    .where(eq(ticket.id, ticketId))
+  const result = await db.transaction(async (tx) => {
+    // Re-check status inside the transaction, and only flip a row that is
+    // still pending, so two concurrent resolves cannot both pay out.
+    const rows = await tx.select().from(ticket).where(eq(ticket.id, ticketId)).limit(1)
+    const t = rows[0]
+    if (!t) return { ok: false as const, error: "Билет не найден" }
+    if (t.status !== "pending") return { ok: false as const, error: "Билет уже разыгран" }
 
-  if (outcome === "win" && safePrize > 0) {
-    await db.insert(transaction).values({
-      userId: t.userId,
-      type: "prize",
-      amount: safePrize,
-      description: `Выигрыш по билету «${t.game}» #${t.id}`,
-    })
-  }
+    const updated = await tx
+      .update(ticket)
+      .set({ status: outcome, prize: safePrize })
+      .where(and(eq(ticket.id, ticketId), eq(ticket.status, "pending")))
+      .returning({ id: ticket.id })
 
-  revalidatePath("/admin")
-  return { ok: true as const }
+    if (updated.length === 0) {
+      return { ok: false as const, error: "Билет уже разыгран" }
+    }
+
+    if (outcome === "win" && safePrize > 0) {
+      await tx.insert(transaction).values({
+        userId: t.userId,
+        type: "prize",
+        amount: safePrize,
+        description: `Выигрыш по билету «${t.game}» #${t.id}`,
+      })
+    }
+    return { ok: true as const }
+  })
+
+  if (result.ok) revalidatePath("/admin")
+  return result
 }

@@ -22,10 +22,31 @@ const unbounded = Unbounded({
   display: 'swap',
 })
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://lotery.by'
+const title = 'lotery.by — Государственные лотереи Республики Беларусь'
+const description =
+  'Официальный портал государственных лотерей. Актуальные тиражи, проверка билетов, результаты розыгрышей. Прозрачно, честно, на благо страны.'
+
 export const metadata: Metadata = {
-  title: 'lotery.by — Государственные лотереи Республики Беларусь',
-  description:
-    'Официальный портал государственных лотерей. Актуальные тиражи, проверка билетов, результаты розыгрышей. Прозрачно, честно, на благо страны.',
+  metadataBase: new URL(siteUrl),
+  title,
+  description,
+  applicationName: 'lotery.by',
+  keywords: ['лотерея', 'госолотерея', 'Беларусь', 'тиражи', 'проверка билета', 'розыгрыш'],
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    locale: 'ru_RU',
+    url: siteUrl,
+    siteName: 'lotery.by',
+    title,
+    description,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+  },
   generator: 'v0.app',
 }
 

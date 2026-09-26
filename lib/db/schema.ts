@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm"
 import {
   pgTable,
   text,
@@ -5,6 +6,7 @@ import {
   boolean,
   serial,
   integer,
+  uniqueIndex,
 } from "drizzle-orm/pg-core"
 
 // ─── Better Auth tables ───────────────────────────────────────────────
@@ -74,11 +76,20 @@ export const ticket = pgTable("ticket", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
-export const transaction = pgTable("transaction", {
-  id: serial("id").primaryKey(),
-  userId: text("userId").notNull(),
-  type: text("type").notNull(),
-  amount: integer("amount").notNull(),
-  description: text("description").notNull(),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-})
+export const transaction = pgTable(
+  "transaction",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId").notNull(),
+    type: text("type").notNull(),
+    amount: integer("amount").notNull(),
+    description: text("description").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [
+    // At most one welcome bonus per user, enforced at the database level.
+    uniqueIndex("transaction_welcome_once")
+      .on(table.userId)
+      .where(sql`${table.type} = 'welcome'`),
+  ],
+)

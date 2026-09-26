@@ -174,6 +174,30 @@
   animation: sweep 3.4s ease-in-out infinite;
 }
 
+/* Soft ambient page glow used behind cabinet / admin / auth surfaces */
+.aura-bg {
+  background:
+    radial-gradient(60% 50% at 18% 18%, oklch(0.66 0.27 350 / 0.18), transparent 70%),
+    radial-gradient(50% 50% at 85% 12%, oklch(0.82 0.15 85 / 0.14), transparent 70%),
+    radial-gradient(70% 60% at 50% 100%, oklch(0.5 0.2 300 / 0.16), transparent 70%);
+}
+
+/* Sweep shine for standalone CTA buttons */
+.cta-shine {
+  position: relative;
+  overflow: hidden;
+}
+.cta-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.35), transparent);
+  animation: sweep 3.4s ease-in-out infinite;
+}
+
 /* Perforated ticket edge */
 .perforate {
   --p: oklch(0.19 0.09 300);
@@ -273,7 +297,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .animate-float, .animate-spin-slow, .animate-glow, .animate-marquee, .text-shimmer,
-  .animate-pop, .animate-conic, .animate-twinkle, .shine::before {
+  .animate-pop, .animate-conic, .animate-twinkle, .shine::before, .cta-shine::before {
     animation: none !important;
   }
 }
