@@ -3,6 +3,8 @@ import { NextResponse } from "next/server"
 import { settleDueDraws } from "@/lib/draws"
 
 export const dynamic = "force-dynamic"
+// Settlement also sends result e-mails, so give the Vercel function headroom.
+export const maxDuration = 60
 
 function isAuthorized(request: Request) {
   const secret = process.env.CRON_SECRET

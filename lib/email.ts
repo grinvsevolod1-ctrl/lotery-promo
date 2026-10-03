@@ -2,9 +2,10 @@ import nodemailer, { type Transporter } from "nodemailer"
 import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { formatDateTime } from "@/lib/format"
+import { site } from "@/lib/site"
 
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "lotery.by"
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/$/, "")
+const SITE_NAME = site.name
+const SITE_URL = site.url
 
 type MailInput = {
   to: string
@@ -49,8 +50,13 @@ export async function sendMail(input: MailInput) {
   const transport = getTransporter()
 
   if (!transport) {
+    // Resend HTTP API: the transport for Vercel, where there is no SMTP relay.
+    if (process.env.RESEND_API_KEY) {
+      await sendViaResend(input)
+      return
+    }
     if (process.env.NODE_ENV === "production") {
-      throw new Error("SMTP_HOST is not set: cannot send e-mail")
+      throw new Error("Neither SMTP_HOST nor RESEND_API_KEY is set: cannot send e-mail")
     }
     // Without SMTP in development the letter is printed to the server log so
     // the link can still be followed while testing.
@@ -62,6 +68,28 @@ export async function sendMail(input: MailInput) {
     from: process.env.MAIL_FROM ?? process.env.SMTP_USER,
     ...input,
   })
+}
+
+async function sendViaResend(input: MailInput) {
+  // Without a verified domain Resend only accepts its sandbox sender, and
+  // delivers solely to the e-mail of the Resend account owner.
+  const from = process.env.MAIL_FROM ?? `${SITE_NAME} <onboarding@resend.dev>`
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from, to: [input.to], subject: input.subject, text: input.text, html: input.html }),
+  })
+
+  if (!response.ok) {
+    // Resend explains the refusal (unverified domain, sandbox recipient
+    // restriction, rate limit) in the body; keep that server-side only.
+    const detail = await response.text().catch(() => "")
+    console.error(`[mail] Resend rejected the letter for ${input.to}: HTTP ${response.status} ${detail}`)
+    throw new Error("E-mail delivery failed")
+  }
 }
 
 export function escapeHtml(value: string) {

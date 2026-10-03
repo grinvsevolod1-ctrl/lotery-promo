@@ -11,12 +11,24 @@ import {
 
 const isDev = process.env.NODE_ENV === "development"
 
+// Vercel system variables: the stable production hostname and the hostname of
+// the current deployment (both without a scheme).
+const vercelProductionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL
+const vercelDeploymentHost = process.env.VERCEL_URL
+
 // Public origin of the site, e.g. https://example.com. On the VPS it comes
-// from BETTER_AUTH_URL; in development the v0 preview URL or localhost is used.
+// from BETTER_AUTH_URL; in development the v0 preview URL or localhost is
+// used; on Vercel the production URL, falling back to the deployment URL.
 const siteURL =
   process.env.BETTER_AUTH_URL ??
   process.env.NEXT_PUBLIC_SITE_URL ??
-  (isDev ? (process.env.V0_RUNTIME_URL ?? "http://localhost:3000") : undefined)
+  (isDev
+    ? (process.env.V0_RUNTIME_URL ?? "http://localhost:3000")
+    : vercelProductionHost
+      ? `https://${vercelProductionHost}`
+      : vercelDeploymentHost
+        ? `https://${vercelDeploymentHost}`
+        : undefined)
 
 function splitList(value: string | undefined) {
   return (value ?? "")
@@ -38,6 +50,14 @@ const devOrigins = isDev
     ].filter((origin): origin is string => Boolean(origin))
   : []
 
+// On Vercel the deployment may be opened through its unique URL as well as the
+// production URL; both exact origins are trusted, nothing wildcarded.
+const vercelOrigins = isDev
+  ? []
+  : [vercelProductionHost, vercelDeploymentHost]
+      .filter((host): host is string => Boolean(host))
+      .map((host) => `https://${host}`)
+
 // Reverse proxies in front of `next start` (nginx/Caddy on the same host by
 // default). Their hops are skipped when resolving the client IP from
 // X-Forwarded-For, so rate limits apply to real visitors, not to the proxy.
@@ -48,7 +68,7 @@ const turnstileSecret = process.env.TURNSTILE_SECRET_KEY
 export const auth = betterAuth({
   database: pool,
   baseURL: siteURL,
-  trustedOrigins: [...extraOrigins, ...devOrigins],
+  trustedOrigins: [...extraOrigins, ...devOrigins, ...vercelOrigins],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

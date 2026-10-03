@@ -3,9 +3,22 @@
  * Operator details come from NEXT_PUBLIC_* variables so the legal texts can
  * be completed on the VPS without touching the code.
  */
+function resolveSiteUrl() {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.BETTER_AUTH_URL
+  if (explicit) return explicit.replace(/\/$/, "")
+  // On Vercel the production hostname is provided by the platform, so no
+  // NEXT_PUBLIC_SITE_URL is needed there.
+  const vercelHost =
+    process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+    process.env.VERCEL_URL
+  if (vercelHost) return `https://${vercelHost}`
+  return "http://localhost:3000"
+}
+
 export const site = {
   name: process.env.NEXT_PUBLIC_SITE_NAME ?? "lotery.by",
-  url: (process.env.NEXT_PUBLIC_SITE_URL ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/$/, ""),
+  url: resolveSiteUrl(),
   title: "lotery.by — промо-лотерея с ежедневным тиражом",
   description:
     "Промо-лотерея lotery.by: регистрируйтесь, получайте бонусы, собирайте комбинацию из 6 чисел и участвуйте в ежедневном тираже в 20:00. Результаты розыгрышей публикуются открыто.",

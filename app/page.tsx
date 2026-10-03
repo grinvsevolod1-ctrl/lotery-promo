@@ -9,6 +9,10 @@ import { FaqSection } from '@/components/faq-section'
 import { TermsSection } from '@/components/terms-section'
 import { SiteFooter } from '@/components/site-footer'
 
+// The marquee shows real draw results, so the prerendered landing page is
+// refreshed in the background at most every 5 minutes.
+export const revalidate = 300
+
 export default function HomePage() {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
