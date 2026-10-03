@@ -29,10 +29,7 @@ const description = site.description
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: {
-    default: title,
-    template: `%s — ${site.name}`,
-  },
+  title,
   description,
   applicationName: site.name,
   keywords: ['лотерея', 'промо-лотерея', 'Беларусь', 'тираж', 'розыгрыш', 'бонус за регистрацию'],
