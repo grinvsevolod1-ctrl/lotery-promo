@@ -197,7 +197,7 @@ export function CabinetView({
 
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Tickets */}
-          <section>
+          <section className="min-w-0">
             <h2 className="mb-4 font-display text-xl font-extrabold text-foreground">Мои билеты</h2>
             {tickets.length === 0 ? (
               <EmptyState text="Пока нет билетов. Купите первый выше!" />
@@ -230,7 +230,7 @@ export function CabinetView({
           </section>
 
           {/* Transactions */}
-          <section>
+          <section className="min-w-0">
             <h2 className="mb-4 font-display text-xl font-extrabold text-foreground">История баланса</h2>
             {transactions.length === 0 ? (
               <EmptyState text="Операций пока нет." />
