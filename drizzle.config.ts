@@ -5,6 +5,8 @@ export default defineConfig({
   out: "./lib/db/migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    // Neon exposes a direct (non-pooled) URL that is safer for DDL than the
+    // transaction-mode pooler; a VPS has only DATABASE_URL.
+    url: (process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL)!,
   },
 })
