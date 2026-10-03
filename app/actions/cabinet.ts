@@ -2,8 +2,20 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { ticket, transaction } from "@/lib/db/schema"
-import { and, desc, eq, lte, sql } from "drizzle-orm"
+import { draw, spin, ticket, transaction } from "@/lib/db/schema"
+import { getOrCreateNextDraw } from "@/lib/draws"
+import {
+  WELCOME_BONUS,
+  WHEEL_SEGMENTS,
+  formatNumbers,
+  gameCost,
+  minskDayKey,
+  pickWeighted,
+  randomNumbers,
+  validateNumbers,
+} from "@/lib/lottery"
+import { secureRng } from "@/lib/random"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 
@@ -12,6 +24,8 @@ async function getUserId() {
   if (!session?.user) throw new Error("Unauthorized")
   return session.user.id
 }
+
+export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string }
 
 export async function getBalance() {
   const userId = await getUserId()
@@ -32,102 +46,94 @@ export async function getTransactions() {
     .limit(50)
 }
 
-export async function getTickets() {
+export type TicketRow = {
+  id: number
+  drawId: number
+  game: string
+  numbers: string
+  cost: number
+  status: string
+  matches: number
+  prize: number
+  createdAt: Date
+  drawAt: Date
+  winningNumbers: string | null
+}
+
+export async function getTickets(): Promise<TicketRow[]> {
   const userId = await getUserId()
   return db
-    .select()
+    .select({
+      id: ticket.id,
+      drawId: ticket.drawId,
+      game: ticket.game,
+      numbers: ticket.numbers,
+      cost: ticket.cost,
+      status: ticket.status,
+      matches: ticket.matches,
+      prize: ticket.prize,
+      createdAt: ticket.createdAt,
+      drawAt: draw.drawAt,
+      winningNumbers: draw.winningNumbers,
+    })
     .from(ticket)
+    .innerJoin(draw, eq(ticket.drawId, draw.id))
     .where(eq(ticket.userId, userId))
     .orderBy(desc(ticket.createdAt))
+    .limit(100)
 }
 
-const GAME_COST: Record<string, number> = {
-  "Суперлото": 3,
-  "Пятёрочка": 2,
-  "КЕНО": 1,
+export async function getSpinStatus() {
+  const userId = await getUserId()
+  const [today] = await db
+    .select({ segment: spin.segment, amount: spin.amount })
+    .from(spin)
+    .where(and(eq(spin.userId, userId), eq(spin.day, minskDayKey())))
+    .limit(1)
+  return { spunToday: Boolean(today), todaySegment: today?.segment ?? null, todayAmount: today?.amount ?? null }
 }
-
-const NUMBERS_PER_TICKET = 6
-const MAX_NUMBER = 45
-const DRAW_DELAY_MS = 1000 * 60 * 60 * 24
-const WELCOME_BONUS = 20
-
-// Bonus prize (BYN) by the count of matched numbers.
-const PRIZE_BY_MATCHES: Record<number, number> = { 3: 2, 4: 10, 5: 100, 6: 1000 }
 
 // Sentinels used to abort a db.transaction and surface a friendly error.
 class InsufficientFundsError extends Error {}
 class AlreadyClaimedError extends Error {}
+class DrawClosedError extends Error {}
 
-function randomNumbers(count: number, max: number) {
-  const set = new Set<number>()
-  while (set.size < count) set.add(Math.floor(Math.random() * max) + 1)
-  return [...set].sort((a, b) => a - b)
-}
-
-function parseNumbers(value: string) {
-  return value
-    .split(",")
-    .map((n) => Number(n.trim()))
-    .filter(Number.isFinite)
+function isUniqueViolation(e: unknown) {
+  return e instanceof Error && /unique|duplicate/i.test(e.message)
 }
 
 /**
- * Settles the caller's tickets whose draw time has passed: draws a winning
- * combination, counts matches and credits the prize to the balance.
+ * Buys a ticket for the next draw. `numbers` is the player's own pick
+ * (6 distinct numbers 1..45); when omitted a random combination is used.
  */
-export async function settleDueTickets() {
+export async function buyTicket(game: string, numbers?: number[]): Promise<ActionResult<{ ticketId: number }>> {
   const userId = await getUserId()
 
-  const due = await db
-    .select({ id: ticket.id, game: ticket.game, numbers: ticket.numbers })
-    .from(ticket)
-    .where(
-      and(eq(ticket.userId, userId), eq(ticket.status, "pending"), lte(ticket.drawAt, new Date())),
-    )
+  const cost = gameCost(game)
+  if (cost === null) return { ok: false, error: "Неизвестная игра" }
 
-  for (const t of due) {
-    const winning = randomNumbers(NUMBERS_PER_TICKET, MAX_NUMBER)
-    const picked = new Set(parseNumbers(t.numbers))
-    const matches = winning.filter((n) => picked.has(n)).length
-    const prize = PRIZE_BY_MATCHES[matches] ?? 0
-
-    await db.transaction(async (tx) => {
-      // Only flip a row that is still pending, so a concurrent settlement of
-      // the same ticket cannot pay the prize twice.
-      const updated = await tx
-        .update(ticket)
-        .set({ status: prize > 0 ? "win" : "lose", prize, winningNumbers: winning.join(", ") })
-        .where(and(eq(ticket.id, t.id), eq(ticket.userId, userId), eq(ticket.status, "pending")))
-        .returning({ id: ticket.id })
-
-      if (updated.length === 0 || prize === 0) return
-
-      await tx.insert(transaction).values({
-        userId,
-        type: "prize",
-        amount: prize,
-        description: `Выигрыш по билету «${t.game}» #${t.id}`,
-      })
-    })
+  let picked: number[]
+  if (numbers === undefined) {
+    picked = randomNumbers(undefined, undefined, secureRng)
+  } else {
+    const valid = validateNumbers(numbers)
+    if (!valid) return { ok: false, error: "Выберите ровно 6 разных чисел от 1 до 45" }
+    picked = valid
   }
 
-  return due.length
-}
+  const purchase = async () => {
+    const nextDraw = await getOrCreateNextDraw()
 
-export async function buyTicket(game: string) {
-  const userId = await getUserId()
+    return db.transaction(async (tx) => {
+      // A shared lock on the draw row waits for an in-flight settlement (which
+      // holds FOR UPDATE) and guarantees the ticket lands in an open draw.
+      const [locked] = await tx
+        .select({ status: draw.status })
+        .from(draw)
+        .where(eq(draw.id, nextDraw.id))
+        .for("share")
+      if (!locked || locked.status !== "scheduled") throw new DrawClosedError()
 
-  if (!Object.prototype.hasOwnProperty.call(GAME_COST, game)) {
-    return { ok: false as const, error: "Неизвестная игра" }
-  }
-  const cost = GAME_COST[game]
-
-  const numbers = randomNumbers(NUMBERS_PER_TICKET, MAX_NUMBER).join(", ")
-  const drawAt = new Date(Date.now() + DRAW_DELAY_MS)
-
-  try {
-    await db.transaction(async (tx) => {
       const rows = await tx
         .select({ total: sql<number>`coalesce(sum(${transaction.amount}), 0)` })
         .from(transaction)
@@ -135,33 +141,39 @@ export async function buyTicket(game: string) {
       const balance = Number(rows[0]?.total ?? 0)
       if (balance < cost) throw new InsufficientFundsError()
 
-      await tx.insert(ticket).values({
-        userId,
-        game,
-        numbers,
-        cost,
-        status: "pending",
-        drawAt,
-      })
+      const [created] = await tx
+        .insert(ticket)
+        .values({ userId, drawId: nextDraw.id, game, numbers: formatNumbers(picked), cost, status: "pending" })
+        .returning({ id: ticket.id })
       await tx.insert(transaction).values({
         userId,
         type: "purchase",
         amount: -cost,
-        description: `Покупка билета «${game}»`,
+        description: `Покупка билета «${game}» #${created.id}`,
       })
+      return created.id
     })
-  } catch (e) {
-    if (e instanceof InsufficientFundsError) {
-      return { ok: false as const, error: "Недостаточно бонусов на балансе" }
-    }
-    throw e
   }
 
-  revalidatePath("/cabinet")
-  return { ok: true as const }
+  try {
+    let ticketId: number
+    try {
+      ticketId = await purchase()
+    } catch (e) {
+      // The draw closed between selecting it and locking it: retry once with the next one.
+      if (!(e instanceof DrawClosedError)) throw e
+      ticketId = await purchase()
+    }
+    revalidatePath("/cabinet")
+    return { ok: true, ticketId }
+  } catch (e) {
+    if (e instanceof InsufficientFundsError) return { ok: false, error: "Недостаточно бонусов на балансе" }
+    if (e instanceof DrawClosedError) return { ok: false, error: "Приём билетов на тираж закрыт, попробуйте ещё раз" }
+    throw e
+  }
 }
 
-export async function claimWelcomeBonus() {
+export async function claimWelcomeBonus(): Promise<ActionResult> {
   const userId = await getUserId()
 
   try {
@@ -181,16 +193,39 @@ export async function claimWelcomeBonus() {
       })
     })
   } catch (e) {
-    if (e instanceof AlreadyClaimedError) {
-      return { ok: false as const, error: "Бонус уже получен" }
-    }
     // A duplicate insert racing past the check trips the partial unique index.
-    if (e instanceof Error && /unique|duplicate/i.test(e.message)) {
-      return { ok: false as const, error: "Бонус уже получен" }
+    if (e instanceof AlreadyClaimedError || isUniqueViolation(e)) {
+      return { ok: false, error: "Бонус уже получен" }
     }
     throw e
   }
 
   revalidatePath("/cabinet")
-  return { ok: true as const }
+  return { ok: true }
+}
+
+/** One free spin per Minsk calendar day; the prize is picked server-side. */
+export async function spinWheel(): Promise<ActionResult<{ segment: number; amount: number }>> {
+  const userId = await getUserId()
+  const day = minskDayKey()
+  const segment = pickWeighted(WHEEL_SEGMENTS, secureRng)
+  const { amount, label } = WHEEL_SEGMENTS[segment]
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(spin).values({ userId, day, segment, amount })
+      await tx.insert(transaction).values({
+        userId,
+        type: "spin",
+        amount,
+        description: `Колесо фортуны: ${label}`,
+      })
+    })
+  } catch (e) {
+    if (isUniqueViolation(e)) return { ok: false, error: "Сегодня вы уже крутили колесо. Возвращайтесь завтра!" }
+    throw e
+  }
+
+  revalidatePath("/cabinet")
+  return { ok: true, segment, amount }
 }

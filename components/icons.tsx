@@ -193,3 +193,118 @@ export function GaugeMark(props: IconProps) {
     </svg>
   )
 }
+
+/* Four-leaf clover — the lucky punch on every ticket */
+export function CloverMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 12c-3.2 0-5.5-1.6-5.5-3.8S8.1 4.5 9.6 4.5c1 0 1.9.6 2.4 1.6.5-1 1.4-1.6 2.4-1.6 1.5 0 3.1 1.5 3.1 3.7S15.2 12 12 12Z" />
+      <path d="M12 12c0 3.2-1.6 5.5-3.8 5.5S4.5 15.9 4.5 14.4c0-1 .6-1.9 1.6-2.4-1-.5-1.6-1.4-1.6-2.4 0-1.5 1.5-3.1 3.7-3.1" />
+      <path d="M12 12c3.2 0 5.5 1.6 5.5 3.8s-1.6 3.7-3.1 3.7c-1 0-1.9-.6-2.4-1.6" />
+      <path d="M12 12v8.5" />
+    </svg>
+  )
+}
+
+/* Check mark */
+export function CheckMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m5 12.5 4.2 4L19 7" />
+    </svg>
+  )
+}
+
+/* Shuffle — random pick */
+export function ShuffleMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 7h3.5c1.4 0 2.7.7 3.5 1.9L14 15.1c.8 1.2 2.1 1.9 3.5 1.9H20" />
+      <path d="M4 17h3.5c1.4 0 2.7-.7 3.5-1.9" />
+      <path d="M14 8.9c.8-1.2 2.1-1.9 3.5-1.9H20" />
+      <path d="m17.5 4.5 2.5 2.5-2.5 2.5M17.5 14.5l2.5 2.5-2.5 2.5" />
+    </svg>
+  )
+}
+
+/* Key — password */
+export function KeyMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="8.5" cy="14.5" r="4" />
+      <path d="m11.5 11.5 8-8M16 7l2.5 2.5M13.5 9.5 16 12" />
+    </svg>
+  )
+}
+
+/* Envelope — e-mail */
+export function MailMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2.5" />
+      <path d="m4 7.5 8 5.5 8-5.5" />
+    </svg>
+  )
+}
+
+/* Devices — active sessions */
+export function DevicesMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="5" width="13" height="10" rx="2" />
+      <path d="M7 19h5M9.5 15v4" />
+      <rect x="16.5" y="9" width="4.5" height="10" rx="1.5" />
+    </svg>
+  )
+}
+
+/* Trash — danger zone */
+export function TrashMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 7h14M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7" />
+      <path d="M7 7l.8 11.2A2 2 0 0 0 9.8 20h4.4a2 2 0 0 0 2-1.8L17 7" />
+      <path d="M10.5 11v5M13.5 11v5" />
+    </svg>
+  )
+}
+
+/* Download / install */
+export function DownloadMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 4v10M8 10.5l4 4 4-4" />
+      <path d="M5 16.5v1A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-1" />
+    </svg>
+  )
+}
+
+/* Home */
+export function HomeMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m4 11 8-7 8 7" />
+      <path d="M6 10v9a1 1 0 0 0 1 1h3.5v-5h3v5H17a1 1 0 0 0 1-1v-9" />
+    </svg>
+  )
+}
+
+/* Calendar */
+export function CalendarMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </svg>
+  )
+}
+
+/* Warning triangle */
+export function WarnMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 4 3.5 19h17L12 4Z" />
+      <path d="M12 10v4M12 16.5h.01" />
+    </svg>
+  )
+}

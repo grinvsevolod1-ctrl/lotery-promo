@@ -9,8 +9,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthShell, FormMessage } from "@/components/auth-shell"
+import { Turnstile, TURNSTILE_ENABLED } from "@/components/turnstile"
 
 const VERIFY_CALLBACK = "/verify-email"
+
+const SIGN_UP_ERRORS: Record<string, string> = {
+  USER_ALREADY_EXISTS: "Пользователь с таким e-mail уже зарегистрирован.",
+  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "Пользователь с таким e-mail уже зарегистрирован.",
+  TERMS_NOT_ACCEPTED: "Подтвердите, что вам есть 18 лет и вы согласны с правилами.",
+  PASSWORD_TOO_SHORT: "Пароль слишком короткий — минимум 8 символов.",
+  VERIFICATION_FAILED: "Проверка «я не робот» не пройдена. Попробуйте ещё раз.",
+  MISSING_RESPONSE: "Пройдите проверку «я не робот».",
+}
 
 export function AuthForm({
   mode,
@@ -23,6 +33,8 @@ export function AuthForm({
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [captcha, setCaptcha] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
@@ -33,24 +45,37 @@ export function AuthForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setLoading(true)
 
     if (isSignUp) {
+      if (!termsAccepted) {
+        setError(SIGN_UP_ERRORS.TERMS_NOT_ACCEPTED)
+        return
+      }
+      if (TURNSTILE_ENABLED && !captcha) {
+        setError(SIGN_UP_ERRORS.MISSING_RESPONSE)
+        return
+      }
+      setLoading(true)
       const { error } = await authClient.signUp.email({
         email,
         password,
         name,
         callbackURL: VERIFY_CALLBACK,
-      })
+        // Checked server-side in lib/auth.ts; the API refuses sign-ups without it.
+        termsAccepted: true,
+        fetchOptions: captcha ? { headers: { "x-captcha-response": captcha } } : undefined,
+      } as Parameters<typeof authClient.signUp.email>[0])
       setLoading(false)
       if (error) {
-        setError("Не удалось создать аккаунт. Проверьте данные и попробуйте снова.")
+        setCaptcha(null)
+        setError(SIGN_UP_ERRORS[error.code ?? ""] ?? "Не удалось создать аккаунт. Проверьте данные и попробуйте снова.")
         return
       }
       setSentTo(email)
       return
     }
 
+    setLoading(true)
     const { error } = await authClient.signIn.email({
       email,
       password,
@@ -186,6 +211,37 @@ export function AuthForm({
             placeholder="Минимум 8 символов"
           />
         </div>
+
+        {isSignUp && (
+          <>
+            <label className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background/40 p-3 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                name="termsAccepted"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                required
+                className="mt-0.5 size-4 shrink-0 accent-[oklch(0.66_0.27_350)]"
+              />
+              <span className="text-pretty">
+                Мне есть 18 лет, я принимаю{" "}
+                <Link href="/rules" target="_blank" className="font-semibold text-primary underline-offset-4 hover:underline">
+                  правила акции
+                </Link>
+                ,{" "}
+                <Link href="/terms" target="_blank" className="font-semibold text-primary underline-offset-4 hover:underline">
+                  оферту
+                </Link>{" "}
+                и согласен на обработку персональных данных согласно{" "}
+                <Link href="/privacy" target="_blank" className="font-semibold text-primary underline-offset-4 hover:underline">
+                  политике конфиденциальности
+                </Link>
+                .
+              </span>
+            </label>
+            <Turnstile action="signup" onToken={setCaptcha} />
+          </>
+        )}
 
         {error && <FormMessage tone="error">{error}</FormMessage>}
 

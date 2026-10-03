@@ -1,4 +1,5 @@
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { InstallAppButton } from '@/components/pwa'
 
 export function TermsSection() {
   return (
@@ -40,15 +41,14 @@ export function TermsSection() {
           </div>
         </div>
 
-        <div className="mt-10 text-center">
-          <Button
-            size="lg"
-            nativeButton={false}
-            render={<a href="#" />}
-            className="h-14 rounded-full px-10 text-base font-bold uppercase tracking-wide shadow-xl shadow-primary/40 transition-transform hover:scale-[1.03]"
-          >
-            Скачать приложение
-          </Button>
+        <div className="mt-10 flex flex-col items-center gap-3 text-center">
+          <InstallAppButton />
+          <p className="text-xs text-muted-foreground/70">
+            Сайт работает как приложение: добавьте его на главный экран, чтобы открывать кабинет в одно касание.{' '}
+            <Link href="/rules" className="font-semibold text-gold underline-offset-4 hover:underline">
+              Полные правила акции
+            </Link>
+          </p>
         </div>
       </div>
     </section>

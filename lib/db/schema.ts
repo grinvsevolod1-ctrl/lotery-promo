@@ -6,6 +6,7 @@ import {
   boolean,
   serial,
   integer,
+  date,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
@@ -18,6 +19,7 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: text("image"),
+  termsAcceptedAt: timestamp("termsAcceptedAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
@@ -64,6 +66,26 @@ export const verification = pgTable("verification", {
 
 // ─── App tables ───────────────────────────────────────────────────────
 
+/** One daily draw (20:00 Minsk). All tickets of a draw share its winning numbers. */
+export const draw = pgTable(
+  "draw",
+  {
+    id: serial("id").primaryKey(),
+    drawAt: timestamp("drawAt").notNull(),
+    status: text("status").notNull().default("scheduled"),
+    winningNumbers: text("winningNumbers"),
+    ticketsCount: integer("ticketsCount").notNull().default(0),
+    winnersCount: integer("winnersCount").notNull().default(0),
+    prizeTotal: integer("prizeTotal").notNull().default(0),
+    settledAt: timestamp("settledAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("draw_draw_at_unique").on(table.drawAt),
+    index("draw_status_idx").on(table.status, table.drawAt),
+  ],
+)
+
 export const ticket = pgTable(
   "ticket",
   {
@@ -71,16 +93,21 @@ export const ticket = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    drawId: integer("drawId")
+      .notNull()
+      .references(() => draw.id),
     game: text("game").notNull(),
     numbers: text("numbers").notNull(),
-    winningNumbers: text("winningNumbers"),
     cost: integer("cost").notNull().default(0),
     status: text("status").notNull().default("pending"),
+    matches: integer("matches").notNull().default(0),
     prize: integer("prize").notNull().default(0),
-    drawAt: timestamp("drawAt"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
-  (table) => [index("ticket_user_idx").on(table.userId)],
+  (table) => [
+    index("ticket_user_idx").on(table.userId),
+    index("ticket_draw_idx").on(table.drawId),
+  ],
 )
 
 export const transaction = pgTable(
@@ -102,4 +129,20 @@ export const transaction = pgTable(
       .on(table.userId)
       .where(sql`${table.type} = 'welcome'`),
   ],
+)
+
+/** Daily fortune-wheel spins; the unique index allows one spin per Minsk calendar day. */
+export const spin = pgTable(
+  "spin",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    segment: integer("segment").notNull(),
+    amount: integer("amount").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("spin_user_day_unique").on(table.userId, table.day)],
 )

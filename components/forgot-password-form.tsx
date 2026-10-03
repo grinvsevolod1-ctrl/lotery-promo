@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthShell, FormMessage } from "@/components/auth-shell"
+import { Turnstile, TURNSTILE_ENABLED } from "@/components/turnstile"
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("")
+  const [captcha, setCaptcha] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
@@ -18,16 +20,26 @@ export function ForgotPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (TURNSTILE_ENABLED && !captcha) {
+      setError("Пройдите проверку «я не робот».")
+      return
+    }
     setLoading(true)
 
     const { error } = await authClient.requestPasswordReset({
       email,
       redirectTo: "/reset-password",
+      fetchOptions: captcha ? { headers: { "x-captcha-response": captcha } } : undefined,
     })
     setLoading(false)
 
     if (error) {
-      setError("Не удалось отправить письмо. Попробуйте ещё раз через минуту.")
+      setCaptcha(null)
+      setError(
+        error.code === "VERIFICATION_FAILED" || error.code === "MISSING_RESPONSE"
+          ? "Проверка «я не робот» не пройдена. Попробуйте ещё раз."
+          : "Не удалось отправить письмо. Попробуйте ещё раз через минуту.",
+      )
       return
     }
     setSentTo(email)
@@ -77,6 +89,8 @@ export function ForgotPasswordForm() {
             placeholder="you@example.com"
           />
         </div>
+
+        <Turnstile action="forgot-password" onToken={setCaptcha} />
 
         {error && <FormMessage tone="error">{error}</FormMessage>}
 
