@@ -50,7 +50,14 @@ export function DailySpin({
     if (spinning || done || !wheelRef.current) return
     setSpinning(true)
     setError(null)
-    const res = await spinWheel()
+    let res: Awaited<ReturnType<typeof spinWheel>>
+    try {
+      res = await spinWheel()
+    } catch {
+      setSpinning(false)
+      setError("Не удалось связаться с сервером. Попробуйте ещё раз.")
+      return
+    }
     if (!res.ok) {
       setSpinning(false)
       setDone(true)

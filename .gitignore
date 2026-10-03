@@ -19,3 +19,7 @@ node_modules
 # PM2 / logs
 logs/
 *.log
+test-results/
+playwright-report/
+mail-outbox/
+backups/

@@ -1,11 +1,17 @@
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { CoinMark } from '@/components/icons'
 import { Reveal } from '@/components/reveal'
+import { DRAW_HOUR_MINSK, GAMES, MAX_NUMBER, NUMBERS_PER_TICKET, WELCOME_BONUS, WHEEL_SEGMENTS } from '@/lib/lottery'
+
+const cheapestTicket = Math.min(...GAMES.map((g) => g.cost))
+const wheelMin = Math.min(...WHEEL_SEGMENTS.map((s) => s.amount))
+const wheelMax = Math.max(...WHEEL_SEGMENTS.map((s) => s.amount))
 
 const steps = [
-  { n: '01', title: '1 Колесо Фортуны', desc: 'за покупку билета от 7 до 14 BYN' },
-  { n: '02', title: '2 Супер Колеса Фортуны', desc: 'за покупку билета от 15 до 49 BYN' },
-  { n: '03', title: '3 Супер Колеса + 1 Колесо', desc: 'за покупку билета от 50 BYN и более' },
+  { n: '01', title: 'Зарегистрируйся и подтверди e-mail', desc: `+${WELCOME_BONUS} бонусных BYN на первые билеты` },
+  { n: '02', title: 'Собери билет', desc: `${NUMBERS_PER_TICKET} чисел из ${MAX_NUMBER} или случайная комбинация — от ${cheapestTicket} BYN` },
+  { n: '03', title: `Дождись тиража в ${DRAW_HOUR_MINSK}:00`, desc: 'результаты — на сайте и на почту, выигрыш сразу на балансе' },
 ]
 
 export function HowToSection() {
@@ -21,7 +27,8 @@ export function HowToSection() {
         <div className="orbit-border mt-12 grid items-center gap-8 rounded-4xl bg-gradient-to-br from-[oklch(0.4_0.2_305)] to-[oklch(0.3_0.14_302)] p-6 shadow-2xl shadow-black/30 md:grid-cols-2 md:p-12">
           <div>
             <p className="font-heading text-xl font-bold leading-snug text-balance">
-              Покупай билеты и получи до 7 Супер Колёс Фортуны и Колёс Фортуны:
+              Три шага до первого тиража. А колесо фортуны в кабинете даёт от {wheelMin} до {wheelMax} бонусных BYN
+              каждый день — бесплатно.
             </p>
             <ul className="mt-6 space-y-3">
               {steps.map((step) => (
@@ -60,7 +67,7 @@ export function HowToSection() {
           <Button
             size="lg"
             nativeButton={false}
-            render={<a href="#terms" />}
+            render={<Link href="/sign-up" />}
             className="h-14 rounded-full px-10 text-base font-bold uppercase tracking-wide shadow-xl shadow-primary/40 transition-transform hover:scale-[1.03]"
           >
             Получить бонус

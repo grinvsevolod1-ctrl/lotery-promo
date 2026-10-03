@@ -4,14 +4,19 @@ import { useState } from 'react'
 import { ArrowLeftMark, ArrowRightMark } from '@/components/icons'
 import { Reveal } from '@/components/reveal'
 import { Button } from '@/components/ui/button'
+import { GAMES, MAX_NUMBER, NUMBERS_PER_TICKET, PRIZE_BY_MATCHES } from '@/lib/lottery'
 
-const prizes = [
-  { name: 'Двойной успех', max: '110 300 BYN' },
-  { name: 'Суперлото', max: '1 000 000 BYN' },
-  { name: 'Пятёрочка', max: '85 000 BYN' },
-  { name: 'КЕНО', max: '250 000 BYN' },
-  { name: 'Спортпрогноз', max: '420 000 BYN' },
-]
+const topPrize = PRIZE_BY_MATCHES[NUMBERS_PER_TICKET]
+
+const prizes = GAMES.map((game) => ({
+  name: game.name,
+  cost: `${game.cost} BYN за билет`,
+  max: `${topPrize.toLocaleString('ru-RU')} BYN`,
+}))
+
+const tiers = Object.entries(PRIZE_BY_MATCHES)
+  .map(([matches, prize]) => ({ matches: Number(matches), prize }))
+  .sort((a, b) => b.matches - a.matches)
 
 export function PrizesSection() {
   const [index, setIndex] = useState(0)
@@ -26,9 +31,13 @@ export function PrizesSection() {
       <div className="mx-auto max-w-6xl px-5">
         <Reveal>
           <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
-            Присоединяйся ко вселенной
-            <br className="hidden sm:block" /> государственных лотерей
+            Три игры —
+            <br className="hidden sm:block" /> один ежедневный тираж
           </h2>
+          <p className="mx-auto mt-4 max-w-xl text-center text-muted-foreground text-pretty">
+            Выбери игру по цене билета, отметь {NUMBERS_PER_TICKET} чисел из {MAX_NUMBER} и жди вечернего тиража.
+            Таблица выигрышей одинакова для всех игр.
+          </p>
         </Reveal>
 
         <div className="relative mt-12 flex items-center gap-3 md:gap-6">
@@ -44,12 +53,25 @@ export function PrizesSection() {
           <div className="orbit-border grid flex-1 items-center gap-6 overflow-hidden rounded-3xl bg-card p-6 shadow-2xl shadow-black/30 md:grid-cols-2 md:p-10">
             <div>
               <h3 className="font-heading text-2xl font-bold md:text-3xl">{prize.name}</h3>
+              <p className="mt-1 text-sm font-semibold text-gold">{prize.cost}</p>
               <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
                 Максимальный выигрыш
               </p>
-              <p className="mt-1 font-display text-4xl font-extrabold text-accent md:text-5xl">
+              <p className="mt-1 whitespace-nowrap font-display text-3xl font-extrabold text-accent sm:text-4xl md:text-5xl">
                 {prize.max}
               </p>
+              <dl className="mt-5 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+                {tiers.map((tier) => (
+                  <div key={tier.matches} className="flex items-baseline justify-between gap-3 border-b border-border/50 pb-1">
+                    <dt className="whitespace-nowrap text-muted-foreground">
+                      {tier.matches} из {NUMBERS_PER_TICKET} совпадений
+                    </dt>
+                    <dd className="whitespace-nowrap font-heading font-bold tabular-nums text-foreground">
+                      {tier.prize.toLocaleString('ru-RU')} BYN
+                    </dd>
+                  </div>
+                ))}
+              </dl>
               <div className="mt-6 flex gap-1.5" role="tablist" aria-label="Слайды лотерей">
                 {prizes.map((p, i) => (
                   <button

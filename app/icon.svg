@@ -19,5 +19,6 @@
   <path d="M208 160v192" stroke="#22103f" stroke-width="10" stroke-dasharray="14 16" stroke-linecap="round" opacity="0.7"/>
   <!-- golden lucky ball -->
   <circle cx="312" cy="256" r="58" fill="url(#ball)"/>
-  <text x="312" y="278" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="64" fill="#2a0f4a">7</text>
+  <!-- bold "7" drawn as a path so it renders identically everywhere (no font dependency) -->
+  <path d="M284 224h58v12l-32 60h-20l30-56h-36z" fill="#2a0f4a"/>
 </svg>

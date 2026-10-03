@@ -10,6 +10,8 @@ const securityHeaders = [
 
 const nextConfig = {
   poweredByHeader: false,
+  // The Docker image runs the self-contained server; PM2 keeps using `next start`.
+  output: process.env.DOCKER_BUILD ? 'standalone' : undefined,
   async headers() {
     return [
       {

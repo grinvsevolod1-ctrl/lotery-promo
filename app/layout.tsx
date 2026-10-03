@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Manrope, Unbounded } from 'next/font/google'
+import { PwaRegister } from '@/components/pwa'
+import { Analytics } from '@/components/analytics'
+import { site } from '@/lib/site'
 import './globals.css'
 
 const inter = Inter({
@@ -21,24 +24,24 @@ const unbounded = Unbounded({
   display: 'swap',
 })
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
-const title = 'lotery.by — Государственные лотереи Республики Беларусь'
-const description =
-  'Официальный портал государственных лотерей. Актуальные тиражи, проверка билетов, результаты розыгрышей. Прозрачно, честно, на благо страны.'
+const title = site.title
+const description = site.description
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title,
+  metadataBase: new URL(site.url),
+  title: {
+    default: title,
+    template: `%s — ${site.name}`,
+  },
   description,
-  applicationName: 'lotery.by',
-  keywords: ['лотерея', 'госолотерея', 'Беларусь', 'тиражи', 'проверка билета', 'розыгрыш'],
+  applicationName: site.name,
+  keywords: ['лотерея', 'промо-лотерея', 'Беларусь', 'тираж', 'розыгрыш', 'бонус за регистрацию'],
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'ru_RU',
-    url: siteUrl,
-    siteName: 'lotery.by',
+    url: site.url,
+    siteName: site.name,
     title,
     description,
   },
@@ -47,9 +50,18 @@ export const metadata: Metadata = {
     title,
     description,
   },
+  appleWebApp: {
+    capable: true,
+    title: site.name,
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: { telephone: false },
+  robots: { index: true, follow: true },
 }
 
 export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
   colorScheme: 'dark',
   themeColor: '#2a0f4a',
 }
@@ -61,7 +73,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className={`${inter.variable} ${manrope.variable} ${unbounded.variable}`}>
-      <body className="bg-background font-sans antialiased">{children}</body>
+      <body className="bg-background font-sans antialiased">
+        {children}
+        <PwaRegister />
+        <Analytics />
+      </body>
     </html>
   )
 }

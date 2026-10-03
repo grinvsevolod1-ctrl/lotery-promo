@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { JackpotCounter } from '@/components/jackpot-counter'
+import { WELCOME_BONUS } from '@/lib/lottery'
 import { DrawCountdown } from '@/components/draw-countdown'
 import { BoltMark, BurstMark } from '@/components/icons'
 
@@ -37,12 +38,13 @@ export function Hero() {
             Тираж каждый день
           </span>
           <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.02] tracking-tight text-balance sm:text-5xl md:text-6xl">
-            Получи супер-
+            Выиграй
             <br className="hidden sm:block" />{' '}
-            <span className="text-shimmer">джекпот</span>
+            <span className="text-shimmer">главный приз</span>
           </h1>
           <p className="mx-auto mt-5 max-w-md text-lg font-medium text-muted-foreground text-pretty md:mx-0">
-            Впервые играешь в государственную лотерею? Скорее регистрируйся, лови удачу и забирай бонус на первый билет!
+            Промо-лотерея с тиражом каждый вечер. Зарегистрируйся, подтверди <span className="whitespace-nowrap">e-mail</span>{' '}
+            и забирай {WELCOME_BONUS} бонусных BYN на первые билеты!
           </p>
 
           <div className="mt-7 flex flex-col items-center gap-4 md:items-start">
