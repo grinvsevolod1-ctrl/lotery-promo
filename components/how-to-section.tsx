@@ -45,8 +45,12 @@ export function HowToSection() {
           </div>
           <div>
             <img
-              src="/promo-wheels.png"
+              src="/promo-wheels.webp"
               alt="Золотое и синее колёса фортуны"
+              width={1024}
+              height={1024}
+              loading="lazy"
+              decoding="async"
               className="mx-auto w-full max-w-sm drop-shadow-2xl animate-float"
             />
           </div>

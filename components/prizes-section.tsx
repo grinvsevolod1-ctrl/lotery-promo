@@ -68,8 +68,12 @@ export function PrizesSection() {
             </div>
             <div className="order-first md:order-last">
               <img
-                src="/promo-slot.png"
+                src="/promo-slot.webp"
                 alt="Игровые символы: семёрка, клевер и апельсин"
+                width={1024}
+                height={1024}
+                loading="lazy"
+                decoding="async"
                 className="mx-auto w-full max-w-xs rounded-2xl animate-float"
               />
             </div>

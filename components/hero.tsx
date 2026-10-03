@@ -77,28 +77,41 @@ export function Hero() {
         <div className="relative">
           {/* spinning wheel behind the phone */}
           <img
-            src="/promo-wheels.png"
+            src="/promo-wheels.webp"
             alt=""
             aria-hidden="true"
+            width={1024}
+            height={1024}
+            decoding="async"
             className="pointer-events-none absolute left-1/2 top-1/2 w-[26rem] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-40 blur-[1px] animate-spin-slow"
           />
           <img
-            src="/promo-hero.png"
+            src="/promo-hero.webp"
             alt="Смартфон с приложением лотереи, золотые монеты и колёса фортуны"
+            width={1024}
+            height={1024}
+            fetchPriority="high"
+            decoding="async"
             className="relative mx-auto w-full max-w-lg drop-shadow-2xl animate-float"
           />
           {/* floating coins */}
           <img
-            src="/promo-slot.png"
+            src="/promo-slot.webp"
             alt=""
             aria-hidden="true"
+            width={1024}
+            height={1024}
+            decoding="async"
             className="absolute -bottom-4 -left-2 w-24 animate-float drop-shadow-xl [--r:-8deg]"
             style={{ animationDelay: '0.6s' }}
           />
           <img
-            src="/promo-phone.png"
+            src="/promo-phone.webp"
             alt=""
             aria-hidden="true"
+            width={1024}
+            height={1024}
+            decoding="async"
             className="absolute -right-2 top-4 w-20 animate-float drop-shadow-xl [--r:10deg]"
             style={{ animationDelay: '1.2s' }}
           />

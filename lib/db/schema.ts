@@ -6,6 +6,7 @@ import {
   boolean,
   serial,
   integer,
+  index,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
 
@@ -17,7 +18,6 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: text("image"),
-  role: text("role").notNull().default("user"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
@@ -64,29 +64,39 @@ export const verification = pgTable("verification", {
 
 // ─── App tables ───────────────────────────────────────────────────────
 
-export const ticket = pgTable("ticket", {
-  id: serial("id").primaryKey(),
-  userId: text("userId").notNull(),
-  game: text("game").notNull(),
-  numbers: text("numbers").notNull(),
-  cost: integer("cost").notNull().default(0),
-  status: text("status").notNull().default("pending"),
-  prize: integer("prize").notNull().default(0),
-  drawAt: timestamp("drawAt"),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-})
+export const ticket = pgTable(
+  "ticket",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    game: text("game").notNull(),
+    numbers: text("numbers").notNull(),
+    winningNumbers: text("winningNumbers"),
+    cost: integer("cost").notNull().default(0),
+    status: text("status").notNull().default("pending"),
+    prize: integer("prize").notNull().default(0),
+    drawAt: timestamp("drawAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [index("ticket_user_idx").on(table.userId)],
+)
 
 export const transaction = pgTable(
   "transaction",
   {
     id: serial("id").primaryKey(),
-    userId: text("userId").notNull(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     amount: integer("amount").notNull(),
     description: text("description").notNull(),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [
+    index("transaction_user_idx").on(table.userId),
     // At most one welcome bonus per user, enforced at the database level.
     uniqueIndex("transaction_welcome_once")
       .on(table.userId)

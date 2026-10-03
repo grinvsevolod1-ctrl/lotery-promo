@@ -29,8 +29,12 @@ export function TermsSection() {
           </div>
           <div>
             <img
-              src="/promo-phone.png"
+              src="/promo-phone.webp"
               alt="Смартфоны с приложением лотереи и Гранд Джекпотом"
+              width={1024}
+              height={1024}
+              loading="lazy"
+              decoding="async"
               className="mx-auto w-full max-w-md drop-shadow-2xl"
             />
           </div>

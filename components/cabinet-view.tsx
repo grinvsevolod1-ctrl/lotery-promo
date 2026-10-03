@@ -12,7 +12,6 @@ import {
   BoltMark,
   UserMark,
   LogoutMark,
-  ShieldMark,
   CoinMark,
 } from "@/components/icons"
 import { buyTicket, claimWelcomeBonus } from "@/app/actions/cabinet"
@@ -21,6 +20,7 @@ type Ticket = {
   id: number
   game: string
   numbers: string
+  winningNumbers: string | null
   cost: number
   status: string
   prize: number
@@ -65,7 +65,7 @@ export function CabinetView({
   transactions,
   hasWelcome,
 }: {
-  user: { name: string; email: string; role: string }
+  user: { name: string; email: string }
   balance: number
   tickets: Ticket[]
   transactions: Transaction[]
@@ -76,7 +76,6 @@ export function CabinetView({
   const [msg, setMsg] = useState<string | null>(null)
 
   const wins = tickets.filter((t) => t.status === "win").length
-  const isAdmin = user.role === "admin"
 
   const doBuy = (game: string) =>
     startTransition(async () => {
@@ -110,15 +109,6 @@ export function CabinetView({
             </span>
           </Link>
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="flex items-center gap-2 rounded-full bg-gold/15 px-4 py-2 text-sm font-bold text-gold transition-colors hover:bg-gold/25"
-              >
-                <ShieldMark className="size-4" />
-                Админка
-              </Link>
-            )}
             <button
               type="button"
               onClick={async () => {
@@ -220,7 +210,14 @@ export function CabinetView({
                       <div className="min-w-0">
                         <p className="font-semibold text-foreground">{t.game}</p>
                         <p className="truncate font-mono text-xs text-muted-foreground">{t.numbers}</p>
-                        <p className="mt-1 text-xs text-muted-foreground/70">{formatDate(t.createdAt)}</p>
+                        {t.winningNumbers && (
+                          <p className="truncate font-mono text-xs text-gold/80">Выпало: {t.winningNumbers}</p>
+                        )}
+                        <p className="mt-1 text-xs text-muted-foreground/70">
+                          {t.status === "pending"
+                            ? `Тираж ${formatDate(t.drawAt)}`
+                            : formatDate(t.createdAt)}
+                        </p>
                       </div>
                       <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${s.cls}`}>
                         {t.status === "win" ? `+${t.prize} BYN` : s.label}

@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Manrope, Unbounded } from 'next/font/google'
 import './globals.css'
@@ -22,7 +21,8 @@ const unbounded = Unbounded({
   display: 'swap',
 })
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://lotery.by'
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
 const title = 'lotery.by — Государственные лотереи Республики Беларусь'
 const description =
   'Официальный портал государственных лотерей. Актуальные тиражи, проверка билетов, результаты розыгрышей. Прозрачно, честно, на благо страны.'
@@ -47,7 +47,6 @@ export const metadata: Metadata = {
     title,
     description,
   },
-  generator: 'v0.app',
 }
 
 export const viewport: Viewport = {
@@ -61,14 +60,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="ru"
-      className={`light ${inter.variable} ${manrope.variable} ${unbounded.variable}`}
-    >
-      <body className="bg-background font-sans antialiased">
-        {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
-      </body>
+    <html lang="ru" className={`${inter.variable} ${manrope.variable} ${unbounded.variable}`}>
+      <body className="bg-background font-sans antialiased">{children}</body>
     </html>
   )
 }

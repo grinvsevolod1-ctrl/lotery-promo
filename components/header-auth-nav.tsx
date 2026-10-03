@@ -32,18 +32,8 @@ export function HeaderAuthNav() {
     )
   }
 
-  const isAdmin = (session.user as { role?: string }).role === "admin"
-
   return (
     <div className="flex items-center gap-2">
-      {isAdmin && (
-        <Link
-          href="/admin"
-          className="hidden rounded-full px-3 py-2 text-sm font-semibold text-gold transition-colors hover:text-gold/80 sm:block"
-        >
-          Админка
-        </Link>
-      )}
       <Link
         href="/cabinet"
         className="flex items-center gap-2 rounded-full bg-foreground/10 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/15"

@@ -1,12 +1,20 @@
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
-import { getBalance, getTickets, getTransactions } from "@/app/actions/cabinet"
+import {
+  getBalance,
+  getTickets,
+  getTransactions,
+  settleDueTickets,
+} from "@/app/actions/cabinet"
 import { CabinetView } from "@/components/cabinet-view"
 
 export default async function CabinetPage() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) redirect("/sign-in")
+
+  // Resolve tickets whose draw time has passed before showing the lists.
+  await settleDueTickets()
 
   const [balance, tickets, transactions] = await Promise.all([
     getBalance(),
@@ -18,11 +26,7 @@ export default async function CabinetPage() {
 
   return (
     <CabinetView
-      user={{
-        name: session.user.name,
-        email: session.user.email,
-        role: (session.user as { role?: string }).role ?? "user",
-      }}
+      user={{ name: session.user.name, email: session.user.email }}
       balance={balance}
       tickets={tickets}
       transactions={transactions}
