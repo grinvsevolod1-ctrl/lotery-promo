@@ -163,12 +163,15 @@ export const paymentCard = pgTable(
     last4: text("last4").notNull(),
     bankName: text("bankName"),
     cardholder: text("cardholder").notNull(),
-    expMonth: integer("expMonth").notNull(),
-    expYear: integer("expYear").notNull(),
+    expMonth: integer("expMonth"),
+    expYear: integer("expYear"),
     fingerprint: text("fingerprint").notNull(),
     isDefault: boolean("isDefault").notNull().default(false),
     /** "pending" until an admin manually confirms the card, then "confirmed" or "rejected". */
     status: text("status").notNull().default("pending"),
+    /** bePaid card-binding link the admin issues; the user enters card details only there. */
+    bindingUrl: text("bindingUrl"),
+    processedAt: timestamp("processedAt"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [
