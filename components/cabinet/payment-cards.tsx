@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react"
 import useSWR from "swr"
 import { deletePaymentCard, requestCardBinding, setDefaultPaymentCard, type PaymentCardView } from "@/app/actions/cards"
 import { reviewFetcher } from "@/lib/review-fetcher"
-import { CARD_BRAND_LABEL, formatExpiry, maskCard, type CardBrand } from "@/lib/payment-cards"
+import { CARD_BRAND_LABEL, detectBrand, formatCardNumber, formatExpiry, luhnValid, maskCard, normalizeCardNumber, type CardBrand } from "@/lib/payment-cards"
 import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
 import { EmptyState, Panel } from "@/components/cabinet/panel"
 import { cn } from "@/lib/utils"
@@ -17,7 +17,6 @@ const BRAND_MATERIAL: Record<CardBrand, string> = {
   other: "from-muted via-card to-card",
 }
 
-const BANKS = ["Беларусбанк", "Приорбанк", "Сбер Банк", "Белагропромбанк", "Белинвестбанк", "МТБанк", "Альфа-Банк", "Банк Дабрабыт", "Другой банк"]
 
 export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
   const { data: cards = initial, mutate, error: fetchError } = useSWR<PaymentCardView[]>("/api/cabinet/cards", reviewFetcher, {
@@ -179,18 +178,25 @@ function CardTile({
 
 function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone: (cards: PaymentCardView[]) => Promise<void> }) {
   const [cardholder, setCardholder] = useState("")
-  const [bankName, setBankName] = useState(BANKS[0])
-  const [last4, setLast4] = useState("")
-  const [brand, setBrand] = useState<CardBrand>("visa")
+  const [cardNumber, setCardNumber] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const digits = normalizeCardNumber(cardNumber).slice(0, 16)
+  const brand = detectBrand(digits)
+  const numberComplete = digits.length === 16
+  const numberInvalid = numberComplete && !luhnValid(digits)
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (!numberComplete || numberInvalid) {
+      setError("Проверьте номер карты — нужно 16 цифр.")
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
-      const res = await requestCardBinding({ cardholder, bankName: bankName === "Другой банк" ? "" : bankName, last4, brand })
+      const res = await requestCardBinding({ cardholder, cardNumber: digits })
       if (!res.ok) setError(res.error)
       else await onDone(res.cards)
     } catch {
@@ -200,10 +206,8 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
     }
   }
 
-  const preview: PaymentCardView = {
-    id: 0, brand, last4: last4 || "0000", bankName: bankName === "Другой банк" ? null : bankName,
-    cardholder: cardholder || "ИМЯ ФАМИЛИЯ", expMonth: null, expYear: null, isDefault: false, status: "preview",
-  }
+  const previewNumber = (digits + "•".repeat(16 - digits.length)).replace(/(.{4})/g, "$1 ").trim()
+  const previewHolder = cardholder || "ИМЯ ФАМИЛИЯ"
 
   const field = "min-h-11 w-full rounded-2xl border border-border/60 bg-background/60 px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
 
@@ -211,41 +215,37 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
     <Panel className="p-5">
       <form onSubmit={onSubmit} className="grid gap-6 md:grid-cols-2">
         <div className="pointer-events-none flex flex-col justify-center" aria-hidden="true">
-          <div className={cn("relative flex aspect-[1.586] flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br p-5 text-foreground shadow-xl ring-1 ring-border", BRAND_MATERIAL[preview.brand])}>
+          <div className={cn("relative flex aspect-[1.586] flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br p-5 text-foreground shadow-xl ring-1 ring-border transition-colors", BRAND_MATERIAL[brand])}>
             <span className="card-sheen absolute inset-0 opacity-40" />
-            <div className="relative flex items-start justify-between">
-              <span className="text-xs font-medium text-foreground/70">{preview.bankName ?? CARD_BRAND_LABEL[preview.brand]}</span>
-              <CardBrandMark brand={preview.brand} className="h-6" />
+            <div className="relative flex items-start justify-end">
+              <CardBrandMark brand={brand} className="h-6" />
             </div>
             <span className="card-chip relative h-8 w-11 rounded-md" />
-            <p className="relative font-mono text-lg tracking-[0.12em] tabular-nums">{maskCard(preview.last4)}</p>
-            <p className="relative truncate text-sm font-semibold uppercase">{preview.cardholder}</p>
+            <p className="relative font-mono text-lg tracking-[0.12em] tabular-nums">{previewNumber}</p>
+            <p className="relative truncate text-sm font-semibold uppercase">{previewHolder}</p>
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
           <h2 className="font-display text-lg font-bold text-foreground">Заявка на привязку карты</h2>
           <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+            Номер карты
+            <input
+              value={formatCardNumber(digits)}
+              onChange={(e) => setCardNumber(normalizeCardNumber(e.target.value).slice(0, 16))}
+              required
+              inputMode="numeric"
+              autoComplete="cc-number"
+              placeholder="0000 0000 0000 0000"
+              maxLength={19}
+              aria-invalid={numberInvalid}
+              className={cn(field, "font-mono text-base tracking-widest tabular-nums", numberInvalid && "border-destructive focus:border-destructive focus:ring-destructive/30")}
+            />
+            {numberInvalid && <span className="text-xs text-destructive">Номер карты введён с ошибкой</span>}
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
             Держатель карты
             <input value={cardholder} onChange={(e) => setCardholder(e.target.value.toUpperCase())} required maxLength={60} autoComplete="cc-name" placeholder="IVAN IVANOV" className={cn(field, "uppercase")} />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-              Платёжная система
-              <select value={brand} onChange={(e) => setBrand(e.target.value as CardBrand)} className={field}>
-                {(Object.keys(CARD_BRAND_LABEL) as CardBrand[]).map((b) => <option key={b} value={b}>{CARD_BRAND_LABEL[b]}</option>)}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-              Последние 4 цифры
-              <input value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))} required inputMode="numeric" pattern="\d{4}" placeholder="1234" className={cn(field, "font-mono tracking-widest")} />
-            </label>
-          </div>
-          <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-            Банк
-            <select value={bankName} onChange={(e) => setBankName(e.target.value)} className={field}>
-              {BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
           </label>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-3">
