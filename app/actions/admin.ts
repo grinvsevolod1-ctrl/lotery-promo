@@ -1,10 +1,10 @@
 "use server"
 
-import { desc, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { referral } from "@/lib/db/schema"
+import { paymentCard, referral, user } from "@/lib/db/schema"
 import { processReview } from "@/lib/reviews"
 import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { clearAdminSession, isAdmin, setAdminSession, verifyAdminPassword } from "@/lib/admin-auth"
@@ -32,6 +32,7 @@ export type PendingCardRow = {
   last4: string
   bankName: string | null
   cardholder: string
+  bindingUrl: string | null
   createdAt: Date
   userName: string
   userEmail: string
@@ -39,7 +40,12 @@ export type PendingCardRow = {
 
 export async function getPendingCards(): Promise<PendingCardRow[]> {
   await requireAdmin()
-  return []
+  return db.select({
+    id: paymentCard.id, brand: paymentCard.brand, last4: paymentCard.last4, bankName: paymentCard.bankName,
+    cardholder: paymentCard.cardholder, bindingUrl: paymentCard.bindingUrl, createdAt: paymentCard.createdAt,
+    userName: user.name, userEmail: user.email,
+  }).from(paymentCard).innerJoin(user, eq(user.id, paymentCard.userId))
+    .where(eq(paymentCard.status, "pending")).orderBy(desc(paymentCard.createdAt)).limit(100)
 }
 
 async function review(target: ReviewTarget, decision: ReviewDecision) {
@@ -51,12 +57,58 @@ async function review(target: ReviewTarget, decision: ReviewDecision) {
   return changed
 }
 
+function validCardId(id: number) {
+  return Number.isInteger(id) && id > 0 && id <= 2147483647
+}
+
+/** Only bePaid-hosted links are accepted so a compromised admin form can't redirect users to a phishing page. */
+function parseBepaidUrl(raw: string) {
+  try {
+    const url = new URL(raw.trim())
+    const host = url.hostname.toLowerCase()
+    const trusted = ["bepaid.by", "bepaid.tech"].some((d) => host === d || host.endsWith(`.${d}`))
+    return url.protocol === "https:" && trusted ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
+export async function setCardBindingUrl(id: number, formData: FormData) {
+  await requireAdmin()
+  const url = parseBepaidUrl(String(formData.get("bindingUrl") ?? ""))
+  if (!validCardId(id) || !url) return
+  await db.update(paymentCard).set({ bindingUrl: url })
+    .where(and(eq(paymentCard.id, id), eq(paymentCard.status, "pending")))
+  revalidatePath("/admin")
+  revalidatePath("/cabinet/cards")
+}
+
+async function finishCard(id: number, status: "confirmed" | "rejected") {
+  await requireAdmin()
+  if (!validCardId(id)) return
+  const changed = await db.transaction(async (tx) => {
+    const [row] = await tx.update(paymentCard).set({ status, processedAt: new Date(), bindingUrl: null })
+      .where(and(eq(paymentCard.id, id), eq(paymentCard.status, "pending")))
+      .returning({ userId: paymentCard.userId, last4: paymentCard.last4 })
+    if (!row) return null
+    if (status === "confirmed") {
+      const [existingDefault] = await tx.select({ id: paymentCard.id }).from(paymentCard)
+        .where(and(eq(paymentCard.userId, row.userId), eq(paymentCard.isDefault, true))).limit(1)
+      if (!existingDefault) await tx.update(paymentCard).set({ isDefault: true }).where(eq(paymentCard.id, id))
+    }
+    return row
+  })
+  revalidatePath("/admin")
+  revalidatePath("/cabinet/cards")
+  if (changed) void notifyTelegram(`<b>Карта #${id}</b> •••• ${changed.last4}\n${status === "confirmed" ? "Привязана" : "Отклонена"}.`)
+}
+
 export async function confirmCard(id: number) {
-  await review({ kind: "card", id }, "approve")
+  await finishCard(id, "confirmed")
 }
 
 export async function rejectCard(id: number) {
-  await review({ kind: "card", id }, "reject")
+  await finishCard(id, "rejected")
 }
 
 export type PendingFundingRow = {

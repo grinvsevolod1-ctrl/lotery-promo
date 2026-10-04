@@ -4,6 +4,7 @@ import {
   confirmCard,
   rejectCard,
   rejectFundingRequest,
+  setCardBindingUrl,
   type PendingCardRow,
   type PendingFundingRow,
 } from "@/app/actions/admin"
@@ -46,10 +47,25 @@ export function AdminDashboard({ cards, requests }: { cards: PendingCardRow[]; r
                   </p>
                   <p className="text-xs text-muted-foreground">{formatDate(c.createdAt)}</p>
                 </div>
+                <form action={setCardBindingUrl.bind(null, c.id)} className="flex w-full flex-wrap gap-2">
+                  <label htmlFor={`binding-${c.id}`} className="sr-only">Ссылка bePaid на привязку карты</label>
+                  <input
+                    id={`binding-${c.id}`}
+                    name="bindingUrl"
+                    type="url"
+                    required
+                    defaultValue={c.bindingUrl ?? ""}
+                    placeholder="https://checkout.bepaid.by/..."
+                    className="min-h-10 min-w-0 flex-1 rounded-full border border-border/60 bg-background px-4 text-sm text-foreground"
+                  />
+                  <button type="submit" className="rounded-full border border-border/60 px-4 py-2 text-sm font-semibold text-foreground hover:bg-foreground/5">
+                    {c.bindingUrl ? "Обновить ссылку" : "Отправить ссылку"}
+                  </button>
+                </form>
                 <div className="flex gap-2">
                   <form action={confirmCard.bind(null, c.id)}>
                     <button type="submit" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-                      Подтвердить
+                      Карта привязана
                     </button>
                   </form>
                   <form action={rejectCard.bind(null, c.id)}>

@@ -1,12 +1,13 @@
 "use server"
 
-import { and, asc, desc, eq, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { paymentCard } from "@/lib/db/schema"
-import type { CardBrand } from "@/lib/payment-cards"
+import { CARD_BRAND_LABEL, type CardBrand } from "@/lib/payment-cards"
+import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 
 export type PaymentCardView = {
   id: number
@@ -14,18 +15,28 @@ export type PaymentCardView = {
   last4: string
   bankName: string | null
   cardholder: string
-  expMonth: number
-  expYear: number
+  expMonth: number | null
+  expYear: number | null
   isDefault: boolean
   status: string
+  bindingUrl: string | null
 }
 
 type CardsResult = { ok: true; cards: PaymentCardView[] }
+export type BindingRequestResult = { ok: true; cards: PaymentCardView[] } | { ok: false; error: string }
 
-async function getUserId() {
+const BRANDS = Object.keys(CARD_BRAND_LABEL) as CardBrand[]
+const MAX_CARDS = 5
+const MAX_PENDING = 2
+
+async function getSessionUser() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) throw new Error("Unauthorized")
-  return session.user.id
+  return session.user
+}
+
+async function getUserId() {
+  return (await getSessionUser()).id
 }
 
 async function listCards(userId: string): Promise<PaymentCardView[]> {
@@ -36,11 +47,55 @@ async function listCards(userId: string): Promise<PaymentCardView[]> {
     id: r.id, brand: r.brand as CardBrand, last4: r.last4, bankName: r.bankName,
     cardholder: r.cardholder, expMonth: r.expMonth, expYear: r.expYear,
     isDefault: r.isDefault, status: r.status,
+    bindingUrl: r.status === "pending" ? r.bindingUrl : null,
   }))
 }
 
 export async function getPaymentCards() {
   return listCards(await getUserId())
+}
+
+export async function requestCardBinding(input: {
+  cardholder: string
+  bankName: string
+  last4: string
+  brand: string
+}): Promise<BindingRequestResult> {
+  const user = await getSessionUser()
+  const cardholder = String(input.cardholder ?? "").trim().replace(/\s+/g, " ").toUpperCase()
+  const bankName = String(input.bankName ?? "").trim().slice(0, 60)
+  const last4 = String(input.last4 ?? "").trim()
+  const brand = BRANDS.includes(input.brand as CardBrand) ? (input.brand as CardBrand) : null
+
+  if (!/^[A-ZА-ЯЁ][A-ZА-ЯЁ' -]{1,59}$/.test(cardholder)) return { ok: false, error: "Укажите имя держателя как на карте." }
+  if (!/^\d{4}$/.test(last4)) return { ok: false, error: "Укажите последние 4 цифры карты." }
+  if (!brand) return { ok: false, error: "Выберите платёжную систему." }
+
+  const created = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`)
+    const [{ total }] = await tx.select({ total: count() }).from(paymentCard).where(eq(paymentCard.userId, user.id))
+    if (total >= MAX_CARDS) return { error: `Можно привязать не больше ${MAX_CARDS} карт.` }
+    const [{ pending }] = await tx.select({ pending: count() }).from(paymentCard)
+      .where(and(eq(paymentCard.userId, user.id), eq(paymentCard.status, "pending")))
+    if (pending >= MAX_PENDING) return { error: "Дождитесь обработки текущих заявок на привязку." }
+    const [row] = await tx.insert(paymentCard).values({
+      userId: user.id, brand, last4, bankName: bankName || null, cardholder,
+      fingerprint: `request:${crypto.randomUUID()}`, status: "pending",
+    }).returning({ id: paymentCard.id })
+    return { id: row.id }
+  })
+  if ("error" in created) return { ok: false, error: created.error as string }
+
+  void notifyTelegram([
+    `<b>Заявка на привязку карты #${created.id}</b>`,
+    `${escapeTelegram(CARD_BRAND_LABEL[brand])} •••• ${last4}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
+    `Держатель: ${escapeTelegram(cardholder)}`,
+    `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
+    "Создайте ссылку на привязку в bePaid и добавьте её в админ-панели.",
+  ].join("\n"))
+
+  revalidatePath("/cabinet/cards")
+  return { ok: true, cards: await listCards(user.id) }
 }
 
 export async function setDefaultPaymentCard(id: number): Promise<PaymentCardView[]> {
@@ -49,7 +104,7 @@ export async function setDefaultPaymentCard(id: number): Promise<PaymentCardView
   await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`)
     const [owned] = await tx.select({ id: paymentCard.id }).from(paymentCard)
-      .where(and(eq(paymentCard.id, id), eq(paymentCard.userId, userId)))
+      .where(and(eq(paymentCard.id, id), eq(paymentCard.userId, userId), eq(paymentCard.status, "confirmed")))
     if (!owned) return
     await tx.update(paymentCard).set({ isDefault: false }).where(eq(paymentCard.userId, userId))
     await tx.update(paymentCard).set({ isDefault: true }).where(and(eq(paymentCard.id, id), eq(paymentCard.userId, userId)))
@@ -68,7 +123,8 @@ export async function deletePaymentCard(id: number): Promise<CardsResult> {
       .returning({ isDefault: paymentCard.isDefault })
     if (removed?.isDefault) {
       const [next] = await tx.select({ id: paymentCard.id }).from(paymentCard)
-        .where(eq(paymentCard.userId, userId)).orderBy(asc(paymentCard.createdAt)).limit(1)
+        .where(and(eq(paymentCard.userId, userId), eq(paymentCard.status, "confirmed")))
+        .orderBy(asc(paymentCard.createdAt)).limit(1)
       if (next) await tx.update(paymentCard).set({ isDefault: true })
         .where(and(eq(paymentCard.id, next.id), eq(paymentCard.userId, userId)))
     }
