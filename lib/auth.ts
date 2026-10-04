@@ -66,13 +66,18 @@ const trustedProxies = splitList(process.env.TRUSTED_PROXIES ?? "127.0.0.1,::1")
 
 const turnstileSecret = process.env.TURNSTILE_SECRET_KEY
 
+// E-mail confirmation is off for now: users are signed in right after sign-up.
+// Set REQUIRE_EMAIL_VERIFICATION=1 to require a confirmed address again.
+const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === "1"
+
 export const auth = betterAuth({
   database: pool,
   baseURL: siteURL,
   trustedOrigins: [...extraOrigins, ...devOrigins, ...vercelOrigins],
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification,
+    autoSignIn: true,
     minPasswordLength: 8,
     sendResetPassword: async ({ user, url }) => {
       await sendPasswordResetEmail({ to: user.email, name: user.name, url })
@@ -84,8 +89,8 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url }) => {
       await sendVerificationEmail({ to: user.email, name: user.name, url })
     },
-    sendOnSignUp: true,
-    sendOnSignIn: true,
+    sendOnSignUp: requireEmailVerification,
+    sendOnSignIn: requireEmailVerification,
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60 * 24, // 24 hours
   },
