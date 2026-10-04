@@ -8,17 +8,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthShell, FormMessage } from "@/components/auth-shell"
+import { TestMailNotice, getTestMail, type TestMail } from "@/components/test-mail-notice"
 
 export function VerifyEmailResend() {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [testMail, setTestMail] = useState<TestMail[] | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await authClient.sendVerificationEmail({ email, callbackURL: "/verify-email" })
+    const { data } = await authClient.sendVerificationEmail({ email, callbackURL: "/verify-email" })
     setLoading(false)
+    setTestMail(getTestMail(data))
     setSent(true)
   }
 
@@ -46,7 +49,8 @@ export function VerifyEmailResend() {
           />
         </div>
 
-        {sent && (
+        <TestMailNotice letters={testMail} />
+        {sent && !testMail && (
           <FormMessage tone="success">
             Если адрес зарегистрирован и ещё не подтверждён, мы отправили новое письмо.
           </FormMessage>

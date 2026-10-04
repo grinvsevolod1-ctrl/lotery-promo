@@ -8,6 +8,7 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } from "@/lib/email"
+import { mailTestMode, takeCapturedMail } from "@/lib/mail-capture"
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -126,6 +127,19 @@ export const auth = betterAuth({
           code: "TERMS_NOT_ACCEPTED",
         })
       }
+    }),
+    // Test mail mode: letters produced by this request are handed back to the
+    // browser (see lib/mail-capture.ts). Error responses are left untouched.
+    after: createAuthMiddleware(async (ctx) => {
+      if (!mailTestMode) return
+      const letters = takeCapturedMail()
+      const returned = ctx.context.returned
+      if (letters.length === 0 || !returned || typeof returned !== "object") return
+      if (returned instanceof APIError || returned instanceof Response) return
+      return ctx.json({
+        ...(returned as Record<string, unknown>),
+        testMail: letters.map(({ subject, url }) => ({ subject, url })),
+      })
     }),
   },
   rateLimit: {

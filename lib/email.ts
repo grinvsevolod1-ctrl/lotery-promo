@@ -2,6 +2,7 @@ import nodemailer, { type Transporter } from "nodemailer"
 import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { formatDateTime } from "@/lib/format"
+import { captureMail, firstLink, mailTestMode } from "@/lib/mail-capture"
 import { site } from "@/lib/site"
 
 const SITE_NAME = site.name
@@ -38,6 +39,12 @@ function getTransporter() {
 }
 
 export async function sendMail(input: MailInput) {
+  if (mailTestMode) {
+    const captured = captureMail({ to: input.to, subject: input.subject, url: firstLink(input.text) })
+    if (!captured) console.info(`[mail] test mode: letter "${input.subject}" for ${input.to} was not sent`)
+    return
+  }
+
   // File outbox: used by the e2e tests (and handy for local debugging).
   const outbox = process.env.MAIL_OUTBOX_DIR
   if (outbox) {

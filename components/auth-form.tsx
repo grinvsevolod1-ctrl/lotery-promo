@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthShell, FormMessage } from "@/components/auth-shell"
 import { Turnstile, TURNSTILE_ENABLED } from "@/components/turnstile"
+import { TestMailNotice, getTestMail, type TestMail } from "@/components/test-mail-notice"
 
 const VERIFY_CALLBACK = "/verify-email"
 
@@ -39,6 +40,7 @@ export function AuthForm({
   const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [resent, setResent] = useState(false)
+  const [testMail, setTestMail] = useState<TestMail[] | null>(null)
 
   const isSignUp = mode === "sign-up"
 
@@ -56,7 +58,7 @@ export function AuthForm({
         return
       }
       setLoading(true)
-      const { error } = await authClient.signUp.email({
+      const { data, error } = await authClient.signUp.email({
         email,
         password,
         name,
@@ -71,6 +73,7 @@ export function AuthForm({
         setError(SIGN_UP_ERRORS[error.code ?? ""] ?? "Не удалось создать аккаунт. Проверьте данные и попробуйте снова.")
         return
       }
+      setTestMail(getTestMail(data))
       setSentTo(email)
       return
     }
@@ -99,8 +102,9 @@ export function AuthForm({
   const resend = async () => {
     if (!sentTo) return
     setLoading(true)
-    await authClient.sendVerificationEmail({ email: sentTo, callbackURL: VERIFY_CALLBACK })
+    const { data } = await authClient.sendVerificationEmail({ email: sentTo, callbackURL: VERIFY_CALLBACK })
     setLoading(false)
+    setTestMail(getTestMail(data))
     setResent(true)
   }
 
@@ -121,10 +125,11 @@ export function AuthForm({
         }
       >
         <div className="flex flex-col gap-4">
+          <TestMailNotice letters={testMail} />
           <p className="text-center text-sm text-muted-foreground text-pretty">
             Письма нет? Загляните в папку «Спам» или запросите новое.
           </p>
-          {resent && <FormMessage tone="success">Письмо отправлено повторно.</FormMessage>}
+          {resent && !testMail && <FormMessage tone="success">Письмо отправлено повторно.</FormMessage>}
           <Button
             type="button"
             variant="secondary"
