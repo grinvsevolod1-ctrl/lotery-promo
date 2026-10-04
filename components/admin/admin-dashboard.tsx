@@ -49,7 +49,7 @@ export function AdminDashboard({ cards, requests }: { cards: PendingCardRow[]; r
                 <div className="flex gap-2">
                   <form action={confirmCard.bind(null, c.id)}>
                     <button type="submit" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-                      Подтвердить
+                      Карта привязана
                     </button>
                   </form>
                   <form action={rejectCard.bind(null, c.id)}>
