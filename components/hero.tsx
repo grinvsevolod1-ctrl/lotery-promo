@@ -77,18 +77,6 @@ export function Hero() {
         </div>
 
         <div className="relative">
-          {/* spinning wheel behind the phone */}
-          <img
-            src="/promo-wheels-512.webp"
-            srcSet="/promo-wheels-512.webp 512w, /promo-wheels.webp 1024w"
-            sizes="26rem"
-            alt=""
-            aria-hidden="true"
-            width={1024}
-            height={1024}
-            decoding="async"
-            className="pointer-events-none absolute left-1/2 top-1/2 w-[26rem] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-40 blur-[1px] animate-spin-slow"
-          />
           {/* The artwork is rendered on its own dark square; a soft radial mask
               plus lighten blending dissolves that plate into the hero gradient
               while the phone, coins and glow stay crisp. */}
@@ -102,29 +90,6 @@ export function Hero() {
             fetchPriority="high"
             decoding="async"
             className="relative mx-auto w-full max-w-lg mix-blend-lighten animate-float [mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)]"
-          />
-          {/* floating coins */}
-          <img
-            src="/promo-slot-256.webp"
-            alt=""
-            aria-hidden="true"
-            width={256}
-            height={256}
-            loading="lazy"
-            decoding="async"
-            className="absolute -bottom-4 -left-2 w-24 rounded-full mix-blend-lighten animate-float drop-shadow-xl [--r:-8deg] [mask-image:radial-gradient(closest-side,#000_60%,transparent_100%)]"
-            style={{ animationDelay: '0.6s' }}
-          />
-          <img
-            src="/promo-phone-256.webp"
-            alt=""
-            aria-hidden="true"
-            width={256}
-            height={256}
-            loading="lazy"
-            decoding="async"
-            className="absolute -right-2 top-4 w-20 rounded-full mix-blend-lighten animate-float drop-shadow-xl [--r:10deg] [mask-image:radial-gradient(closest-side,#000_60%,transparent_100%)]"
-            style={{ animationDelay: '1.2s' }}
           />
         </div>
       </div>
