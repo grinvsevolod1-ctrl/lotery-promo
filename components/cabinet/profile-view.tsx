@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DevicesMark, KeyMark, MailMark, TrashMark, UserMark, CheckMark } from "@/components/icons"
 import { Notice, Panel, PanelTitle } from "@/components/cabinet/panel"
-import { TestMailNotice, getTestMail, type TestMail } from "@/components/test-mail-notice"
 import { formatDate, formatDateTime } from "@/lib/format"
 
 export type SessionInfo = {
@@ -195,13 +194,12 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<Message>(null)
-  const [testMail, setTestMail] = useState<TestMail[] | null>(null)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setMessage(null)
     setLoading(true)
-    const { data, error } = await authClient.changeEmail({
+    const { error } = await authClient.changeEmail({
       newEmail: email.trim(),
       callbackURL: "/cabinet/profile?notice=email",
     })
@@ -215,7 +213,6 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
       })
       return
     }
-    setTestMail(getTestMail(data))
     setMessage({
       tone: "success",
       text: `Мы отправили письмо на ${currentEmail}. Подтвердите смену по ссылке — затем проверьте новый адрес.`,
@@ -235,7 +232,6 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
           <Input id="new-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" placeholder="new@example.com" />
         </div>
         {message && <Notice tone={message.tone}>{message.text}</Notice>}
-        <TestMailNotice letters={testMail} />
         <Button type="submit" disabled={loading || !email} className="w-full font-bold sm:w-auto">
           {loading ? "Отправляем..." : "Сменить e-mail"}
         </Button>
@@ -328,13 +324,12 @@ function DeleteAccountCard() {
   const [confirmed, setConfirmed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<Message>(null)
-  const [testMail, setTestMail] = useState<TestMail[] | null>(null)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setMessage(null)
     setLoading(true)
-    const { data, error } = await authClient.deleteUser({ password, callbackURL: "/?notice=account-deleted" })
+    const { error } = await authClient.deleteUser({ password, callbackURL: "/?notice=account-deleted" })
     setLoading(false)
     if (error) {
       setMessage({
@@ -343,7 +338,6 @@ function DeleteAccountCard() {
       })
       return
     }
-    setTestMail(getTestMail(data))
     setPassword("")
     setConfirmed(false)
     setMessage({ tone: "success", text: "Мы отправили письмо с подтверждением удаления. Аккаунт будет удалён после перехода по ссылке." })
@@ -370,7 +364,6 @@ function DeleteAccountCard() {
           <span>Я понимаю, что все данные будут удалены без возможности восстановления</span>
         </label>
         {message && <Notice tone={message.tone}>{message.text}</Notice>}
-        <TestMailNotice letters={testMail} />
         <Button type="submit" variant="destructive" disabled={loading || !confirmed || !password} className="w-full font-bold sm:w-auto">
           {loading ? "Отправляем..." : "Удалить аккаунт"}
         </Button>

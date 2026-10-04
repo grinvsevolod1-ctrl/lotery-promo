@@ -71,7 +71,6 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`bg-background ${inter.variable} ${manrope.variable} ${unbounded.variable}`}>
       <body className="bg-background font-sans antialiased">
-        <aside aria-label="Статус платежей" className="border-b border-border bg-card px-4 py-3 text-center text-sm leading-relaxed text-foreground">Баланс игровой. Привязка карт, пополнение и вывод обрабатываются администратором вручную через Telegram-бота.</aside>
         {children}
         <PwaRegister />
         <Analytics />

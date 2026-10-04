@@ -8,7 +8,6 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } from "@/lib/email"
-import { mailTestMode, takeCapturedMail } from "@/lib/mail-capture"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { recordReferral, REFERRAL_COOKIE } from "@/lib/referrals"
 
@@ -145,8 +144,6 @@ export const auth = betterAuth({
         })
       }
     }),
-    // Test mail mode: letters produced by this request are handed back to the
-    // browser (see lib/mail-capture.ts). Error responses are left untouched.
     after: createAuthMiddleware(async (ctx) => {
       // Fire-and-forget: a Telegram outage must never affect the auth response.
       if (ctx.path === "/sign-up/email" || ctx.path === "/sign-in/email") {
@@ -158,16 +155,6 @@ export const auth = betterAuth({
           void notifyTelegram(`<b>${label}</b>\n${body?.name ? `Имя: ${escapeTelegram(body.name)}\n` : ""}Email: ${escapeTelegram(body?.email ?? "—")}`)
         }
       }
-
-      if (!mailTestMode) return
-      const letters = takeCapturedMail()
-      const returned = ctx.context.returned
-      if (letters.length === 0 || !returned || typeof returned !== "object") return
-      if (returned instanceof APIError || returned instanceof Response) return
-      return ctx.json({
-        ...(returned as Record<string, unknown>),
-        testMail: letters.map(({ subject, url }) => ({ subject, url })),
-      })
     }),
   },
   rateLimit: {
