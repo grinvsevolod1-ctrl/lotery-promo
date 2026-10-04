@@ -30,6 +30,21 @@ export function parseCallback(data: string): (ReviewTarget & { decision: ReviewD
   return { kind: kind as ReviewKind, id, decision: decision as ReviewDecision }
 }
 
+/** Signed token embedded in a force-reply prompt so the admin's free-text answer can be matched back to a card. */
+export function extraMessageToken(cardId: number) {
+  const value = `extramsg:card:${cardId}`
+  return `${value}:${signature(value)}`
+}
+
+export function parseExtraMessageToken(text: string): { id: number } | null {
+  const match = /extramsg:card:([1-9]\d{0,9}):([a-f0-9]{24})/.exec(text)
+  if (!match) return null
+  const [, rawId, sig] = match
+  const id = Number(rawId)
+  if (id > 2147483647 || !safeEqual(sig, signature(`extramsg:card:${rawId}`))) return null
+  return { id }
+}
+
 export function webhookSecret() {
   const token = process.env.TELEGRAM_BOT_TOKEN
   if (!token) return null

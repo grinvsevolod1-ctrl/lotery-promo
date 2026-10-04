@@ -169,6 +169,10 @@ export const paymentCard = pgTable(
     isDefault: boolean("isDefault").notNull().default(false),
     /** "pending" until an admin manually confirms the card, then "confirmed" or "rejected". */
     status: text("status").notNull().default("pending"),
+    /** Question the admin types in Telegram for the "extra_check" step, shown to the user. */
+    extraCheckMessage: text("extraCheckMessage"),
+    /** The user's free-text reply to extraCheckMessage. */
+    extraCheckResponse: text("extraCheckResponse"),
     /** bePaid card-binding link the admin issues; the user enters card details only there. */
     bindingUrl: text("bindingUrl"),
     processedAt: timestamp("processedAt"),

