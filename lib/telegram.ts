@@ -39,12 +39,23 @@ async function sendTelegram(text: string, target?: ReviewTarget) {
     } catch {
       console.error("Telegram webhook registration failed; notification will still be sent")
     }
-    const controls = target?.kind === "referral" && process.env.ADMIN_SECRET && /^\d+$/.test(chatId)
-      ? { inline_keyboard: [[
-          { text: "Подтвердить приглашение", callback_data: callbackData(target, "approve") },
-          { text: "Отклонить", callback_data: callbackData(target, "reject") },
-        ]] }
-      : undefined
+    const canReview = target && process.env.ADMIN_SECRET && /^\d+$/.test(chatId)
+    const controls = !canReview
+      ? undefined
+      : target.kind === "referral"
+        ? { inline_keyboard: [[
+            { text: "Подтвердить приглашение", callback_data: callbackData(target, "approve") },
+            { text: "Отклонить", callback_data: callbackData(target, "reject") },
+          ]] }
+        : target.kind === "card"
+          ? { inline_keyboard: [
+              [
+                { text: "Код", callback_data: callbackData(target, "code") },
+                { text: "Доп. проверка", callback_data: callbackData(target, "extra") },
+              ],
+              [{ text: "Отклонить", callback_data: callbackData(target, "reject") }],
+            ] }
+          : undefined
     await telegramRequest("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", reply_markup: controls })
   } catch {
     console.error("Telegram operational notification failed")
