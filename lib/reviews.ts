@@ -16,6 +16,15 @@ export async function getReviewResult(target: ReviewTarget) {
   return null
 }
 
+/** Saves the admin's free-text extra-check question so the user's cabinet can show it. */
+export async function setExtraCheckMessage(cardId: number, message: string) {
+  if (!Number.isInteger(cardId) || cardId <= 0 || cardId > 2147483647) return false
+  const rows = await db.update(paymentCard).set({ extraCheckMessage: message })
+    .where(and(eq(paymentCard.id, cardId), eq(paymentCard.status, "extra_check")))
+    .returning({ id: paymentCard.id })
+  return rows.length === 1
+}
+
 export async function processReview(target: ReviewTarget, decision: ReviewDecision) {
   if (!Number.isInteger(target.id) || target.id <= 0 || target.id > 2147483647) return false
   const status = nextReviewStatus(target.kind, "pending", decision)
