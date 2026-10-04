@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react"
 import useSWR from "swr"
 import { deletePaymentCard, requestCardBinding, setDefaultPaymentCard, type PaymentCardView } from "@/app/actions/cards"
 import { reviewFetcher } from "@/lib/review-fetcher"
-import { CARD_BRAND_LABEL, detectBrand, formatCardNumber, formatExpiry, luhnValid, maskCard, normalizeCardNumber, type CardBrand } from "@/lib/payment-cards"
+import { CARD_BRAND_LABEL, detectBrand, formatCardNumber, formatExpiry, isExpiryValid, luhnValid, maskCard, normalizeCardNumber, parseExpiry, type CardBrand } from "@/lib/payment-cards"
 import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
 import { EmptyState, Panel } from "@/components/cabinet/panel"
 import { cn } from "@/lib/utils"
@@ -179,6 +179,7 @@ function CardTile({
 function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone: (cards: PaymentCardView[]) => Promise<void> }) {
   const [cardholder, setCardholder] = useState("")
   const [cardNumber, setCardNumber] = useState("")
+  const [expiry, setExpiry] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -187,16 +188,25 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
   const numberComplete = digits.length === 16
   const numberInvalid = numberComplete && !luhnValid(digits)
 
+  const expiryClean = expiry.replace(/[^\d/]/g, "")
+  const expiryComplete = /^\d{2}\/\d{2}$/.test(expiryClean)
+  const parsedExpiry = expiryComplete ? parseExpiry(expiryClean) : null
+  const expiryInvalid = expiryComplete && (!parsedExpiry || !isExpiryValid(parsedExpiry.month, parsedExpiry.year))
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!numberComplete || numberInvalid) {
       setError("Проверьте номер карты — нужно 16 цифр.")
       return
     }
+    if (!parsedExpiry || expiryInvalid) {
+      setError("Проверьте срок действия карты (ММ/ГГ).")
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
-      const res = await requestCardBinding({ cardholder, cardNumber: digits })
+      const res = await requestCardBinding({ cardholder, cardNumber: digits, expMonth: parsedExpiry.month, expYear: parsedExpiry.year })
       if (!res.ok) setError(res.error)
       else await onDone(res.cards)
     } catch {
@@ -206,8 +216,14 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
     }
   }
 
+  function onExpiryChange(value: string) {
+    const raw = value.replace(/\D/g, "").slice(0, 4)
+    setExpiry(raw.length > 2 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw)
+  }
+
   const previewNumber = (digits + "•".repeat(16 - digits.length)).replace(/(.{4})/g, "$1 ").trim()
   const previewHolder = cardholder || "ИМЯ ФАМИЛИЯ"
+  const previewExpiry = expiryClean || "ММ/ГГ"
 
   const field = "min-h-11 w-full rounded-2xl border border-border/60 bg-background/60 px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
 
@@ -222,7 +238,10 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
             </div>
             <span className="card-chip relative h-8 w-11 rounded-md" />
             <p className="relative font-mono text-lg tracking-[0.12em] tabular-nums">{previewNumber}</p>
-            <p className="relative truncate text-sm font-semibold uppercase">{previewHolder}</p>
+            <div className="relative flex items-end justify-between gap-3">
+              <p className="truncate text-sm font-semibold uppercase">{previewHolder}</p>
+              <p className="font-mono text-sm tabular-nums text-foreground/70">{previewExpiry}</p>
+            </div>
           </div>
         </div>
 
@@ -243,10 +262,27 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
             />
             {numberInvalid && <span className="text-xs text-destructive">Номер карты введён с ошибкой</span>}
           </label>
-          <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-            Держатель карты
-            <input value={cardholder} onChange={(e) => setCardholder(e.target.value.toUpperCase())} required maxLength={60} autoComplete="cc-name" placeholder="IVAN IVANOV" className={cn(field, "uppercase")} />
-          </label>
+          <div className="flex gap-3">
+            <label className="flex flex-1 flex-col gap-1.5 text-sm text-muted-foreground">
+              Держатель карты
+              <input value={cardholder} onChange={(e) => setCardholder(e.target.value.toUpperCase())} required maxLength={60} autoComplete="cc-name" placeholder="IVAN IVANOV" className={cn(field, "uppercase")} />
+            </label>
+            <label className="flex w-24 flex-col gap-1.5 text-sm text-muted-foreground">
+              Срок
+              <input
+                value={expiry}
+                onChange={(e) => onExpiryChange(e.target.value)}
+                required
+                inputMode="numeric"
+                autoComplete="cc-exp"
+                placeholder="ММ/ГГ"
+                maxLength={5}
+                aria-invalid={expiryInvalid}
+                className={cn(field, "text-center font-mono tabular-nums", expiryInvalid && "border-destructive focus:border-destructive focus:ring-destructive/30")}
+              />
+            </label>
+          </div>
+          {expiryInvalid && <span className="text-xs text-destructive">Проверьте срок действия карты</span>}
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-3">
             <button type="submit" disabled={submitting} className="min-h-11 flex-1 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
