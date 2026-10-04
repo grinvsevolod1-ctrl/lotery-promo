@@ -177,6 +177,21 @@ export const paymentCard = pgTable(
   ],
 )
 
+export const referralCode = pgTable("referral_code", {
+  userId: text("userId").primaryKey(),
+  code: text("code").notNull().unique(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const referral = pgTable("referral", {
+  id: serial("id").primaryKey(),
+  userId: text("userId").notNull(),
+  inviteeId: text("inviteeId").notNull().unique(),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  processedAt: timestamp("processedAt"),
+})
+
 /** Deposit/withdrawal requests, approved or rejected manually by an admin for now. */
 export const fundingRequest = pgTable(
   "funding_request",

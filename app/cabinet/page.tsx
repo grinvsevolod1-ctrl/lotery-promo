@@ -14,6 +14,7 @@ import { BuyTicketPanel } from "@/components/cabinet/buy-ticket-panel"
 import { TicketCard } from "@/components/cabinet/ticket-card"
 import { TransactionsList } from "@/components/cabinet/transactions-list"
 import { FundingPanel } from "@/components/cabinet/funding-panel"
+import { ReferralPanel } from "@/components/cabinet/referral-panel"
 
 export default async function CabinetPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -40,7 +41,7 @@ export default async function CabinetPage() {
       <Panel accent className="p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-1">
-            <p className="text-sm text-muted-foreground">Привет, {firstName}! Ваш баланс</p>
+            <p className="text-sm text-muted-foreground">Привет, {firstName}! Ваш тестовый баланс</p>
             <p className="flex items-baseline gap-2 font-display text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl">
               {balance.toLocaleString("ru-RU")}
               <span className="text-2xl text-gold">BYN</span>
@@ -76,6 +77,8 @@ export default async function CabinetPage() {
       </Panel>
 
       {!hasWelcome && <WelcomeBonusCard />}
+
+      <ReferralPanel />
 
       <FundingPanel cards={cards} requests={fundingRequests} />
 

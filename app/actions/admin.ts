@@ -1,10 +1,12 @@
 "use server"
 
-import { desc, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { fundingRequest, paymentCard, transaction, user } from "@/lib/db/schema"
+import { fundingRequest, paymentCard, referral, user } from "@/lib/db/schema"
+import { processReview } from "@/lib/reviews"
+import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { clearAdminSession, isAdmin, setAdminSession, verifyAdminPassword } from "@/lib/admin-auth"
 import { notifyTelegram } from "@/lib/telegram"
 
@@ -55,16 +57,21 @@ export async function getPendingCards(): Promise<PendingCardRow[]> {
   return rows
 }
 
-export async function confirmCard(id: number) {
+async function review(target: ReviewTarget, decision: ReviewDecision) {
   await requireAdmin()
-  await db.update(paymentCard).set({ status: "confirmed" }).where(eq(paymentCard.id, id))
+  const changed = await processReview(target, decision)
   revalidatePath("/admin")
+  revalidatePath("/cabinet", "layout")
+  if (changed) void notifyTelegram(`<b>Тестовая заявка #${target.id}</b>\n${decision === "approve" ? "Подтверждена" : "Отклонена"}. Реальных платежей нет.`)
+  return changed
+}
+
+export async function confirmCard(id: number) {
+  await review({ kind: "card", id }, "approve")
 }
 
 export async function rejectCard(id: number) {
-  await requireAdmin()
-  await db.update(paymentCard).set({ status: "rejected" }).where(eq(paymentCard.id, id))
-  revalidatePath("/admin")
+  await review({ kind: "card", id }, "reject")
 }
 
 export type PendingFundingRow = {
@@ -94,50 +101,25 @@ export async function getPendingFundingRequests(): Promise<PendingFundingRow[]> 
     .from(fundingRequest)
     .innerJoin(user, eq(fundingRequest.userId, user.id))
     .leftJoin(paymentCard, eq(fundingRequest.cardId, paymentCard.id))
-    .where(eq(fundingRequest.status, "pending"))
+    .where(and(eq(fundingRequest.status, "pending"), eq(fundingRequest.note, "demo-only")))
     .orderBy(desc(fundingRequest.createdAt))
   return rows
 }
 
+// Withdrawals were already debited by a `withdrawal_hold` transaction when requested.
 export async function approveFundingRequest(id: number) {
-  await requireAdmin()
-  const [req] = await db.select().from(fundingRequest).where(eq(fundingRequest.id, id))
-  if (!req || req.status !== "pending") return
-
-  await db.transaction(async (tx) => {
-    if (req.type === "deposit") {
-      await tx.insert(transaction).values({
-        userId: req.userId,
-        type: "deposit",
-        amount: req.amount,
-        description: `Пополнение подтверждено (заявка #${req.id})`,
-      })
-    }
-    // Withdrawals were already debited by a `withdrawal_hold` transaction when requested.
-    await tx.update(fundingRequest).set({ status: "approved", processedAt: new Date() }).where(eq(fundingRequest.id, id))
-  })
-
-  void notifyTelegram(`<b>Заявка #${req.id} одобрена</b>\n${req.type === "deposit" ? "Пополнение" : "Вывод"}: ${req.amount} BYN`)
-  revalidatePath("/admin")
+  await review({ kind: "funding", id }, "approve")
 }
 
 export async function rejectFundingRequest(id: number) {
+  await review({ kind: "funding", id }, "reject")
+}
+
+export async function getPendingReferrals() {
   await requireAdmin()
-  const [req] = await db.select().from(fundingRequest).where(eq(fundingRequest.id, id))
-  if (!req || req.status !== "pending") return
+  return db.select({ id: referral.id, createdAt: referral.createdAt }).from(referral).where(eq(referral.status, "pending")).orderBy(desc(referral.createdAt)).limit(100)
+}
 
-  await db.transaction(async (tx) => {
-    if (req.type === "withdrawal") {
-      await tx.insert(transaction).values({
-        userId: req.userId,
-        type: "withdrawal_refund",
-        amount: req.amount,
-        description: `Отклонена заявка на вывод #${req.id} — средства возвращены`,
-      })
-    }
-    await tx.update(fundingRequest).set({ status: "rejected", processedAt: new Date() }).where(eq(fundingRequest.id, id))
-  })
-
-  void notifyTelegram(`<b>Заявка #${req.id} отклонена</b>\n${req.type === "deposit" ? "Пополнение" : "Вывод"}: ${req.amount} BYN`)
-  revalidatePath("/admin")
+export async function reviewReferral(id: number, decision: ReviewDecision) {
+  return review({ kind: "referral", id }, decision)
 }
