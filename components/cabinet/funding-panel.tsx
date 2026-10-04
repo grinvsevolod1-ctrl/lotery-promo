@@ -1,6 +1,11 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import useSWR from "swr"
+import Link from "next/link"
+import { reviewFetcher } from "@/lib/review-fetcher"
+import { DepositWaiting } from "@/components/cabinet/deposit-waiting"
+import { demoPaymentPath } from "@/lib/review-transitions"
 import { requestDeposit, requestWithdrawal } from "@/app/actions/funding"
 import type { FundingRequestRow } from "@/app/actions/funding"
 import type { PaymentCardView } from "@/app/actions/cards"
@@ -11,25 +16,30 @@ import { cn } from "@/lib/utils"
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Ожидает подтверждения",
-  approved: "Выполнено",
+  awaiting_payment: "Тестовая ссылка готова",
+  approved: "Тест одобрен",
   rejected: "Отклонено",
 }
 
 const STATUS_CLASS: Record<string, string> = {
   pending: "text-gold",
+  awaiting_payment: "text-primary",
   approved: "text-primary",
   rejected: "text-destructive",
 }
 
 export function FundingPanel({
   cards,
-  requests,
+  requests: initialRequests,
 }: {
   cards: PaymentCardView[]
   requests: FundingRequestRow[]
 }) {
-  const confirmedCards = cards.filter((c) => c.status === "confirmed")
+  const { data: requests = initialRequests, mutate, error: statusError } = useSWR<FundingRequestRow[]>("/api/cabinet/funding", reviewFetcher, { fallbackData: initialRequests, refreshInterval: 2500 })
+  const { data: liveCards = cards } = useSWR<PaymentCardView[]>("/api/cabinet/cards", reviewFetcher, { fallbackData: cards, refreshInterval: 2500 })
+  const confirmedCards = liveCards.filter((c) => c.status === "confirmed")
   const [mode, setMode] = useState<"deposit" | "withdraw" | null>(null)
+  const [waitingId, setWaitingId] = useState<number | null>(null)
 
   return (
     <Panel className="p-5 sm:p-6">
@@ -61,11 +71,16 @@ export function FundingPanel({
         </div>
       </div>
 
-      {mode && (
+      <p className="mt-4 text-sm leading-relaxed text-muted-foreground">Только тестовые внутренние заявки. Указанные суммы условные: одобрение не подтверждает банковский платёж и не переводит деньги.</p>
+
+      {waitingId !== null && <DepositWaiting id={waitingId} request={requests.find((r) => r.id === waitingId)} onClose={() => setWaitingId(null)} />}
+      {statusError && <p role="alert" className="mt-4 text-sm text-destructive">Не удалось обновить статус заявки. Проверьте соединение.</p>}
+      {mode && waitingId === null && (
         <FundingForm
+          key={mode}
           mode={mode}
           cards={confirmedCards}
-          onDone={() => setMode(null)}
+          onDone={(id) => { setMode(null); if (id !== undefined) setWaitingId(id); void mutate() }}
         />
       )}
 
@@ -83,7 +98,7 @@ export function FundingPanel({
               </span>
               <span className={cn("flex items-center gap-1 text-xs font-medium", STATUS_CLASS[r.status])}>
                 {r.status === "pending" && <ClockMark className="size-3.5" />}
-                {STATUS_LABEL[r.status] ?? r.status}
+                {r.status === "awaiting_payment" ? <Link href={demoPaymentPath(r.id)} className="underline">Перейти к симуляции оплаты</Link> : STATUS_LABEL[r.status] ?? r.status}
               </span>
             </li>
           ))}
@@ -100,7 +115,7 @@ function FundingForm({
 }: {
   mode: "deposit" | "withdraw"
   cards: PaymentCardView[]
-  onDone: () => void
+  onDone: (requestId?: number) => void
 }) {
   const [cardId, setCardId] = useState(String(cards[0]?.id ?? ""))
   const [amount, setAmount] = useState("")
@@ -124,15 +139,16 @@ function FundingForm({
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      const action = mode === "deposit" ? requestDeposit : requestWithdrawal
-      const result = await action(Number(cardId), amount)
-      if (!result.ok) {
-        setError(result.error)
-        return
+      try {
+        const action = mode === "deposit" ? requestDeposit : requestWithdrawal
+        const result = await action(Number(cardId), amount)
+        if (!result.ok) { setError(result.error); return }
+        setSuccess(true)
+        setAmount("")
+        onDone(mode === "deposit" ? result.requestId : undefined)
+      } catch {
+        setError("Не удалось отправить тестовую заявку. Повторите попытку.")
       }
-      setSuccess(true)
-      setAmount("")
-      setTimeout(onDone, 1200)
     })
   }
 
@@ -147,6 +163,7 @@ function FundingForm({
   return (
     <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start">
       <select
+        aria-label="Тестовая карта для заявки"
         value={cardId}
         onChange={(e) => setCardId(e.target.value)}
         className="h-12 rounded-2xl border border-border bg-background/60 px-4 text-sm text-foreground outline-none focus:border-primary"
@@ -158,6 +175,7 @@ function FundingForm({
         ))}
       </select>
       <input
+        aria-label="Сумма тестовой заявки"
         inputMode="numeric"
         placeholder="Сумма, BYN"
         value={amount}

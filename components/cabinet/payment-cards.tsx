@@ -3,6 +3,9 @@
 import { useRef, useState, useTransition } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { useRouter } from "next/navigation"
+import useSWR from "swr"
+import { reviewFetcher } from "@/lib/review-fetcher"
+import { DemoCardReview } from "@/components/cabinet/demo-card-review"
 import {
   deletePaymentCard,
   setDefaultPaymentCard,
@@ -12,7 +15,6 @@ import {
 import {
   CARD_BRAND_LABEL,
   type CardBrand,
-  detectBank,
   detectBrand,
   formatCardNumber,
   formatExpiry,
@@ -38,7 +40,7 @@ const fieldClass =
   "h-12 w-full rounded-2xl border border-border bg-background/60 px-4 text-base text-foreground placeholder:text-muted-foreground/60 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/20"
 
 export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
-  const [cards, setCards] = useState(initial)
+  const { data: cards = initial, mutate, error: statusError } = useSWR<PaymentCardView[]>("/api/cabinet/cards", reviewFetcher, { fallbackData: initial, refreshInterval: (rows) => rows?.some((card) => ["pending", "code_required", "extra_required"].includes(card.status)) ? 2500 : 0 })
   const [adding, setAdding] = useState(initial.length === 0)
   const [pendingId, setPendingId] = useState<number | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -49,7 +51,7 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
     setActionError(null)
     startTransition(async () => {
       try {
-        setCards(await action())
+        await mutate(await action(), false)
       } catch {
         setActionError("Не удалось выполнить действие. Попробуйте ещё раз.")
       } finally {
@@ -73,14 +75,15 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
                   run(c.id, async () => (await deletePaymentCard(c.id)).cards)
                 }}
               />
+              <DemoCardReview card={c} onDone={(rows) => mutate(rows, { revalidate: false })} />
             </li>
           ))}
         </ul>
       )}
 
-      {actionError && (
+      {(actionError || statusError) && (
         <p role="alert" className="text-sm text-destructive">
-          {actionError}
+          {actionError || "Не удалось обновить статус карты. Перезагрузите страницу."}
         </p>
       )}
 
@@ -103,8 +106,7 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
 
       <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground text-pretty">
         <KeyMark className="mt-0.5 size-4 shrink-0 text-gold" />
-        Полный номер карты и CVC не сохраняются. В кабинете видны только последние 4 цифры, а повторная привязка
-        той же карты определяется по зашифрованному отпечатку.
+        Только тестовая симуляция. Все реквизиты предустановлены, их нельзя заменить реальными. Этот сервис не проверяет банковский баланс и не выполняет платежи.
       </p>
     </div>
   )
@@ -202,7 +204,7 @@ function CardPreview({
   flipped: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const shown = formatCardNumber(number).padEnd(19, "•").replace(/(.{4})(?! )/g, "$1 ").slice(0, 19)
+  const shown = formatCardNumber(number)
 
   function tilt(e: ReactPointerEvent<HTMLDivElement>) {
     const el = ref.current
@@ -275,7 +277,7 @@ function CardPreview({
               </div>
               <CardBrandMark brand={brand} className="h-5" />
             </div>
-            <p className="text-[11px] text-foreground/70">Три цифры на обороте. Мы их не храним.</p>
+            <p className="text-[11px] text-foreground/70">Фиксированный тестовый CVC. Реальный код не вводится.</p>
           </div>
         </div>
       </div>
@@ -285,17 +287,17 @@ function CardPreview({
 
 function AddCardForm({ onCancel }: { onCancel?: () => void }) {
   const router = useRouter()
-  const [number, setNumber] = useState("")
-  const [cardholder, setCardholder] = useState("")
-  const [expiry, setExpiry] = useState("")
-  const [cvc, setCvc] = useState("")
+  const [number, setNumber] = useState("4242424242424242")
+  const [cardholder, setCardholder] = useState("TEST USER")
+  const [expiry, setExpiry] = useState("12/99")
+  const [cvc, setCvc] = useState("123")
   const [flipped, setFlipped] = useState(false)
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
 
   const digits = normalizeCardNumber(number)
   const brand = detectBrand(number)
-  const bank = digits.length >= 6 ? detectBank(number) : null
+  const bank = "Тестовая карта (не банк)"
   const numberOk = digits.length >= 13 && luhnValid(digits)
   const exp = parseExpiry(expiry)
   const expiryOk = Boolean(exp && isExpiryValid(exp.month, exp.year))
@@ -369,8 +371,8 @@ async function proceed(e: React.FormEvent) {
 
         <div className="flex flex-col gap-4">
           <div>
-            <h3 className="font-display text-xl font-extrabold text-foreground">Новая карта</h3>
-            <p className="text-sm text-muted-foreground">Visa, Mastercard, БЕЛКАРТ или МИР</p>
+            <h3 className="font-display text-xl font-extrabold text-foreground">Тестовая карта</h3>
+            <p className="text-sm leading-relaxed text-muted-foreground">Демо: фиксированные вымышленные реквизиты. Банк не подключён, реальные данные и СМС-коды не принимаются.</p>
           </div>
 
           <Field label="Номер карты" htmlFor="card-number" ok={numberOk}>
@@ -378,7 +380,9 @@ async function proceed(e: React.FormEvent) {
               <input
                 id="card-number"
                 inputMode="numeric"
-                autoComplete="cc-number"
+                readOnly
+                autoComplete="off"
+                data-demo-field="number"
                 placeholder="0000 0000 0000 0000"
                 value={formatCardNumber(number)}
                 maxLength={23}
@@ -398,7 +402,9 @@ async function proceed(e: React.FormEvent) {
           <Field label="Держатель карты" htmlFor="card-holder" ok={holderOk}>
             <input
               id="card-holder"
-              autoComplete="cc-name"
+              readOnly
+                autoComplete="off"
+                data-demo-field="name"
               placeholder="IVAN IVANOV"
               value={cardholder}
               maxLength={60}
@@ -413,7 +419,9 @@ async function proceed(e: React.FormEvent) {
               <input
                 id="card-exp"
                 inputMode="numeric"
-                autoComplete="cc-exp"
+                readOnly
+                autoComplete="off"
+                data-demo-field="exp"
                 placeholder="ММ/ГГ"
                 value={expiry}
                 maxLength={5}
@@ -425,12 +433,14 @@ async function proceed(e: React.FormEvent) {
                 className={cn(fieldClass, "font-mono")}
               />
             </Field>
-            <Field label="CVC" htmlFor="card-cvc" ok={cvcOk}>
+            <Field label="Тестовый CVC (фиксированный)" htmlFor="card-cvc" ok={cvcOk}>
               <input
                 id="card-cvc"
                 type="password"
                 inputMode="numeric"
-                autoComplete="cc-csc"
+                readOnly
+                autoComplete="off"
+                data-demo-field="csc"
                 placeholder="•••"
                 value={cvc}
                 maxLength={4}

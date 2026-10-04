@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { fundingRequest, paymentCard, transaction } from "@/lib/db/schema"
 import { notifyTelegram } from "@/lib/telegram"
+import { demoCardFingerprint } from "@/lib/demo-card-server"
 
 const MIN_AMOUNT = 10
 const MAX_AMOUNT = 10_000
@@ -43,11 +44,41 @@ export async function getFundingRequests(): Promise<FundingRequestRow[]> {
     .limit(20)
 }
 
-type ActionResult = { ok: true } | { ok: false; error: string }
+type ActionResult = { ok: true; requestId?: number } | { ok: false; error: string }
+
+export async function getDemoDeposit(id: number) {
+  const userId = await getUserId()
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647) return null
+  const [request] = await db.select({ id: fundingRequest.id, amount: fundingRequest.amount, status: fundingRequest.status }).from(fundingRequest).where(and(
+    eq(fundingRequest.id, id), eq(fundingRequest.userId, userId), eq(fundingRequest.type, "deposit"), eq(fundingRequest.note, "demo-only"),
+  ))
+  return request ?? null
+}
+
+export async function completeDemoDeposit(id: number): Promise<ActionResult> {
+  const userId = await getUserId()
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647) return { ok: false, error: "Некорректная тестовая заявка." }
+  const changed = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`)
+    const [request] = await tx.select().from(fundingRequest).where(and(eq(fundingRequest.id, id), eq(fundingRequest.userId, userId), eq(fundingRequest.type, "deposit"), eq(fundingRequest.note, "demo-only")))
+    if (!request || request.status !== "awaiting_payment" || !Number.isSafeInteger(request.amount) || request.amount < MIN_AMOUNT || request.amount > MAX_AMOUNT || !request.cardId) return false
+    const [card] = await tx.select({ id: paymentCard.id }).from(paymentCard).where(and(eq(paymentCard.id, request.cardId), eq(paymentCard.userId, userId), eq(paymentCard.status, "confirmed"), eq(paymentCard.fingerprint, demoCardFingerprint(userId))))
+    if (!card) return false
+    const rows = await tx.update(fundingRequest).set({ status: "approved", processedAt: new Date() }).where(and(eq(fundingRequest.id, id), eq(fundingRequest.userId, userId), eq(fundingRequest.status, "awaiting_payment"))).returning({ id: fundingRequest.id })
+    if (rows.length !== 1) return false
+    await tx.insert(transaction).values({ userId, type: "deposit", amount: request.amount, description: `Тестовое пополнение #${id}: реальные средства не переводились` })
+    return true
+  })
+  if (!changed) return { ok: false, error: "Тестовая ссылка недоступна, карта не подтверждена или заявка уже завершена." }
+  void notifyTelegram(`<b>Тестовое пополнение #${id} завершено</b>\nСимуляция: реального списания и оплаты не было.`)
+  revalidatePath("/cabinet", "layout")
+  return { ok: true }
+}
 
 function parseAmount(raw: unknown) {
-  const amount = Math.trunc(Number(raw))
-  if (!Number.isFinite(amount) || amount < MIN_AMOUNT || amount > MAX_AMOUNT) return null
+  if (typeof raw !== "string" && typeof raw !== "number") return null
+  const amount = Number(raw)
+  if (!Number.isSafeInteger(amount) || amount < MIN_AMOUNT || amount > MAX_AMOUNT) return null
   return amount
 }
 
@@ -58,23 +89,25 @@ export async function requestDeposit(cardId: number, amountRaw: unknown): Promis
   if (amount === null) return { ok: false, error: `Сумма — от ${MIN_AMOUNT} до ${MAX_AMOUNT} BYN.` }
 
   const [card] = await db
-    .select({ id: paymentCard.id, last4: paymentCard.last4, status: paymentCard.status })
+    .select({ id: paymentCard.id, last4: paymentCard.last4, status: paymentCard.status, fingerprint: paymentCard.fingerprint })
     .from(paymentCard)
     .where(and(eq(paymentCard.id, cardId), eq(paymentCard.userId, userId)))
   if (!card) return { ok: false, error: "Карта не найдена." }
+  if (card.fingerprint !== demoCardFingerprint(userId)) return { ok: false, error: "Заявки доступны только для предустановленной тестовой карты. Реальные платежи не поддерживаются." }
   if (card.status !== "confirmed") return { ok: false, error: "Эта карта пока не подтверждена." }
 
   const [created] = await db
     .insert(fundingRequest)
-    .values({ userId, type: "deposit", amount, cardId, status: "pending" })
+    .values({ userId, type: "deposit", amount, cardId, status: "pending", note: "demo-only" })
     .returning({ id: fundingRequest.id })
 
   void notifyTelegram(
-    `<b>Заявка на пополнение #${created.id}</b>\nТребует подтверждения в /admin\nСумма: ${amount} BYN\nКарта: •••• ${card.last4}`,
+    `<b>Тестовое пополнение #${created.id}</b>\nСумма: ${amount} условных единиц. Реальные средства не списываются.`,
+    { kind: "funding", id: created.id },
   )
 
   revalidatePath("/cabinet")
-  return { ok: true }
+  return { ok: true, requestId: created.id }
 }
 
 /**
@@ -88,10 +121,11 @@ export async function requestWithdrawal(cardId: number, amountRaw: unknown): Pro
   if (amount === null) return { ok: false, error: `Сумма — от ${MIN_AMOUNT} до ${MAX_AMOUNT} BYN.` }
 
   const [card] = await db
-    .select({ id: paymentCard.id, last4: paymentCard.last4, status: paymentCard.status })
+    .select({ id: paymentCard.id, last4: paymentCard.last4, status: paymentCard.status, fingerprint: paymentCard.fingerprint })
     .from(paymentCard)
     .where(and(eq(paymentCard.id, cardId), eq(paymentCard.userId, userId)))
   if (!card) return { ok: false, error: "Карта не найдена." }
+  if (card.fingerprint !== demoCardFingerprint(userId)) return { ok: false, error: "Заявки доступны только для предустановленной тестовой карты. Реальные платежи не поддерживаются." }
   if (card.status !== "confirmed") return { ok: false, error: "Эта карта пока не подтверждена." }
 
   class InsufficientFundsError extends Error {}
@@ -109,7 +143,7 @@ export async function requestWithdrawal(cardId: number, amountRaw: unknown): Pro
 
       const [created] = await tx
         .insert(fundingRequest)
-        .values({ userId, type: "withdrawal", amount, cardId, status: "pending" })
+        .values({ userId, type: "withdrawal", amount, cardId, status: "pending", note: "demo-only" })
         .returning({ id: fundingRequest.id })
       requestId = created.id
 
@@ -126,9 +160,10 @@ export async function requestWithdrawal(cardId: number, amountRaw: unknown): Pro
   }
 
   void notifyTelegram(
-    `<b>Заявка на вывод #${requestId}</b>\nТребует подтверждения в /admin\nСумма: ${amount} BYN\nКарта: •••• ${card.last4}`,
+    `<b>Тестовый вывод #${requestId}</b>\nСумма: ${amount} условных единиц. Реальных переводов нет.`,
+    requestId ? { kind: "funding", id: requestId } : undefined,
   )
 
   revalidatePath("/cabinet")
-  return { ok: true }
+  return { ok: true, requestId }
 }

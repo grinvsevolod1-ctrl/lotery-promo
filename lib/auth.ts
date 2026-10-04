@@ -9,7 +9,8 @@ import {
   sendVerificationEmail,
 } from "@/lib/email"
 import { mailTestMode, takeCapturedMail } from "@/lib/mail-capture"
-import { notifyTelegram } from "@/lib/telegram"
+import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
+import { recordReferral, REFERRAL_COOKIE } from "@/lib/referrals"
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -118,6 +119,16 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => ({ data: { ...user, termsAcceptedAt: new Date() } }),
+        after: async (createdUser, ctx) => {
+          const cookieHeader = ctx?.headers?.get("cookie") ?? ctx?.request?.headers.get("cookie") ?? ""
+          const cookieValue = cookieHeader.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${REFERRAL_COOKIE}=`))?.slice(REFERRAL_COOKIE.length + 1)
+          if (!cookieValue) return
+          try {
+            await recordReferral(createdUser.id, cookieValue)
+          } catch {
+            console.error("Referral attribution failed during registration")
+          }
+        },
       },
     },
   },
@@ -144,7 +155,7 @@ export const auth = betterAuth({
         if (ok) {
           const body = ctx.body as { email?: string; name?: string } | undefined
           const label = ctx.path === "/sign-up/email" ? "Регистрация" : "Вход"
-          void notifyTelegram(`<b>${label}</b>\n${body?.name ? `Имя: ${body.name}\n` : ""}Email: ${body?.email ?? "—"}`)
+          void notifyTelegram(`<b>${label}</b>\n${body?.name ? `Имя: ${escapeTelegram(body.name)}\n` : ""}Email: ${escapeTelegram(body?.email ?? "—")}`)
         }
       }
 

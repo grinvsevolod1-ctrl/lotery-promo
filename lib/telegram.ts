@@ -1,42 +1,67 @@
 import { after } from "next/server"
+import { callbackData, webhookSecret, type ReviewTarget } from "@/lib/telegram-security"
 
-async function sendTelegram(token: string, chatId: string, text: string) {
+export function escapeTelegram(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+}
+
+export async function telegramRequest(method: "sendMessage" | "setWebhook" | "answerCallbackQuery" | "editMessageReplyMarkup", body: Record<string, unknown>) {
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim()
+  if (!token) throw new Error("Telegram not configured")
+  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!res.ok) throw new Error(`Telegram request rejected: ${res.status}`)
+  const result = await res.json() as { ok?: boolean }
+  if (!result.ok) throw new Error("Telegram request rejected")
+}
+
+export async function configureWebhook() {
+  if (process.env.NODE_ENV !== "production" || (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production")) return
+  const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.BETTER_AUTH_URL?.trim() || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined)
+  const secret = webhookSecret()
+  if (!origin || !secret) return
+  const url = new URL("/api/telegram/webhook", origin)
+  if (url.protocol !== "https:") return
+  await telegramRequest("setWebhook", { url: url.toString(), secret_token: secret, allowed_updates: ["callback_query"] })
+}
+
+async function sendTelegram(text: string, target?: ReviewTarget) {
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim()
+  if (!chatId || !process.env.TELEGRAM_BOT_TOKEN) return
   try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-      signal: AbortSignal.timeout(8000),
-    })
-    if (!res.ok) {
-      console.error("Telegram notify rejected:", res.status, await res.text())
+    try {
+      await configureWebhook()
+    } catch {
+      console.error("Telegram webhook registration failed; notification will still be sent")
     }
-  } catch (error) {
-    console.error("Telegram notify failed:", error)
+    const controls = target && process.env.ADMIN_SECRET && /^\d+$/.test(chatId)
+      ? { inline_keyboard: [
+          ...(target.kind === "card" ? [[
+            { text: "Тестовый код", callback_data: callbackData(target, "code") },
+            { text: "Доп. тестовая проверка", callback_data: callbackData(target, "extra") },
+          ]] : []),
+          [
+            { text: target.kind === "funding" ? "Одобрить тест (пополнение: ссылка)" : "Подтвердить тест", callback_data: callbackData(target, "approve") },
+            { text: "Отклонить", callback_data: callbackData(target, "reject") },
+          ],
+        ] }
+      : undefined
+    await telegramRequest("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", reply_markup: controls })
+  } catch {
+    console.error("Telegram operational notification failed")
   }
 }
 
-/**
- * Sends operational notifications (sign-ups, sign-ins, card links, funding
- * requests) to a Telegram chat for manual monitoring during testing.
- * Never throws: a missing token or a failed request must not break the
- * calling flow.
- *
- * Delivery is scheduled with `after()` because a bare un-awaited fetch is
- * dropped when Vercel freezes the serverless function after the response.
- */
-export function notifyTelegram(text: string): Promise<void> {
-  const token = process.env.TELEGRAM_BOT_TOKEN?.trim()
-  const chatId = process.env.TELEGRAM_CHAT_ID?.trim()
-  if (!token || !chatId) {
-    console.error("Telegram notify skipped: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set")
-    return Promise.resolve()
-  }
-
+/** after() keeps notification delivery alive after a serverless response. */
+export function notifyTelegram(text: string, target?: ReviewTarget): Promise<void> {
   try {
-    after(() => sendTelegram(token, chatId, text))
+    after(() => sendTelegram(text, target))
     return Promise.resolve()
   } catch {
-    return sendTelegram(token, chatId, text)
+    return sendTelegram(text, target)
   }
 }

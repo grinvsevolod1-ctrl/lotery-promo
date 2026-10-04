@@ -3,7 +3,7 @@ import { GatewayConfirm } from "@/components/pay/gateway-confirm"
 import { ShieldMark, WarnMark } from "@/components/icons"
 
 export const metadata = {
-  title: "Подтверждение платежа — ToLoto Pay",
+  title: "Тестовая симуляция — ToLoto",
   robots: { index: false, follow: false },
 }
 
@@ -32,7 +32,7 @@ function ExpiredGateway() {
           </span>
           <div className="leading-tight">
             <p className="text-sm font-bold text-foreground">ToLoto Pay</p>
-            <p className="text-[11px] text-muted-foreground">Платёжный шлюз</p>
+            <p className="text-[11px] text-muted-foreground">Тестовая симуляция · не банк</p>
           </div>
         </div>
         <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">

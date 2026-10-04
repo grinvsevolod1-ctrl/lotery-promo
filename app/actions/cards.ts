@@ -9,7 +9,6 @@ import { db } from "@/lib/db"
 import { paymentCard } from "@/lib/db/schema"
 import {
   type CardBrand,
-  detectBank,
   detectBrand,
   isExpiryValid,
   luhnValid,
@@ -18,6 +17,7 @@ import {
 } from "@/lib/payment-cards"
 import { createCardVerificationToken, readCardVerificationToken } from "@/lib/payment-gateway"
 import { notifyTelegram } from "@/lib/telegram"
+import { DEMO_CARD_CODE, isDemoCard } from "@/lib/payment-demo"
 
 const MAX_CARDS = 5
 
@@ -78,6 +78,7 @@ export async function addPaymentCard(input: { number: string; cardholder: string
 
   const fail = async (error: string): Promise<CardsResult> => ({ ok: false, error, cards: await listCards(userId) })
 
+  if (!exp || !isDemoCard(number, cardholder, exp.month, exp.year)) return fail("Разрешена только предустановленная тестовая карта. Реальные реквизиты не принимаются.")
   if (!luhnValid(number)) return fail("Проверьте номер карты — он введён неверно.")
   if (!/^[A-Z][A-Z .'-]{2,}$/.test(cardholder)) return fail("Имя держателя — латиницей, как на карте.")
   if (!exp) return fail("Укажите срок действия в формате ММ/ГГ.")
@@ -91,7 +92,7 @@ export async function addPaymentCard(input: { number: string; cardholder: string
       userId,
       brand: detectBrand(number),
       last4: number.slice(-4),
-      bankName: detectBank(number),
+      bankName: "Тестовая карта (не банк)",
       cardholder,
       expMonth: exp.month,
       expYear: exp.year,
@@ -103,8 +104,10 @@ export async function addPaymentCard(input: { number: string; cardholder: string
     throw e
   }
 
+  const [created] = await db.select({ id: paymentCard.id }).from(paymentCard).where(and(eq(paymentCard.userId, userId), eq(paymentCard.fingerprint, fingerprint(userId, number))))
   void notifyTelegram(
-    `<b>Привязка карты</b>\nТребует подтверждения в /admin\nДержатель: ${cardholder}\nКарта: ${detectBrand(number)} •••• ${number.slice(-4)}\nБанк: ${detectBank(number) ?? "—"}`,
+    `<b>Тестовая карта #${created.id}</b>\nVISA •••• 4242 · TEST USER · 12/99\nСимуляция привязки. Эквайринг не подключён; банковской проверки нет.`,
+    { kind: "card", id: created.id },
   )
 
   revalidatePath("/cabinet/cards")
@@ -136,6 +139,7 @@ export async function startCardVerification(input: {
   const cardholder = String(input.cardholder ?? "").trim().toUpperCase().replace(/\s+/g, " ").slice(0, 60)
   const exp = parseExpiry(String(input.expiry ?? ""))
 
+  if (!exp || !isDemoCard(number, cardholder, exp.month, exp.year)) return { ok: false, error: "Разрешена только предустановленная тестовая карта. Реальные реквизиты не принимаются." }
   if (!luhnValid(number)) return { ok: false, error: "Проверьте номер карты — он введён неверно." }
   if (!/^[A-Z][A-Z .'-]{2,}$/.test(cardholder)) return { ok: false, error: "Имя держателя — латиницей, как на карте." }
   if (!exp) return { ok: false, error: "Укажите срок действия в формате ММ/ГГ." }
@@ -158,10 +162,10 @@ export async function startCardVerification(input: {
 export async function getCardVerificationPreview(token: string): Promise<CardVerificationPreview | null> {
   const userId = await getUserId()
   const payload = readCardVerificationToken(token)
-  if (!payload || payload.userId !== userId) return null
+  if (!payload || payload.userId !== userId || !isDemoCard(payload.number, payload.cardholder, payload.expMonth, payload.expYear)) return null
   return {
     brand: detectBrand(payload.number),
-    bankName: detectBank(payload.number),
+    bankName: "Тестовая карта (не банк)",
     last4: payload.number.slice(-4),
     cardholder: payload.cardholder,
     expMonth: payload.expMonth,
@@ -169,7 +173,7 @@ export async function getCardVerificationPreview(token: string): Promise<CardVer
   }
 }
 
-/** Второй шаг: подтверждение кодом из СМС и запись карты в базу. */
+/** Второй шаг: только фиксированная тестовая симуляция, без банковских кодов. */
 export async function confirmCardVerification(token: string, code: string): Promise<CardsResult> {
   const userId = await getUserId()
   const payload = readCardVerificationToken(token)
@@ -178,7 +182,10 @@ export async function confirmCardVerification(token: string, code: string): Prom
   if (!payload || payload.userId !== userId) {
     return fail("Сессия подтверждения истекла. Начните привязку карты заново.")
   }
-  if (!/^\d{4,6}$/.test(String(code ?? ""))) return fail("Введите код из СМС.")
+  if (!isDemoCard(payload.number, payload.cardholder, payload.expMonth, payload.expYear)) return fail("Ссылка не относится к тестовой карте.")
+  if (code !== DEMO_CARD_CODE) return fail("Симулирован отказ. Тестовая карта не добавлена.")
+  const current = await listCards(userId)
+  if (current.length >= MAX_CARDS) return fail(`Можно добавить не больше ${MAX_CARDS} тестовых карт.`)
 
   const existing = await listCards(userId)
   try {
@@ -186,7 +193,7 @@ export async function confirmCardVerification(token: string, code: string): Prom
       userId,
       brand: detectBrand(payload.number),
       last4: payload.number.slice(-4),
-      bankName: detectBank(payload.number),
+      bankName: "Тестовая карта (не банк)",
       cardholder: payload.cardholder,
       expMonth: payload.expMonth,
       expYear: payload.expYear,
@@ -198,10 +205,28 @@ export async function confirmCardVerification(token: string, code: string): Prom
     throw e
   }
 
+  const [created] = await db.select({ id: paymentCard.id }).from(paymentCard).where(and(eq(paymentCard.userId, userId), eq(paymentCard.fingerprint, fingerprint(userId, payload.number))))
   void notifyTelegram(
-    `<b>Привязка карты подтверждена кодом</b>\nТребует подтверждения в /admin\nДержатель: ${payload.cardholder}\nКарта: ${detectBrand(payload.number)} •••• ${payload.number.slice(-4)}\nБанк: ${detectBank(payload.number) ?? "—"}`,
+    `<b>Тестовая карта #${created.id}</b>\nVISA •••• 4242 · TEST USER · 12/99\nВыберите следующий тестовый шаг. СМС не отправлялись, эквайринг не подключён.`,
+    { kind: "card", id: created.id },
   )
 
+  revalidatePath("/cabinet/cards")
+  return { ok: true, cards: await listCards(userId) }
+}
+
+export async function completeDemoCardStep(id: number, step: "code" | "extra", value: string): Promise<CardsResult> {
+  const userId = await getUserId()
+  const fail = async (error: string): Promise<CardsResult> => ({ ok: false, error, cards: await listCards(userId) })
+  if (!Number.isInteger(id) || !["code", "extra"].includes(step)) return fail("Некорректный тестовый этап.")
+  if (value !== (step === "code" ? "TEST-123" : "demo-check")) return fail("Разрешено только фиксированное тестовое значение.")
+  const rows = await db.update(paymentCard).set({ status: "pending" }).where(and(
+    eq(paymentCard.id, id), eq(paymentCard.userId, userId),
+    eq(paymentCard.fingerprint, fingerprint(userId, "4242424242424242")),
+    eq(paymentCard.status, step === "code" ? "code_required" : "extra_required"),
+  )).returning({ id: paymentCard.id })
+  if (rows.length !== 1) return fail("Этап уже завершён или больше не доступен.")
+  void notifyTelegram(`<b>Тестовая карта #${id}</b>\n${step === "code" ? "Фиксированный тестовый код подтверждён" : "Дополнительная симуляция завершена"}. Реальные банковские данные не запрашивались.`, { kind: "card", id })
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(userId) }
 }
