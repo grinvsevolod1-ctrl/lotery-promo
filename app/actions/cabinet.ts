@@ -122,7 +122,7 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
     picked = randomNumbers(game.pick, game.max, secureRng)
   } else {
     const valid = validateNumbers(game, numbers)
-    if (!valid) return { ok: false, error: `Отметьте ровно ${game.pick} разных чисел от 1 до ${game.max}` }
+    if (!valid) return { ok: false, error: `Отметьте ровно ${game.pick} ${game.pick < 5 ? "разных числа" : "разных чисел"} от 1 до ${game.max}` }
     picked = valid
   }
 

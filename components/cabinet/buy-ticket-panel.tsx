@@ -93,7 +93,7 @@ export function BuyTicketPanel({ balance }: { balance: number }) {
           <div>
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
-                Отметьте {game.pick} чисел от 1 до {game.max}
+                Отметьте {game.pick} {game.pick < 5 ? "числа" : "чисел"} от 1 до {game.max}
               </p>
               <span className="shrink-0 rounded-full bg-foreground/10 px-3 py-1 font-mono text-xs font-bold text-foreground/80">
                 {numbers.length} / {game.pick}

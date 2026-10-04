@@ -4,9 +4,9 @@ import { InstallAppButton } from '@/components/pwa'
 export function TermsSection() {
   return (
     <section id="terms" className="relative py-16 md:py-24">
-      <div className="mx-auto max-w-6xl px-5">
-        <div className="grid items-center gap-8 md:grid-cols-2">
-          <div className="rounded-3xl bg-card/60 p-6 text-sm leading-relaxed text-muted-foreground md:p-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-5">
+        <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
+          <div className="min-w-0 rounded-3xl bg-card/60 p-5 text-sm leading-relaxed text-muted-foreground sm:p-6 md:p-8">
             <p className="font-semibold text-foreground">
               Супер Колёса Фортуны и Колёса Фортуны начисляются в течение 30 минут после регистрации и
               выполнения условий акции:
@@ -42,7 +42,7 @@ export function TermsSection() {
         </div>
 
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
-          <InstallAppButton />
+          <InstallAppButton className="w-full px-6 sm:w-auto sm:px-10" />
           <p className="text-xs text-muted-foreground/70">
             Сайт работает как приложение: добавьте его на главный экран, чтобы открывать кабинет в одно касание.{' '}
             <Link href="/rules" className="font-semibold text-gold underline-offset-4 hover:underline">

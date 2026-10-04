@@ -9,20 +9,20 @@ const biggest = Math.max(...GAMES.map(topPrize))
 export function Hero() {
   return (
     <section className="grain relative overflow-hidden bg-gradient-to-b from-[oklch(0.32_0.16_305)] via-[oklch(0.24_0.12_302)] to-background pt-28 pb-12 md:pt-32 md:pb-20">
-      <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-5 md:grid-cols-2">
-        <div className="text-center md:text-left">
-          <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-gold">
-            <BoltMark className="size-4" />
-            Результат сразу после покупки
+      <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 px-4 sm:px-5 lg:grid-cols-2 lg:gap-12">
+        <div className="min-w-0 text-center lg:text-left">
+          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-gold sm:px-4 sm:text-xs sm:tracking-widest">
+            <BoltMark className="size-4 shrink-0" />
+            <span className="truncate">Результат сразу после покупки</span>
           </span>
-          <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-5xl md:text-6xl">
+          <h1 className="mt-5 font-display text-[2rem] font-extrabold leading-[1.05] tracking-tight text-balance hyphens-manual min-[380px]:text-4xl sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl">
             Моментальные лотереи <span className="text-shimmer">онлайн</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-muted-foreground text-pretty md:mx-0">
+          <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-muted-foreground text-pretty sm:text-lg lg:mx-0">
             Выберите игру, отметьте числа — и через секунду узнайте, выиграли ли вы. Никаких тиражей и ожидания.
           </p>
 
-          <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2 text-left text-sm md:mx-0">
+          <ul className="mx-auto mt-6 flex w-fit max-w-md flex-col gap-2 text-left text-sm leading-snug [&>li]:items-start [&>li>span:first-child]:mt-1.5 lg:mx-0">
             <li className="flex items-center gap-3">
               <span className="size-2 shrink-0 rounded-full bg-gold" aria-hidden />
               <span>
@@ -43,7 +43,7 @@ export function Hero() {
             </li>
           </ul>
 
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:justify-start">
+          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
             <Button
               size="lg"
               nativeButton={false}
@@ -71,13 +71,13 @@ export function Hero() {
           <img
             src="/promo-hero-768.webp"
             srcSet="/promo-hero-512.webp 512w, /promo-hero-768.webp 768w, /promo-hero.webp 1024w"
-            sizes="(min-width: 768px) 32rem, 90vw"
+            sizes="(min-width: 1024px) 28rem, (min-width: 640px) 28rem, 90vw"
             alt="Смартфон с приложением лотереи, золотые монеты и колёса фортуны"
             width={1024}
             height={1024}
             fetchPriority="high"
             decoding="async"
-            className="relative mx-auto w-full max-w-md mix-blend-lighten [mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)]"
+            className="relative mx-auto w-full max-w-sm sm:max-w-md mix-blend-lighten [mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)]"
           />
         </div>
       </div>

@@ -364,6 +364,33 @@
   color: var(--foreground);
   font-weight: 700;
 }
+.legal-prose td {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 479px) {
+  .legal-prose tbody th,
+  .legal-prose tbody td {
+    padding-inline: 0;
+  }
+  .legal-prose tbody tr:has(> th) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .legal-prose tbody tr:has(> th) > th,
+  .legal-prose tbody tr:has(> th) > td {
+    padding: 0;
+    border: 0;
+  }
+  .legal-prose tbody tr:has(> th) > th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+  }
+}
 
 /* Payment card preview: pointer tilt + flip + holographic sheen */
 .card-stage {

@@ -78,7 +78,7 @@ export function LiveWinsFeed({ initial }: { initial: FeedItem[] }) {
             </span>
             Выигрыши сейчас
           </h2>
-          <span className="rounded-full border border-border/60 px-3 py-1 text-xs font-semibold text-muted-foreground">Демо-лента</span>
+          <span className="shrink-0 rounded-full border border-border/60 px-3 py-1 text-xs font-semibold text-muted-foreground">Онлайн</span>
         </div>
 
         <ul aria-live="off" className="flex flex-col gap-2 overflow-hidden rounded-3xl border border-border/60 bg-card/70 p-2 backdrop-blur-xl">

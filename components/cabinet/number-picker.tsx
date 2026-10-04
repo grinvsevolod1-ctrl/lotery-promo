@@ -26,8 +26,11 @@ export function NumberPicker({
   return (
     <div
       role="group"
-      aria-label={`Выберите ${pick} чисел от 1 до ${max}`}
-      className={cn("grid gap-1.5 sm:gap-2", max <= 20 ? "grid-cols-5" : "grid-cols-6 sm:grid-cols-9")}
+      aria-label={`Выберите ${pick} из ${max}`}
+      className={cn(
+        "grid w-full max-w-xl gap-1.5 sm:gap-2",
+        max <= 20 ? "grid-cols-5 min-[480px]:grid-cols-10" : "grid-cols-6 min-[480px]:grid-cols-9",
+      )}
     >
       {all.map((n) => {
         const selected = value.includes(n)
@@ -41,7 +44,7 @@ export function NumberPicker({
             aria-pressed={selected}
             aria-disabled={blocked || undefined}
             className={cn(
-              "grid aspect-square place-items-center rounded-full font-display text-sm font-extrabold tabular-nums transition-all",
+              "grid aspect-square min-h-9 place-items-center rounded-full font-display text-sm font-extrabold sm:text-base tabular-nums transition-all",
               selected
                 ? "scale-105 bg-[radial-gradient(circle_at_30%_28%,oklch(0.95_0.1_90),oklch(0.78_0.16_80)_70%)] text-gold-foreground shadow-[0_0_16px_-2px_oklch(0.82_0.15_85/0.8)] ring-2 ring-gold/70"
                 : blocked

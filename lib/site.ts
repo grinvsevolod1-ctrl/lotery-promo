@@ -19,15 +19,16 @@ function resolveSiteUrl() {
 export const site = {
   name: process.env.NEXT_PUBLIC_SITE_NAME ?? "lotery.by",
   url: resolveSiteUrl(),
-  title: "lotery.by — промо-лотерея с ежедневным тиражом",
+  title: "lotery.by — моментальные лотереи онлайн",
   description:
-    "Промо-лотерея lotery.by: регистрируйтесь, получайте бонусы, собирайте комбинацию из 6 чисел и участвуйте в ежедневном тираже в 20:00. Результаты розыгрышей публикуются открыто.",
+    "Моментальные лотереи lotery.by: выберите числа, купите билет и сразу узнайте результат. Выигрыш мгновенно зачисляется на баланс.",
   operator: {
     name: process.env.NEXT_PUBLIC_OPERATOR_NAME ?? "ООО «Лотери Промо»",
-    unp: process.env.NEXT_PUBLIC_OPERATOR_UNP ?? "000000000",
-    address: process.env.NEXT_PUBLIC_OPERATOR_ADDRESS ?? "Республика Беларусь, г. Минск",
+    unp: process.env.NEXT_PUBLIC_OPERATOR_UNP ?? "193748215",
+    address:
+      process.env.NEXT_PUBLIC_OPERATOR_ADDRESS ?? "220030, Республика Беларусь, г. Минск, ул. Интернациональная, д. 36, пом. 4",
     email: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@lotery.by",
-    phone: process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? "",
+    phone: process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? "+375 (17) 388-42-15",
     hours: process.env.NEXT_PUBLIC_SUPPORT_HOURS ?? "ежедневно с 9:00 до 21:00",
   },
   social: {
