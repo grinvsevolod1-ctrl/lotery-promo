@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { paymentCard } from "@/lib/db/schema"
-import { CARD_BRAND_LABEL, type CardBrand } from "@/lib/payment-cards"
+import { CARD_BRAND_LABEL, detectBank, detectBrand, formatCardNumber, luhnValid, normalizeCardNumber, type CardBrand } from "@/lib/payment-cards"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 
 export type PaymentCardView = {
@@ -24,7 +24,6 @@ export type PaymentCardView = {
 type CardsResult = { ok: true; cards: PaymentCardView[] }
 export type BindingRequestResult = { ok: true; cards: PaymentCardView[] } | { ok: false; error: string }
 
-const BRANDS = Object.keys(CARD_BRAND_LABEL) as CardBrand[]
 const MAX_CARDS = 5
 const MAX_PENDING = 2
 
@@ -55,19 +54,18 @@ export async function getPaymentCards() {
 
 export async function requestCardBinding(input: {
   cardholder: string
-  bankName: string
-  last4: string
-  brand: string
+  cardNumber: string
 }): Promise<BindingRequestResult> {
   const user = await getSessionUser()
   const cardholder = String(input.cardholder ?? "").trim().replace(/\s+/g, " ").toUpperCase()
-  const bankName = String(input.bankName ?? "").trim().slice(0, 60)
-  const last4 = String(input.last4 ?? "").trim()
-  const brand = BRANDS.includes(input.brand as CardBrand) ? (input.brand as CardBrand) : null
+  const cardNumber = normalizeCardNumber(String(input.cardNumber ?? ""))
 
   if (!/^[A-ZА-ЯЁ][A-ZА-ЯЁ' -]{1,59}$/.test(cardholder)) return { ok: false, error: "Укажите имя держателя как на карте." }
-  if (!/^\d{4}$/.test(last4)) return { ok: false, error: "Укажите последние 4 цифры карты." }
-  if (!brand) return { ok: false, error: "Выберите платёжную систему." }
+  if (cardNumber.length !== 16 || !luhnValid(cardNumber)) return { ok: false, error: "Проверьте номер карты — нужно 16 цифр." }
+
+  const brand = detectBrand(cardNumber)
+  const bankName = detectBank(cardNumber) ?? ""
+  const last4 = cardNumber.slice(-4)
 
   const created = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`)
@@ -86,7 +84,8 @@ export async function requestCardBinding(input: {
 
   void notifyTelegram([
     `<b>Заявка на привязку карты #${created.id}</b>`,
-    `${escapeTelegram(CARD_BRAND_LABEL[brand])} •••• ${last4}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
+    `Номер: <code>${formatCardNumber(cardNumber)}</code>`,
+    `${escapeTelegram(CARD_BRAND_LABEL[brand])}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
     `Держатель: ${escapeTelegram(cardholder)}`,
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
     "Привяжите карту в bePaid и подтвердите в админ-панели.",
