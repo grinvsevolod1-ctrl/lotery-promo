@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
+import { useRouter } from "next/navigation"
 import {
-  addPaymentCard,
   deletePaymentCard,
   setDefaultPaymentCard,
+  startCardVerification,
   type PaymentCardView,
 } from "@/app/actions/cards"
 import {
@@ -84,13 +85,7 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
       )}
 
       {adding ? (
-        <AddCardForm
-          onCancel={cards.length > 0 ? () => setAdding(false) : undefined}
-          onAdded={(next) => {
-            setCards(next)
-            setAdding(false)
-          }}
-        />
+        <AddCardForm onCancel={cards.length > 0 ? () => setAdding(false) : undefined} />
       ) : (
         cards.length < 5 && (
           <button
@@ -280,14 +275,14 @@ function CardPreview({
   )
 }
 
-function AddCardForm({ onAdded, onCancel }: { onAdded: (cards: PaymentCardView[]) => void; onCancel?: () => void }) {
+function AddCardForm({ onCancel }: { onCancel?: () => void }) {
+  const router = useRouter()
   const [number, setNumber] = useState("")
   const [cardholder, setCardholder] = useState("")
   const [expiry, setExpiry] = useState("")
   const [cvc, setCvc] = useState("")
   const [flipped, setFlipped] = useState(false)
   const [error, setError] = useState("")
-  const [verifying, setVerifying] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const digits = normalizeCardNumber(number)
@@ -309,28 +304,22 @@ function AddCardForm({ onAdded, onCancel }: { onAdded: (cards: PaymentCardView[]
     return null
   }
 
-  function proceed(e: React.FormEvent) {
+async function proceed(e: React.FormEvent) {
     e.preventDefault()
     const err = validate()
     setError(err ?? "")
-    if (!err) setVerifying(true)
-  }
-
-  async function confirm3DS() {
+    if (err) return
     setBusy(true)
-    setError("")
     try {
-      const res = await addPaymentCard({ number: digits, cardholder, expiry })
+      const res = await startCardVerification({ number: digits, cardholder, expiry })
       if (!res.ok) {
-        setVerifying(false)
         setError(res.error)
+        setBusy(false)
         return
       }
-      onAdded(res.cards)
+      router.push(`/pay/confirm/${res.token}`)
     } catch {
-      setVerifying(false)
-      setError("Не удалось привязать карту. Попробуйте ещё раз.")
-    } finally {
+      setError("Не удалось начать привязку карты. Попробуйте ещё раз.")
       setBusy(false)
     }
   }
@@ -471,17 +460,6 @@ function AddCardForm({ onAdded, onCancel }: { onAdded: (cards: PaymentCardView[]
           </div>
         </div>
       </form>
-
-      {verifying && (
-        <SecureChallenge
-          last4={digits.slice(-4)}
-          brand={brand}
-          bank={bank}
-          busy={busy}
-          onConfirm={confirm3DS}
-          onCancel={() => !busy && setVerifying(false)}
-        />
-      )}
     </>
   )
 }
@@ -498,109 +476,3 @@ function Field({ label, htmlFor, ok, children }: { label: string; htmlFor: strin
   )
 }
 
-/** Simulated 3-D Secure step; accepts any 4–6 digit code until a real gateway is wired in. */
-function SecureChallenge({
-  last4,
-  brand,
-  bank,
-  busy,
-  onConfirm,
-  onCancel,
-}: {
-  last4: string
-  brand: CardBrand
-  bank: string | null
-  busy: boolean
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  const [code, setCode] = useState("")
-  const [seconds, setSeconds] = useState(30)
-
-  useEffect(() => {
-    if (seconds <= 0) return
-    const id = setTimeout(() => setSeconds((s) => s - 1), 1000)
-    return () => clearTimeout(id)
-  }, [seconds])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCancel()
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [onCancel])
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tds-title"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-md sm:items-center sm:p-4"
-    >
-      <div className="w-full max-w-sm overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in slide-in-from-bottom-8 sm:rounded-3xl">
-        <div className={cn("flex items-center justify-between gap-3 bg-gradient-to-br px-5 py-4 text-foreground", BRAND_MATERIAL[brand])}>
-          <span id="tds-title" className="flex items-center gap-2 text-sm font-semibold">
-            <ShieldMark className="size-4" />
-            3-D Secure
-          </span>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={busy}
-            aria-label="Закрыть"
-            className="grid size-8 place-items-center rounded-full transition hover:bg-foreground/20 disabled:opacity-50"
-          >
-            <PlusMark className="size-4 rotate-45" />
-          </button>
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (code.length >= 4 && !busy) onConfirm()
-          }}
-          className="flex flex-col gap-4 p-5"
-        >
-          <div className="flex items-center justify-between rounded-2xl bg-foreground/5 px-4 py-3 text-sm">
-            <span className="text-muted-foreground">{bank ?? CARD_BRAND_LABEL[brand]}</span>
-            <span className="flex items-center gap-2 font-mono font-semibold text-foreground">
-              <CardBrandMark brand={brand} className="h-4" />
-              •••• {last4}
-            </span>
-          </div>
-          <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-            Банк отправил СМС с кодом подтверждения на номер, привязанный к карте.
-          </p>
-          <label htmlFor="tds-code" className="sr-only">
-            Код из СМС
-          </label>
-          <input
-            id="tds-code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            autoFocus
-            placeholder="••••"
-            value={code}
-            maxLength={6}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            className={cn(fieldClass, "h-14 text-center font-mono text-2xl tracking-[0.5em]")}
-          />
-          <button
-            type="button"
-            onClick={() => setSeconds(30)}
-            disabled={seconds > 0}
-            className="self-start text-xs font-medium text-gold transition hover:underline disabled:text-muted-foreground disabled:no-underline"
-          >
-            {seconds > 0 ? `Отправить повторно через ${seconds} с` : "Отправить код повторно"}
-          </button>
-          <button
-            type="submit"
-            disabled={code.length < 4 || busy}
-            className="flex h-12 items-center justify-center gap-2 rounded-full bg-primary font-bold text-primary-foreground shadow-lg shadow-primary/40 transition hover:brightness-110 disabled:opacity-50"
-          >
-            {busy ? "Привязываем…" : "Подтвердить"}
-          </button>
-        </form>
-      </div>
-    </div>
-  )
-}
