@@ -1,156 +1,92 @@
-import { and, asc, desc, eq, inArray, lte } from "drizzle-orm"
+import { and, desc, eq, gt, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { draw, ticket, transaction, user } from "@/lib/db/schema"
-import {
-  MAX_NUMBER,
-  NUMBERS_PER_TICKET,
-  countMatches,
-  formatNumbers,
-  nextDrawAt,
-  parseNumbers,
-  prizeFor,
-  randomNumbers,
-} from "@/lib/lottery"
+import { ticket, transaction, user } from "@/lib/db/schema"
+import { formatNumbers, getGame, parseNumbers, playInstant } from "@/lib/lottery"
 import { secureRng } from "@/lib/random"
-import { sendDrawResultsEmail, type ResultTicket } from "@/lib/email"
-
-export type DrawRow = typeof draw.$inferSelect
-
-/** The draw that tickets bought right now take part in (created on demand). */
-export async function getOrCreateNextDraw(now = new Date()): Promise<DrawRow> {
-  const drawAt = nextDrawAt(now)
-  await db.insert(draw).values({ drawAt }).onConflictDoNothing({ target: draw.drawAt })
-  const [row] = await db.select().from(draw).where(eq(draw.drawAt, drawAt)).limit(1)
-  return row
-}
-
-export async function getNextDraw(now = new Date()) {
-  const [row] = await db
-    .select()
-    .from(draw)
-    .where(and(eq(draw.status, "scheduled"), lte(draw.drawAt, nextDrawAt(now))))
-    .orderBy(asc(draw.drawAt))
-    .limit(1)
-  return row ?? (await getOrCreateNextDraw(now))
-}
-
-export async function getSettledDraws(limit = 30) {
-  return db
-    .select()
-    .from(draw)
-    .where(eq(draw.status, "settled"))
-    .orderBy(desc(draw.drawAt))
-    .limit(limit)
-}
-
-type SettledDraw = {
-  draw: DrawRow
-  winning: number[]
-  tickets: Array<typeof ticket.$inferSelect>
-}
 
 /**
- * Settles every draw whose time has come. One draw per transaction; the row
- * is locked with FOR UPDATE SKIP LOCKED so concurrent runners (cron, the
- * in-process scheduler, a cabinet request) never settle the same draw twice.
- * Result e-mails are sent only after the transaction has committed.
+ * Tickets bought before the switch to instant play could still be pending.
+ * Settle each one instantly with its own winning combination. Idempotent:
+ * rows are locked with SKIP LOCKED and only "pending" tickets are touched.
  */
-export async function settleDueDraws(now = new Date()) {
-  const settled: SettledDraw[] = []
-
+export async function settleLegacyTickets() {
+  let settled = 0
   for (;;) {
-    const result = await db.transaction(async (tx) => {
-      const [due] = await tx
+    const done = await db.transaction(async (tx) => {
+      const [pending] = await tx
         .select()
-        .from(draw)
-        .where(and(eq(draw.status, "scheduled"), lte(draw.drawAt, now)))
-        .orderBy(asc(draw.drawAt))
+        .from(ticket)
+        .where(eq(ticket.status, "pending"))
         .limit(1)
         .for("update", { skipLocked: true })
-      if (!due) return null
+      if (!pending) return false
 
-      const winning = randomNumbers(NUMBERS_PER_TICKET, MAX_NUMBER, secureRng)
-      const tickets = await tx.select().from(ticket).where(eq(ticket.drawId, due.id))
-
-      let winnersCount = 0
-      let prizeTotal = 0
-      const settledTickets: SettledDraw["tickets"] = []
-
-      for (const t of tickets) {
-        const matches = countMatches(parseNumbers(t.numbers), winning)
-        const prize = prizeFor(matches)
-        const status = prize > 0 ? "win" : "lose"
-
-        await tx.update(ticket).set({ status, matches, prize }).where(eq(ticket.id, t.id))
-
-        if (prize > 0) {
-          winnersCount += 1
-          prizeTotal += prize
-          await tx.insert(transaction).values({
-            userId: t.userId,
-            type: "prize",
-            amount: prize,
-            description: `Выигрыш по билету «${t.game}» #${t.id}, тираж №${due.id}`,
-          })
-        }
-        settledTickets.push({ ...t, status, matches, prize })
+      const game = getGame(pending.game)
+      const picked = parseNumbers(pending.numbers)
+      if (!game || picked.length !== game.pick) {
+        await tx.update(ticket).set({ status: "lose" }).where(eq(ticket.id, pending.id))
+        return true
       }
 
+      const outcome = playInstant(game, picked, secureRng)
       await tx
-        .update(draw)
+        .update(ticket)
         .set({
-          status: "settled",
-          winningNumbers: formatNumbers(winning),
-          ticketsCount: tickets.length,
-          winnersCount,
-          prizeTotal,
-          settledAt: new Date(),
+          status: outcome.prize > 0 ? "win" : "lose",
+          matches: outcome.matches,
+          prize: outcome.prize,
+          winningNumbers: formatNumbers(outcome.winning),
         })
-        .where(eq(draw.id, due.id))
-
-      return { draw: due, winning, tickets: settledTickets }
+        .where(eq(ticket.id, pending.id))
+      if (outcome.prize > 0) {
+        await tx.insert(transaction).values({
+          userId: pending.userId,
+          type: "prize",
+          amount: outcome.prize,
+          description: `Выигрыш: билет «${game.name}» #${pending.id}`,
+        })
+      }
+      return true
     })
-
-    if (!result) break
-    settled.push(result)
+    if (!done) break
+    settled += 1
   }
-
-  for (const item of settled) {
-    await notifyDrawResults(item)
-  }
-
-  return settled.map((s) => ({ id: s.draw.id, tickets: s.tickets.length }))
+  return settled
 }
 
-async function notifyDrawResults({ draw: settledDraw, winning, tickets }: SettledDraw) {
-  if (tickets.length === 0) return
+export type RecentWin = { id: number; name: string; game: string; prize: number; matches: number; at: Date }
 
-  const byUser = new Map<string, ResultTicket[]>()
-  for (const t of tickets) {
-    const list = byUser.get(t.userId) ?? []
-    list.push({ id: t.id, game: t.game, numbers: parseNumbers(t.numbers), matches: t.matches, prize: t.prize })
-    byUser.set(t.userId, list)
-  }
+/** "Алексей Петров" → "Алексей П." so the public feed never shows full names. */
+function shortName(name: string) {
+  const [first = "Игрок", last] = name.trim().split(/\s+/)
+  return last ? `${first} ${last[0].toUpperCase()}.` : first
+}
 
-  const recipients = await db
-    .select({ id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified })
-    .from(user)
-    .where(inArray(user.id, [...byUser.keys()]))
+export async function getRecentWins(limit = 30): Promise<RecentWin[]> {
+  const rows = await db
+    .select({
+      id: ticket.id,
+      name: user.name,
+      game: ticket.game,
+      prize: ticket.prize,
+      matches: ticket.matches,
+      at: ticket.createdAt,
+    })
+    .from(ticket)
+    .innerJoin(user, eq(user.id, ticket.userId))
+    .where(and(eq(ticket.status, "win"), gt(ticket.prize, 0)))
+    .orderBy(desc(ticket.createdAt))
+    .limit(limit)
+  return rows.map((r) => ({ ...r, name: shortName(r.name) }))
+}
 
-  for (const recipient of recipients) {
-    if (!recipient.emailVerified) continue
-    try {
-      await sendDrawResultsEmail({
-        to: recipient.email,
-        name: recipient.name,
-        drawId: settledDraw.id,
-        drawAt: settledDraw.drawAt,
-        winning,
-        tickets: byUser.get(recipient.id) ?? [],
-      })
-    } catch (error) {
-      // A mail failure must not undo a settled draw; log and continue.
-      console.error(`[draws] result e-mail to ${recipient.email} failed:`, error)
-    }
-  }
+export async function getWinStats() {
+  const [row] = await db
+    .select({
+      tickets: sql<number>`count(*)`,
+      wins: sql<number>`count(*) filter (where ${ticket.status} = 'win')`,
+      paid: sql<number>`coalesce(sum(${ticket.prize}), 0)`,
+    })
+    .from(ticket)
+  return { tickets: Number(row?.tickets ?? 0), wins: Number(row?.wins ?? 0), paid: Number(row?.paid ?? 0) }
 }

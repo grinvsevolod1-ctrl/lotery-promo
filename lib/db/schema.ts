@@ -93,11 +93,12 @@ export const ticket = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    drawId: integer("drawId")
-      .notNull()
-      .references(() => draw.id),
+    /** Legacy: tickets bought before instant play belonged to a daily draw. */
+    drawId: integer("drawId").references(() => draw.id),
     game: text("game").notNull(),
     numbers: text("numbers").notNull(),
+    /** Instant tickets carry their own winning combination. */
+    winningNumbers: text("winningNumbers"),
     cost: integer("cost").notNull().default(0),
     status: text("status").notNull().default("pending"),
     matches: integer("matches").notNull().default(0),
@@ -145,4 +146,31 @@ export const spin = pgTable(
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [uniqueIndex("spin_user_day_unique").on(table.userId, table.day)],
+)
+
+/**
+ * Linked bank cards. The full number is never stored: only the last 4 digits
+ * for display and an HMAC fingerprint to stop the same card being added twice.
+ */
+export const paymentCard = pgTable(
+  "payment_card",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    brand: text("brand").notNull(),
+    last4: text("last4").notNull(),
+    bankName: text("bankName"),
+    cardholder: text("cardholder").notNull(),
+    expMonth: integer("expMonth").notNull(),
+    expYear: integer("expYear").notNull(),
+    fingerprint: text("fingerprint").notNull(),
+    isDefault: boolean("isDefault").notNull().default(false),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [
+    index("payment_card_user_idx").on(table.userId),
+    uniqueIndex("payment_card_user_fingerprint_unique").on(table.userId, table.fingerprint),
+  ],
 )

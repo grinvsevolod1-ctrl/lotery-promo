@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { secureRng } from "@/lib/random"
-import { MAX_NUMBER, NUMBERS_PER_TICKET, WHEEL_SEGMENTS, pickWeighted, randomNumbers } from "@/lib/lottery"
+import { WHEEL_SEGMENTS, pickWeighted, randomNumbers } from "@/lib/lottery"
+
+const NUMBERS_PER_TICKET = 6
+const MAX_NUMBER = 45
 
 describe("secureRng", () => {
   it("returns values in [0, 1) without throwing", () => {

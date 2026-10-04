@@ -17,7 +17,7 @@ export function SiteHeader() {
         </Link>
         <nav aria-label="Основное меню" className="hidden items-center gap-7 text-sm font-semibold text-foreground/80 md:flex">
           <Link href="/results" className="transition-colors hover:text-gold">
-            Результаты тиражей
+            Выигрыши
           </Link>
           <Link href="/rules" className="transition-colors hover:text-gold">
             Правила

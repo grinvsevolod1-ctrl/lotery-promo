@@ -2,16 +2,16 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { CoinMark } from '@/components/icons'
 import { Reveal } from '@/components/reveal'
-import { DRAW_HOUR_MINSK, GAMES, MAX_NUMBER, NUMBERS_PER_TICKET, WELCOME_BONUS, WHEEL_SEGMENTS } from '@/lib/lottery'
+import { GAMES, WELCOME_BONUS, WHEEL_SEGMENTS } from '@/lib/lottery'
 
 const cheapestTicket = Math.min(...GAMES.map((g) => g.cost))
 const wheelMin = Math.min(...WHEEL_SEGMENTS.map((s) => s.amount))
 const wheelMax = Math.max(...WHEEL_SEGMENTS.map((s) => s.amount))
 
 const steps = [
-  { n: '01', title: 'Зарегистрируйся и подтверди e-mail', desc: `+${WELCOME_BONUS} бонусных BYN на первые билеты` },
-  { n: '02', title: 'Собери билет', desc: `${NUMBERS_PER_TICKET} чисел из ${MAX_NUMBER} или случайная комбинация — от ${cheapestTicket} BYN` },
-  { n: '03', title: `Дождись тиража в ${DRAW_HOUR_MINSK}:00`, desc: 'результаты — на сайте и на почту, выигрыш сразу на балансе' },
+  { n: '1', title: 'Зарегистрируйтесь', desc: `+${WELCOME_BONUS} BYN на баланс сразу` },
+  { n: '2', title: 'Отметьте числа', desc: `в любой из ${GAMES.length} игр или случайно — от ${cheapestTicket} BYN` },
+  { n: '3', title: 'Узнайте результат', desc: 'сразу после покупки, выигрыш — на баланс' },
 ]
 
 export function HowToSection() {
@@ -20,14 +20,14 @@ export function HowToSection() {
       <div className="mx-auto max-w-6xl px-5">
         <Reveal>
           <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
-            Как получить бонус?
+            Как играть
           </h2>
         </Reveal>
 
         <div className="orbit-border mt-12 grid items-center gap-8 rounded-4xl bg-gradient-to-br from-[oklch(0.4_0.2_305)] to-[oklch(0.3_0.14_302)] p-6 shadow-2xl shadow-black/30 md:grid-cols-2 md:p-12">
           <div>
             <p className="font-heading text-xl font-bold leading-snug text-balance">
-              Три шага до первого тиража. А колесо фортуны в кабинете даёт от {wheelMin} до {wheelMax} бонусных BYN
+              Три шага до первого выигрыша. А колесо фортуны в кабинете даёт от {wheelMin} до {wheelMax} бонусных BYN
               каждый день — бесплатно.
             </p>
             <ul className="mt-6 space-y-3">

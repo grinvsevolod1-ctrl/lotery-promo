@@ -2,15 +2,15 @@
 
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { draw, spin, ticket, transaction } from "@/lib/db/schema"
-import { getOrCreateNextDraw } from "@/lib/draws"
+import { spin, ticket, transaction } from "@/lib/db/schema"
 import {
   WELCOME_BONUS,
   WHEEL_SEGMENTS,
   formatNumbers,
-  gameCost,
+  getGame,
   minskDayKey,
   pickWeighted,
+  playInstant,
   randomNumbers,
   validateNumbers,
 } from "@/lib/lottery"
@@ -48,7 +48,6 @@ export async function getTransactions() {
 
 export type TicketRow = {
   id: number
-  drawId: number
   game: string
   numbers: string
   cost: number
@@ -56,7 +55,6 @@ export type TicketRow = {
   matches: number
   prize: number
   createdAt: Date
-  drawAt: Date
   winningNumbers: string | null
 }
 
@@ -65,7 +63,6 @@ export async function getTickets(): Promise<TicketRow[]> {
   return db
     .select({
       id: ticket.id,
-      drawId: ticket.drawId,
       game: ticket.game,
       numbers: ticket.numbers,
       cost: ticket.cost,
@@ -73,14 +70,12 @@ export async function getTickets(): Promise<TicketRow[]> {
       matches: ticket.matches,
       prize: ticket.prize,
       createdAt: ticket.createdAt,
-      drawAt: draw.drawAt,
-      winningNumbers: draw.winningNumbers,
+      winningNumbers: ticket.winningNumbers,
     })
     .from(ticket)
-    .innerJoin(draw, eq(ticket.drawId, draw.id))
     .where(eq(ticket.userId, userId))
     .orderBy(desc(ticket.createdAt))
-    .limit(100)
+    .limit(50)
 }
 
 export async function getSpinStatus() {
@@ -96,79 +91,100 @@ export async function getSpinStatus() {
 // Sentinels used to abort a db.transaction and surface a friendly error.
 class InsufficientFundsError extends Error {}
 class AlreadyClaimedError extends Error {}
-class DrawClosedError extends Error {}
 
 function isUniqueViolation(e: unknown) {
   return e instanceof Error && /unique|duplicate/i.test(e.message)
 }
 
+export type InstantResult = {
+  ticketId: number
+  game: string
+  numbers: number[]
+  winning: number[]
+  matches: number
+  prize: number
+  balance: number
+}
+
 /**
- * Buys a ticket for the next draw. `numbers` is the player's own pick
- * (6 distinct numbers 1..45); when omitted a random combination is used.
+ * Buys an instant ticket: charges the cost, draws the winning combination
+ * with a CSPRNG and pays the prize — all in one transaction, so the player
+ * learns the outcome immediately. Without `numbers` a random pick is used.
  */
-export async function buyTicket(game: string, numbers?: number[]): Promise<ActionResult<{ ticketId: number }>> {
+export async function buyTicket(gameId: string, numbers?: number[]): Promise<ActionResult<InstantResult>> {
   const userId = await getUserId()
 
-  const cost = gameCost(game)
-  if (cost === null) return { ok: false, error: "Неизвестная игра" }
+  const game = getGame(gameId)
+  if (!game) return { ok: false, error: "Неизвестная игра" }
 
   let picked: number[]
   if (numbers === undefined) {
-    picked = randomNumbers(undefined, undefined, secureRng)
+    picked = randomNumbers(game.pick, game.max, secureRng)
   } else {
-    const valid = validateNumbers(numbers)
-    if (!valid) return { ok: false, error: "Выберите ровно 6 разных чисел от 1 до 45" }
+    const valid = validateNumbers(game, numbers)
+    if (!valid) return { ok: false, error: `Отметьте ровно ${game.pick} разных чисел от 1 до ${game.max}` }
     picked = valid
   }
 
-  const purchase = async () => {
-    const nextDraw = await getOrCreateNextDraw()
-
-    return db.transaction(async (tx) => {
-      // A shared lock on the draw row waits for an in-flight settlement (which
-      // holds FOR UPDATE) and guarantees the ticket lands in an open draw.
-      const [locked] = await tx
-        .select({ status: draw.status })
-        .from(draw)
-        .where(eq(draw.id, nextDraw.id))
-        .for("share")
-      if (!locked || locked.status !== "scheduled") throw new DrawClosedError()
+  try {
+    const result = await db.transaction(async (tx) => {
+      // Serialise purchases of one user so two parallel tickets cannot both
+      // pass the balance check with money for only one.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`)
 
       const rows = await tx
         .select({ total: sql<number>`coalesce(sum(${transaction.amount}), 0)` })
         .from(transaction)
         .where(eq(transaction.userId, userId))
-      const balance = Number(rows[0]?.total ?? 0)
-      if (balance < cost) throw new InsufficientFundsError()
+      const before = Number(rows[0]?.total ?? 0)
+      if (before < game.cost) throw new InsufficientFundsError()
+
+      const outcome = playInstant(game, picked, secureRng)
+      const status = outcome.prize > 0 ? "win" : "lose"
 
       const [created] = await tx
         .insert(ticket)
-        .values({ userId, drawId: nextDraw.id, game, numbers: formatNumbers(picked), cost, status: "pending" })
+        .values({
+          userId,
+          game: game.name,
+          numbers: formatNumbers(picked),
+          winningNumbers: formatNumbers(outcome.winning),
+          cost: game.cost,
+          status,
+          matches: outcome.matches,
+          prize: outcome.prize,
+        })
         .returning({ id: ticket.id })
+
       await tx.insert(transaction).values({
         userId,
         type: "purchase",
-        amount: -cost,
-        description: `Покупка билета «${game}» #${created.id}`,
+        amount: -game.cost,
+        description: `Билет «${game.name}» #${created.id}`,
       })
-      return created.id
-    })
-  }
+      if (outcome.prize > 0) {
+        await tx.insert(transaction).values({
+          userId,
+          type: "prize",
+          amount: outcome.prize,
+          description: `Выигрыш: билет «${game.name}» #${created.id}, ${outcome.matches} из ${game.pick}`,
+        })
+      }
 
-  try {
-    let ticketId: number
-    try {
-      ticketId = await purchase()
-    } catch (e) {
-      // The draw closed between selecting it and locking it: retry once with the next one.
-      if (!(e instanceof DrawClosedError)) throw e
-      ticketId = await purchase()
-    }
+      return {
+        ticketId: created.id,
+        game: game.name,
+        numbers: picked,
+        winning: outcome.winning,
+        matches: outcome.matches,
+        prize: outcome.prize,
+        balance: before - game.cost + outcome.prize,
+      }
+    })
     revalidatePath("/cabinet")
-    return { ok: true, ticketId }
+    return { ok: true, ...result }
   } catch (e) {
-    if (e instanceof InsufficientFundsError) return { ok: false, error: "Недостаточно бонусов на балансе" }
-    if (e instanceof DrawClosedError) return { ok: false, error: "Приём билетов на тираж закрыт, попробуйте ещё раз" }
+    if (e instanceof InsufficientFundsError) return { ok: false, error: "Недостаточно средств на балансе" }
     throw e
   }
 }

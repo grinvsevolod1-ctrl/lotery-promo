@@ -6,7 +6,7 @@ import type { TicketRow } from "@/app/actions/cabinet"
 import { cn } from "@/lib/utils"
 
 const STATUS: Record<string, { label: string; cls: string }> = {
-  pending: { label: "Ждёт тиража", cls: "bg-foreground/10 text-foreground/70" },
+  pending: { label: "Обрабатывается", cls: "bg-foreground/10 text-foreground/70" },
   win: { label: "Выигрыш", cls: "bg-gold text-gold-foreground shadow-md shadow-gold/30" },
   lose: { label: "Без выигрыша", cls: "bg-foreground/10 text-muted-foreground" },
 }
@@ -40,7 +40,7 @@ export function TicketCard({ ticket }: { ticket: TicketRow }) {
           <div className="min-w-0">
             <p className="font-display text-base font-extrabold text-foreground">{ticket.game}</p>
             <p className="text-xs text-muted-foreground">
-              Тираж №{ticket.drawId} · {formatDateTime(ticket.drawAt)}
+              Моментальный · {formatDateTime(ticket.createdAt)}
             </p>
           </div>
           <span className={cn("shrink-0 rounded-full px-3 py-1 text-xs font-bold", status.cls)}>

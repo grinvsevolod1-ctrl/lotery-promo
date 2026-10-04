@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   title,
   description,
   applicationName: site.name,
-  keywords: ['лотерея', 'промо-лотерея', 'Беларусь', 'тираж', 'розыгрыш', 'бонус за регистрацию'],
+  keywords: ['лотерея', 'промо-лотерея', 'Беларусь', 'моментальная лотерея', 'розыгрыш', 'бонус за регистрацию'],
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',

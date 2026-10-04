@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto"
 import { NextResponse } from "next/server"
-import { settleDueDraws } from "@/lib/draws"
+import { settleLegacyTickets } from "@/lib/draws"
 
 export const dynamic = "force-dynamic"
 // Settlement also sends result e-mails, so give the Vercel function headroom.
@@ -29,7 +29,7 @@ async function handle(request: Request) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 })
   }
 
-  const settled = await settleDueDraws()
+  const settled = await settleLegacyTickets()
   return NextResponse.json({ ok: true, settled, at: new Date().toISOString() })
 }
 

@@ -1,20 +1,22 @@
 "use client"
 
-import { MAX_NUMBER, NUMBERS_PER_TICKET } from "@/lib/lottery"
 import { cn } from "@/lib/utils"
-
-const ALL_NUMBERS = Array.from({ length: MAX_NUMBER }, (_, i) => i + 1)
 
 export function NumberPicker({
   value,
   onChange,
+  pick,
+  max,
   disabled,
 }: {
   value: number[]
   onChange: (next: number[]) => void
+  pick: number
+  max: number
   disabled?: boolean
 }) {
-  const full = value.length >= NUMBERS_PER_TICKET
+  const full = value.length >= pick
+  const all = Array.from({ length: max }, (_, i) => i + 1)
 
   const toggle = (n: number) => {
     if (value.includes(n)) onChange(value.filter((v) => v !== n))
@@ -24,10 +26,10 @@ export function NumberPicker({
   return (
     <div
       role="group"
-      aria-label={`Выберите ${NUMBERS_PER_TICKET} чисел от 1 до ${MAX_NUMBER}`}
-      className="grid grid-cols-9 gap-1.5 sm:gap-2"
+      aria-label={`Выберите ${pick} чисел от 1 до ${max}`}
+      className={cn("grid gap-1.5 sm:gap-2", max <= 20 ? "grid-cols-5" : "grid-cols-6 sm:grid-cols-9")}
     >
-      {ALL_NUMBERS.map((n) => {
+      {all.map((n) => {
         const selected = value.includes(n)
         const blocked = disabled || (full && !selected)
         return (

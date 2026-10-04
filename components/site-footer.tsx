@@ -23,7 +23,7 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground/80 text-pretty">
-              Промо-акция с бонусными баллами и ежедневным тиражом в 20:00. Бонусы не являются денежными средствами и не
+              Промо-акция с бонусными баллами и моментальными билетами. Бонусы не являются денежными средствами и не
               подлежат выплате.
             </p>
             <div className="flex items-center gap-3">
@@ -54,7 +54,7 @@ export function SiteFooter() {
           <div className="flex flex-col gap-2 text-sm">
             <p className="mb-1 text-xs font-bold uppercase tracking-widest text-gold">Игра</p>
             <Link href="/results" className="text-foreground/75 transition-colors hover:text-foreground">
-              Результаты тиражей
+              Выигрыши
             </Link>
             <Link href="/sign-up" className="text-foreground/75 transition-colors hover:text-foreground">
               Регистрация
