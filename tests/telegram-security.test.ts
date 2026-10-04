@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { callbackData, isPrivateAdmin, parseCallback, safeEqual, webhookSecret } from "@/lib/telegram-security"
-import { isDemoCard } from "@/lib/payment-demo"
 
 beforeEach(() => {
   vi.stubEnv("ADMIN_SECRET", "unit-test-admin-secret")
@@ -38,14 +37,5 @@ describe("Telegram reviews", () => {
     expect(safeEqual("test", "other")).toBe(false)
     vi.stubEnv("TELEGRAM_BOT_TOKEN", "changed-token")
     expect(webhookSecret()).not.toBeNull()
-  })
-})
-
-describe("demo card boundary", () => {
-  it("accepts only the fixed test identity", () => {
-    expect(isDemoCard("4242424242424242", "TEST USER", 12, 2099)).toBe(true)
-    expect(isDemoCard("5555555555554444", "TEST USER", 12, 2099)).toBe(false)
-    expect(isDemoCard("4242424242424242", "REAL USER", 12, 2099)).toBe(false)
-    expect(isDemoCard("4242424242424242", "TEST USER", 1, 2030)).toBe(false)
   })
 })

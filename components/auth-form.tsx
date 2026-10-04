@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthShell, FormMessage } from "@/components/auth-shell"
 import { Turnstile, TURNSTILE_ENABLED } from "@/components/turnstile"
-import { TestMailNotice, getTestMail, type TestMail } from "@/components/test-mail-notice"
 
 const VERIFY_CALLBACK = "/verify-email"
 
@@ -40,7 +39,6 @@ export function AuthForm({
   const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [resent, setResent] = useState(false)
-  const [testMail, setTestMail] = useState<TestMail[] | null>(null)
 
   const isSignUp = mode === "sign-up"
 
@@ -78,7 +76,6 @@ export function AuthForm({
         router.refresh()
         return
       }
-      setTestMail(getTestMail(data))
       setSentTo(email)
       return
     }
@@ -107,9 +104,8 @@ export function AuthForm({
   const resend = async () => {
     if (!sentTo) return
     setLoading(true)
-    const { data } = await authClient.sendVerificationEmail({ email: sentTo, callbackURL: VERIFY_CALLBACK })
+    await authClient.sendVerificationEmail({ email: sentTo, callbackURL: VERIFY_CALLBACK })
     setLoading(false)
-    setTestMail(getTestMail(data))
     setResent(true)
   }
 
@@ -130,11 +126,10 @@ export function AuthForm({
         }
       >
         <div className="flex flex-col gap-4">
-          <TestMailNotice letters={testMail} />
           <p className="text-center text-sm text-muted-foreground text-pretty">
             Письма нет? Загляните в папку «Спам» или запросите новое.
           </p>
-          {resent && !testMail && <FormMessage tone="success">Письмо отправлено повторно.</FormMessage>}
+          {resent && <FormMessage tone="success">Письмо отправлено повторно.</FormMessage>}
           <Button
             type="button"
             variant="secondary"

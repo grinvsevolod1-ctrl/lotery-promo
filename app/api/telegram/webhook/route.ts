@@ -1,9 +1,8 @@
 import { revalidatePath } from "next/cache"
-import { callbackData, isPrivateAdmin, parseCallback, safeEqual, webhookSecret } from "@/lib/telegram-security"
+import { isPrivateAdmin, parseCallback, safeEqual, webhookSecret } from "@/lib/telegram-security"
 import { telegramRequest } from "@/lib/telegram"
 import { getReviewResult, processReview } from "@/lib/reviews"
 import { reviewFeedback } from "@/lib/review-feedback"
-import { site } from "@/lib/site"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -40,15 +39,14 @@ export async function POST(request: Request) {
   revalidatePath("/admin")
   revalidatePath("/cabinet", "layout")
   try {
-    if (typeof callback.id === "string") await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id, text: changed ? ({ approve: "Тест подтверждён / тестовая ссылка выдана.", reject: "Отклонено.", code: "Запрошен фиксированный тестовый код, не банковский.", extra: "Запрошена дополнительная симуляция.", checkout: "Тестовая ссылка выдана." })[target.decision] : "Решение уже применено или недоступно на этом этапе." })
+    if (typeof callback.id === "string") await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id, text: changed ? "Решение сохранено." : "Решение уже применено или недоступно на этом этапе." })
     if (changed && Number.isInteger(callback.message?.message_id)) {
-      const intermediateCardStep = target.kind === "card" && ["code", "extra"].includes(target.decision)
       const result = await getReviewResult(target)
       if (result) await telegramRequest("editMessageText", {
         chat_id: callback.message!.chat!.id,
         message_id: callback.message!.message_id,
-        text: `${typeof callback.message?.text === "string" ? callback.message.text.slice(0, 2000) : `Тестовая заявка #${target.id}`}\n\n${reviewFeedback(target, result, site.url)}`,
-        reply_markup: { inline_keyboard: intermediateCardStep ? [[{ text: "Отклонить тестовую привязку", callback_data: callbackData(target, "reject") }]] : [] },
+        text: `${typeof callback.message?.text === "string" ? callback.message.text.slice(0, 2000) : `Приглашение #${target.id}`}\n\n${reviewFeedback(target, result)}`,
+        reply_markup: { inline_keyboard: [] },
         link_preview_options: { is_disabled: true },
       })
     }

@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthShell, FormMessage } from "@/components/auth-shell"
 import { Turnstile, TURNSTILE_ENABLED } from "@/components/turnstile"
-import { TestMailNotice, getTestMail, type TestMail } from "@/components/test-mail-notice"
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("")
@@ -17,7 +16,6 @@ export function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
-  const [testMail, setTestMail] = useState<TestMail[] | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,7 +42,6 @@ export function ForgotPasswordForm() {
       )
       return
     }
-    setTestMail(getTestMail(data))
     setSentTo(email)
   }
 
@@ -67,7 +64,6 @@ export function ForgotPasswordForm() {
         footer={backLink}
       >
         <div className="flex flex-col gap-4">
-          <TestMailNotice letters={testMail} />
           <p className="text-center text-sm text-muted-foreground text-pretty">
             Письма нет? Загляните в папку «Спам».
           </p>

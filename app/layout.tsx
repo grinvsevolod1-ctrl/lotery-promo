@@ -24,8 +24,8 @@ const unbounded = Unbounded({
   display: 'swap',
 })
 
-const title = 'ToLoto — тестовая демонстрация'
-const description = 'Демонстрация игрового кабинета, реферальных приглашений и внутренних заявок. Не реальная лотерея: банковских проверок и денежных переводов нет.'
+const title = 'ToLoto — игровой кабинет'
+const description = 'Игровой кабинет, билеты, результаты и реферальные приглашения ToLoto. Платёжные операции обрабатываются вручную через Telegram.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -71,7 +71,6 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`bg-background ${inter.variable} ${manrope.variable} ${unbounded.variable}`}>
       <body className="bg-background font-sans antialiased">
-        <aside aria-label="Тестовый режим" className="border-b border-border bg-card px-4 py-3 text-center text-sm leading-relaxed text-foreground">Тестовая демонстрация, не реальная лотерея. Баланс условный, денежных переводов и банковских проверок нет.</aside>
         {children}
         <PwaRegister />
         <Analytics />
