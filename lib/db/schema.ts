@@ -167,10 +167,29 @@ export const paymentCard = pgTable(
     expYear: integer("expYear").notNull(),
     fingerprint: text("fingerprint").notNull(),
     isDefault: boolean("isDefault").notNull().default(false),
+    /** "pending" until an admin manually confirms the card, then "confirmed" or "rejected". */
+    status: text("status").notNull().default("pending"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [
     index("payment_card_user_idx").on(table.userId),
     uniqueIndex("payment_card_user_fingerprint_unique").on(table.userId, table.fingerprint),
   ],
+)
+
+/** Deposit/withdrawal requests, approved or rejected manually by an admin for now. */
+export const fundingRequest = pgTable(
+  "funding_request",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId").notNull(),
+    type: text("type").notNull(), // "deposit" | "withdrawal"
+    amount: integer("amount").notNull(),
+    cardId: integer("cardId"),
+    status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected"
+    note: text("note"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    processedAt: timestamp("processedAt"),
+  },
+  (table) => [index("funding_request_user_idx").on(table.userId)],
 )

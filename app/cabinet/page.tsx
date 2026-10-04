@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { getBalance, getSpinStatus, getTickets, getTransactions } from "@/app/actions/cabinet"
+import { getPaymentCards } from "@/app/actions/cards"
+import { getFundingRequests } from "@/app/actions/funding"
 import { settleLegacyTickets } from "@/lib/draws"
 import { TicketMark, TrophyMark, WalletMark } from "@/components/icons"
 import { EmptyState, Panel } from "@/components/cabinet/panel"
@@ -11,6 +13,7 @@ import { DailySpin } from "@/components/cabinet/daily-spin"
 import { BuyTicketPanel } from "@/components/cabinet/buy-ticket-panel"
 import { TicketCard } from "@/components/cabinet/ticket-card"
 import { TransactionsList } from "@/components/cabinet/transactions-list"
+import { FundingPanel } from "@/components/cabinet/funding-panel"
 
 export default async function CabinetPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -18,11 +21,13 @@ export default async function CabinetPage() {
 
   await settleLegacyTickets()
 
-  const [balance, tickets, transactions, spinStatus] = await Promise.all([
+  const [balance, tickets, transactions, spinStatus, cards, fundingRequests] = await Promise.all([
     getBalance(),
     getTickets(),
     getTransactions(),
     getSpinStatus(),
+    getPaymentCards(),
+    getFundingRequests(),
   ])
 
   const hasWelcome = transactions.some((t) => t.type === "welcome")
@@ -71,6 +76,8 @@ export default async function CabinetPage() {
       </Panel>
 
       {!hasWelcome && <WelcomeBonusCard />}
+
+      <FundingPanel cards={cards} requests={fundingRequests} />
 
       <BuyTicketPanel balance={balance} />
 

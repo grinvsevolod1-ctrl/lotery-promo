@@ -133,7 +133,15 @@ function CardTile({
       <span aria-hidden="true" className="card-sheen pointer-events-none absolute inset-0 opacity-40" />
       <div className="relative flex items-start justify-between gap-3">
         <span className="text-xs font-medium text-foreground/70">{card.bankName ?? CARD_BRAND_LABEL[card.brand]}</span>
-        <CardBrandMark brand={card.brand} className="h-6" />
+        <div className="flex items-center gap-2">
+          {card.status === "pending" && (
+            <span className="rounded-full bg-foreground/20 px-2.5 py-1 text-xs font-semibold backdrop-blur">На проверке</span>
+          )}
+          {card.status === "rejected" && (
+            <span className="rounded-full bg-destructive/80 px-2.5 py-1 text-xs font-semibold text-primary-foreground">Отклонена</span>
+          )}
+          <CardBrandMark brand={card.brand} className="h-6" />
+        </div>
       </div>
       <p className="relative font-mono text-lg tracking-[0.12em] tabular-nums">{maskCard(card.last4)}</p>
       <div className="relative flex items-end justify-between gap-3">

@@ -300,6 +300,38 @@ export function CalendarMark(props: IconProps) {
 }
 
 /* Warning triangle */
+/* Arrow into a tray — money coming in */
+export function ArrowDownMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 4v11" />
+      <path d="M7.5 11 12 15.5 16.5 11" />
+      <path d="M4.5 18.5h15" />
+    </svg>
+  )
+}
+
+/* Arrow out of a tray — money going out */
+export function ArrowUpMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 20V9" />
+      <path d="M7.5 13 12 8.5 16.5 13" />
+      <path d="M4.5 5.5h15" />
+    </svg>
+  )
+}
+
+/* Clock face — pending / awaiting review */
+export function ClockMark(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="8.2" />
+      <path d="M12 7.5V12l3.2 2" />
+    </svg>
+  )
+}
+
 export function WarnMark(props: IconProps) {
   return (
     <svg {...base} {...props}>

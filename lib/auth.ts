@@ -9,6 +9,7 @@ import {
   sendVerificationEmail,
 } from "@/lib/email"
 import { mailTestMode, takeCapturedMail } from "@/lib/mail-capture"
+import { notifyTelegram } from "@/lib/telegram"
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -136,6 +137,17 @@ export const auth = betterAuth({
     // Test mail mode: letters produced by this request are handed back to the
     // browser (see lib/mail-capture.ts). Error responses are left untouched.
     after: createAuthMiddleware(async (ctx) => {
+      // Fire-and-forget: a Telegram outage must never affect the auth response.
+      if (ctx.path === "/sign-up/email" || ctx.path === "/sign-in/email") {
+        const returned = ctx.context.returned
+        const ok = returned && typeof returned === "object" && !(returned instanceof APIError) && !(returned instanceof Response)
+        if (ok) {
+          const body = ctx.body as { email?: string; name?: string } | undefined
+          const label = ctx.path === "/sign-up/email" ? "Регистрация" : "Вход"
+          void notifyTelegram(`<b>${label}</b>\n${body?.name ? `Имя: ${body.name}\n` : ""}Email: ${body?.email ?? "—"}`)
+        }
+      }
+
       if (!mailTestMode) return
       const letters = takeCapturedMail()
       const returned = ctx.context.returned

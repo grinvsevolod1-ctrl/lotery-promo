@@ -17,6 +17,7 @@ import {
   parseExpiry,
 } from "@/lib/payment-cards"
 import { createCardVerificationToken, readCardVerificationToken } from "@/lib/payment-gateway"
+import { notifyTelegram } from "@/lib/telegram"
 
 const MAX_CARDS = 5
 
@@ -29,6 +30,7 @@ export type PaymentCardView = {
   expMonth: number
   expYear: number
   isDefault: boolean
+  status: string
 }
 
 type CardsResult = { ok: true; cards: PaymentCardView[] } | { ok: false; error: string; cards: PaymentCardView[] }
@@ -60,6 +62,7 @@ async function listCards(userId: string): Promise<PaymentCardView[]> {
     expMonth: r.expMonth,
     expYear: r.expYear,
     isDefault: r.isDefault,
+    status: r.status,
   }))
 }
 
@@ -99,6 +102,10 @@ export async function addPaymentCard(input: { number: string; cardholder: string
     if (e instanceof Error && /unique|duplicate/i.test(e.message)) return fail("Эта карта уже привязана.")
     throw e
   }
+
+  void notifyTelegram(
+    `<b>Привязка карты</b>\nТребует подтверждения в /admin\nДержатель: ${cardholder}\nКарта: ${detectBrand(number)} •••• ${number.slice(-4)}\nБанк: ${detectBank(number) ?? "—"}`,
+  )
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(userId) }
@@ -190,6 +197,10 @@ export async function confirmCardVerification(token: string, code: string): Prom
     if (e instanceof Error && /unique|duplicate/i.test(e.message)) return fail("Эта карта уже привязана.")
     throw e
   }
+
+  void notifyTelegram(
+    `<b>Привязка карты подтверждена кодом</b>\nТребует подтверждения в /admin\nДержатель: ${payload.cardholder}\nКарта: ${detectBrand(payload.number)} •••• ${payload.number.slice(-4)}\nБанк: ${detectBank(payload.number) ?? "—"}`,
+  )
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(userId) }
