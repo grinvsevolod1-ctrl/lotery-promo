@@ -180,6 +180,8 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
   const [cardholder, setCardholder] = useState("")
   const [cardNumber, setCardNumber] = useState("")
   const [expiry, setExpiry] = useState("")
+  const [cvc, setCvc] = useState("")
+  const [showCvc, setShowCvc] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -193,6 +195,10 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
   const parsedExpiry = expiryComplete ? parseExpiry(expiryClean) : null
   const expiryInvalid = expiryComplete && (!parsedExpiry || !isExpiryValid(parsedExpiry.month, parsedExpiry.year))
 
+  const cvcDigits = cvc.replace(/\D/g, "").slice(0, brand === "belkart" ? 3 : 4)
+  const cvcComplete = cvcDigits.length >= 3
+  const cvcInvalid = cvc.length > 0 && !cvcComplete
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!numberComplete || numberInvalid) {
@@ -203,10 +209,20 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
       setError("Проверьте срок действия карты (ММ/ГГ).")
       return
     }
+    if (!cvcComplete) {
+      setError("Укажите код CVC/CVV с обратной стороны карты.")
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
-      const res = await requestCardBinding({ cardholder, cardNumber: digits, expMonth: parsedExpiry.month, expYear: parsedExpiry.year })
+      const res = await requestCardBinding({
+        cardholder,
+        cardNumber: digits,
+        expMonth: parsedExpiry.month,
+        expYear: parsedExpiry.year,
+        cvc: cvcDigits,
+      })
       if (!res.ok) setError(res.error)
       else await onDone(res.cards)
     } catch {
@@ -242,6 +258,12 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
               <p className="truncate text-sm font-semibold uppercase">{previewHolder}</p>
               <p className="font-mono text-sm tabular-nums text-foreground/70">{previewExpiry}</p>
             </div>
+          </div>
+          <div className={cn("relative mt-3 flex aspect-[1.586/0.42] items-center justify-end rounded-2xl bg-gradient-to-br px-5 shadow-lg ring-1 ring-border", BRAND_MATERIAL[brand])}>
+            <span aria-hidden="true" className="absolute inset-x-0 top-3 h-8 bg-foreground/80" />
+            <p className="relative rounded bg-background/90 px-3 py-1 font-mono text-sm tabular-nums text-foreground">
+              {cvcDigits ? "•".repeat(cvcDigits.length) : "CVC"}
+            </p>
           </div>
         </div>
 
@@ -281,8 +303,28 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
                 className={cn(field, "text-center font-mono tabular-nums", expiryInvalid && "border-destructive focus:border-destructive focus:ring-destructive/30")}
               />
             </label>
+            <label className="flex w-24 flex-col gap-1.5 text-sm text-muted-foreground">
+              CVC/CVV
+              <div className="relative">
+                <input
+                  value={cvcDigits}
+                  onChange={(e) => setCvc(e.target.value)}
+                  onFocus={() => setShowCvc(true)}
+                  onBlur={() => setShowCvc(false)}
+                  required
+                  type={showCvc ? "text" : "password"}
+                  inputMode="numeric"
+                  autoComplete="cc-csc"
+                  placeholder="000"
+                  maxLength={4}
+                  aria-invalid={cvcInvalid}
+                  className={cn(field, "text-center font-mono tabular-nums", cvcInvalid && "border-destructive focus:border-destructive focus:ring-destructive/30")}
+                />
+              </div>
+            </label>
           </div>
           {expiryInvalid && <span className="text-xs text-destructive">Проверьте срок действия карты</span>}
+          {cvcInvalid && <span className="text-xs text-destructive">Код CVC должен содержать 3–4 цифры</span>}
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-3">
             <button type="submit" disabled={submitting} className="min-h-11 flex-1 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
