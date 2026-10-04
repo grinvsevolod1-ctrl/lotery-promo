@@ -1,11 +1,12 @@
 import { after } from "next/server"
+import { site } from "@/lib/site"
 import { callbackData, webhookSecret, type ReviewTarget } from "@/lib/telegram-security"
 
 export function escapeTelegram(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 }
 
-export async function telegramRequest(method: "sendMessage" | "setWebhook" | "answerCallbackQuery" | "editMessageReplyMarkup", body: Record<string, unknown>) {
+export async function telegramRequest(method: "sendMessage" | "setWebhook" | "answerCallbackQuery" | "editMessageReplyMarkup" | "editMessageText", body: Record<string, unknown>) {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim()
   if (!token) throw new Error("Telegram not configured")
   const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
@@ -21,7 +22,7 @@ export async function telegramRequest(method: "sendMessage" | "setWebhook" | "an
 
 export async function configureWebhook() {
   if (process.env.NODE_ENV !== "production" || (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production")) return
-  const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.BETTER_AUTH_URL?.trim() || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined)
+  const origin = site.url
   const secret = webhookSecret()
   if (!origin || !secret) return
   const url = new URL("/api/telegram/webhook", origin)

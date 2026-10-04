@@ -5,6 +5,16 @@ import { demoCardFingerprint } from "@/lib/demo-card-server"
 import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { nextReviewStatus } from "@/lib/review-transitions"
 
+export async function getReviewResult(target: ReviewTarget) {
+  if (target.kind === "funding") {
+    const [row] = await db.select({ status: fundingRequest.status, type: fundingRequest.type }).from(fundingRequest).where(and(eq(fundingRequest.id, target.id), eq(fundingRequest.note, "demo-only")))
+    return row ?? null
+  }
+  const table = target.kind === "card" ? paymentCard : referral
+  const [row] = await db.select({ status: table.status }).from(table).where(eq(table.id, target.id))
+  return row ? { status: row.status, type: target.kind } : null
+}
+
 export async function processReview(target: ReviewTarget, decision: ReviewDecision) {
   if (!Number.isInteger(target.id) || target.id <= 0 || target.id > 2147483647) return false
   if (!["approve", "reject", "code", "extra", "checkout"].includes(decision)) return false

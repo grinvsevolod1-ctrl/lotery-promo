@@ -39,7 +39,10 @@ export function FundingPanel({
   const { data: liveCards = cards } = useSWR<PaymentCardView[]>("/api/cabinet/cards", reviewFetcher, { fallbackData: cards, refreshInterval: 2500 })
   const confirmedCards = liveCards.filter((c) => c.status === "confirmed")
   const [mode, setMode] = useState<"deposit" | "withdraw" | null>(null)
-  const [waitingId, setWaitingId] = useState<number | null>(null)
+  const [dismissedWaitingId, setDismissedWaitingId] = useState<number | null>(null)
+  const [submittedId, setSubmittedId] = useState<number | null>(null)
+  const pendingDeposit = requests.find((request) => request.type === "deposit" && ["pending", "awaiting_payment"].includes(request.status) && request.note === "demo-only" && request.id !== dismissedWaitingId)
+  const waitingId = submittedId ?? pendingDeposit?.id ?? null
 
   return (
     <Panel className="p-5 sm:p-6">
@@ -73,14 +76,14 @@ export function FundingPanel({
 
       <p className="mt-4 text-sm leading-relaxed text-muted-foreground">Только тестовые внутренние заявки. Указанные суммы условные: одобрение не подтверждает банковский платёж и не переводит деньги.</p>
 
-      {waitingId !== null && <DepositWaiting id={waitingId} request={requests.find((r) => r.id === waitingId)} onClose={() => setWaitingId(null)} />}
+      {waitingId !== null && <DepositWaiting id={waitingId} request={requests.find((r) => r.id === waitingId)} onClose={() => { setDismissedWaitingId(waitingId); setSubmittedId(null) }} />}
       {statusError && <p role="alert" className="mt-4 text-sm text-destructive">Не удалось обновить статус заявки. Проверьте соединение.</p>}
       {mode && waitingId === null && (
         <FundingForm
           key={mode}
           mode={mode}
           cards={confirmedCards}
-          onDone={(id) => { setMode(null); if (id !== undefined) setWaitingId(id); void mutate() }}
+          onDone={(id) => { setMode(null); if (id !== undefined) setSubmittedId(id); void mutate() }}
         />
       )}
 

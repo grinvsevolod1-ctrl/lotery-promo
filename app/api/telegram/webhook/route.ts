@@ -1,12 +1,14 @@
 import { revalidatePath } from "next/cache"
-import { isPrivateAdmin, parseCallback, safeEqual, webhookSecret } from "@/lib/telegram-security"
+import { callbackData, isPrivateAdmin, parseCallback, safeEqual, webhookSecret } from "@/lib/telegram-security"
 import { telegramRequest } from "@/lib/telegram"
-import { processReview } from "@/lib/reviews"
+import { getReviewResult, processReview } from "@/lib/reviews"
+import { reviewFeedback } from "@/lib/review-feedback"
+import { site } from "@/lib/site"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
 
-type Callback = { id?: string; data?: string; from?: { id?: number }; message?: { message_id?: number; chat?: { id: number; type?: string } } }
+type Callback = { id?: string; data?: string; from?: { id?: number }; message?: { message_id?: number; text?: string; chat?: { id: number; type?: string } } }
 
 export async function POST(request: Request) {
   const secret = webhookSecret()
@@ -39,7 +41,17 @@ export async function POST(request: Request) {
   revalidatePath("/cabinet", "layout")
   try {
     if (typeof callback.id === "string") await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id, text: changed ? ({ approve: "Тест подтверждён / тестовая ссылка выдана.", reject: "Отклонено.", code: "Запрошен фиксированный тестовый код, не банковский.", extra: "Запрошена дополнительная симуляция.", checkout: "Тестовая ссылка выдана." })[target.decision] : "Решение уже применено или недоступно на этом этапе." })
-    if (changed && Number.isInteger(callback.message?.message_id)) await telegramRequest("editMessageReplyMarkup", { chat_id: callback.message!.chat!.id, message_id: callback.message!.message_id, reply_markup: { inline_keyboard: [] } })
+    if (changed && Number.isInteger(callback.message?.message_id)) {
+      const intermediateCardStep = target.kind === "card" && ["code", "extra"].includes(target.decision)
+      const result = await getReviewResult(target)
+      if (result) await telegramRequest("editMessageText", {
+        chat_id: callback.message!.chat!.id,
+        message_id: callback.message!.message_id,
+        text: `${typeof callback.message?.text === "string" ? callback.message.text.slice(0, 2000) : `Тестовая заявка #${target.id}`}\n\n${reviewFeedback(target, result, site.url)}`,
+        reply_markup: { inline_keyboard: intermediateCardStep ? [[{ text: "Отклонить тестовую привязку", callback_data: callbackData(target, "reject") }]] : [] },
+        link_preview_options: { is_disabled: true },
+      })
+    }
   } catch {
     console.error("Telegram review acknowledgement failed")
   }
