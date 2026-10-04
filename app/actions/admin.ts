@@ -32,7 +32,6 @@ export type PendingCardRow = {
   last4: string
   bankName: string | null
   cardholder: string
-  bindingUrl: string | null
   createdAt: Date
   userName: string
   userEmail: string
@@ -42,7 +41,7 @@ export async function getPendingCards(): Promise<PendingCardRow[]> {
   await requireAdmin()
   return db.select({
     id: paymentCard.id, brand: paymentCard.brand, last4: paymentCard.last4, bankName: paymentCard.bankName,
-    cardholder: paymentCard.cardholder, bindingUrl: paymentCard.bindingUrl, createdAt: paymentCard.createdAt,
+    cardholder: paymentCard.cardholder, createdAt: paymentCard.createdAt,
     userName: user.name, userEmail: user.email,
   }).from(paymentCard).innerJoin(user, eq(user.id, paymentCard.userId))
     .where(eq(paymentCard.status, "pending")).orderBy(desc(paymentCard.createdAt)).limit(100)
@@ -61,33 +60,11 @@ function validCardId(id: number) {
   return Number.isInteger(id) && id > 0 && id <= 2147483647
 }
 
-/** Only bePaid-hosted links are accepted so a compromised admin form can't redirect users to a phishing page. */
-function parseBepaidUrl(raw: string) {
-  try {
-    const url = new URL(raw.trim())
-    const host = url.hostname.toLowerCase()
-    const trusted = ["bepaid.by", "bepaid.tech"].some((d) => host === d || host.endsWith(`.${d}`))
-    return url.protocol === "https:" && trusted ? url.toString() : null
-  } catch {
-    return null
-  }
-}
-
-export async function setCardBindingUrl(id: number, formData: FormData) {
-  await requireAdmin()
-  const url = parseBepaidUrl(String(formData.get("bindingUrl") ?? ""))
-  if (!validCardId(id) || !url) return
-  await db.update(paymentCard).set({ bindingUrl: url })
-    .where(and(eq(paymentCard.id, id), eq(paymentCard.status, "pending")))
-  revalidatePath("/admin")
-  revalidatePath("/cabinet/cards")
-}
-
 async function finishCard(id: number, status: "confirmed" | "rejected") {
   await requireAdmin()
   if (!validCardId(id)) return
   const changed = await db.transaction(async (tx) => {
-    const [row] = await tx.update(paymentCard).set({ status, processedAt: new Date(), bindingUrl: null })
+    const [row] = await tx.update(paymentCard).set({ status, processedAt: new Date() })
       .where(and(eq(paymentCard.id, id), eq(paymentCard.status, "pending")))
       .returning({ userId: paymentCard.userId, last4: paymentCard.last4 })
     if (!row) return null

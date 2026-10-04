@@ -19,7 +19,6 @@ export type PaymentCardView = {
   expYear: number | null
   isDefault: boolean
   status: string
-  bindingUrl: string | null
 }
 
 type CardsResult = { ok: true; cards: PaymentCardView[] }
@@ -47,7 +46,6 @@ async function listCards(userId: string): Promise<PaymentCardView[]> {
     id: r.id, brand: r.brand as CardBrand, last4: r.last4, bankName: r.bankName,
     cardholder: r.cardholder, expMonth: r.expMonth, expYear: r.expYear,
     isDefault: r.isDefault, status: r.status,
-    bindingUrl: r.status === "pending" ? r.bindingUrl : null,
   }))
 }
 
@@ -91,7 +89,7 @@ export async function requestCardBinding(input: {
     `${escapeTelegram(CARD_BRAND_LABEL[brand])} •••• ${last4}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
     `Держатель: ${escapeTelegram(cardholder)}`,
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
-    "Создайте ссылку на привязку в bePaid и добавьте её в админ-панели.",
+    "Привяжите карту в bePaid и подтвердите в админ-панели.",
   ].join("\n"))
 
   revalidatePath("/cabinet/cards")

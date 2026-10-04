@@ -85,7 +85,7 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
 
       <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground text-pretty">
         <LockMark className="mt-0.5 size-4 shrink-0 text-gold" />
-        Номер карты, срок действия и CVC вводятся только на защищённой странице bePaid по ссылке из вашей заявки. Никому не сообщайте эти данные и коды из SMS.
+        Никому не сообщайте CVC и коды из SMS — администратор их никогда не запрашивает.
       </p>
     </div>
   )
@@ -120,7 +120,7 @@ function CardTile({
         <div className="flex items-center gap-2">
           {card.status === "pending" && (
             <span className="rounded-full bg-foreground/20 px-2.5 py-1 text-xs font-semibold backdrop-blur">
-              {card.bindingUrl ? "Ждёт привязки" : "Готовим ссылку"}
+              На проверке
             </span>
           )}
           {card.status === "rejected" && (
@@ -170,21 +170,7 @@ function CardTile({
       </div>
       {card.status === "pending" && (
         <div className="relative flex flex-col gap-2 rounded-2xl bg-background/60 p-3 backdrop-blur">
-          {card.bindingUrl ? (
-            <>
-              <p className="text-xs leading-relaxed text-foreground/80">Ссылка готова. Введите данные карты на странице bePaid — после этого администратор подтвердит привязку.</p>
-              <a
-                href={card.bindingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-              >
-                Привязать карту в bePaid
-              </a>
-            </>
-          ) : (
-            <p className="text-xs leading-relaxed text-foreground/80">Заявка у администратора. Скоро здесь появится защищённая ссылка bePaid для привязки.</p>
-          )}
+          <p className="text-xs leading-relaxed text-foreground/80">Заявка у администратора. После привязки карта появится здесь как подтверждённая.</p>
         </div>
       )}
     </div>
@@ -216,7 +202,7 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
 
   const preview: PaymentCardView = {
     id: 0, brand, last4: last4 || "0000", bankName: bankName === "Другой банк" ? null : bankName,
-    cardholder: cardholder || "ИМЯ ФАМИЛИЯ", expMonth: null, expYear: null, isDefault: false, status: "preview", bindingUrl: null,
+    cardholder: cardholder || "ИМЯ ФАМИЛИЯ", expMonth: null, expYear: null, isDefault: false, status: "preview",
   }
 
   const field = "min-h-11 w-full rounded-2xl border border-border/60 bg-background/60 px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
