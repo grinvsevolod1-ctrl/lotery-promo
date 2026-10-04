@@ -24,8 +24,8 @@ export function HowToSection() {
           </h2>
         </Reveal>
 
-        <div className="orbit-border mt-12 grid items-center gap-8 rounded-4xl bg-gradient-to-br from-[oklch(0.4_0.2_305)] to-[oklch(0.3_0.14_302)] p-6 shadow-2xl shadow-black/30 md:grid-cols-2 md:p-12">
-          <div>
+        <div className="orbit-border mt-12 grid items-center gap-8 rounded-4xl bg-gradient-to-br from-[oklch(0.4_0.2_305)] to-[oklch(0.3_0.14_302)] p-6 shadow-2xl shadow-black/30 md:p-12">
+          <div className="mx-auto w-full max-w-2xl">
             <p className="font-heading text-xl font-bold leading-snug text-balance">
               Три шага до первого выигрыша. А колесо фортуны в кабинете даёт от {wheelMin} до {wheelMax} бонусных BYN
               каждый день — бесплатно.
@@ -49,17 +49,6 @@ export function HowToSection() {
                 </li>
               ))}
             </ul>
-          </div>
-          <div>
-            <img
-              src="/promo-wheels.webp"
-              alt="Золотое и синее колёса фортуны"
-              width={1024}
-              height={1024}
-              loading="lazy"
-              decoding="async"
-              className="mx-auto w-full max-w-sm drop-shadow-2xl animate-float"
-            />
           </div>
         </div>
 
