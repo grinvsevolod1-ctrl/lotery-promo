@@ -3,6 +3,7 @@ import { LiveWinsFeed, type FeedItem } from '@/components/live-wins-feed'
 
 export async function WinnersMarquee() {
   let initial: FeedItem[] = []
+  let unavailable = false
   try {
     const wins = await getRecentWins(8)
     initial = wins.map((w) => ({
@@ -13,7 +14,7 @@ export async function WinnersMarquee() {
       at: w.at.toISOString(),
     }))
   } catch {
-    // The feed tops itself up with demo entries if the database is unreachable.
+    unavailable = true
   }
-  return <LiveWinsFeed initial={initial} />
+  return <LiveWinsFeed initial={initial} unavailable={unavailable} />
 }

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { getBalance, getSpinStatus, getTickets, getTransactions } from "@/app/actions/cabinet"
-import { getPaymentCards } from "@/app/actions/cards"
 import { getFundingRequests } from "@/app/actions/funding"
 import { settleLegacyTickets } from "@/lib/draws"
 import { TicketMark, TrophyMark, WalletMark } from "@/components/icons"
@@ -14,6 +13,7 @@ import { BuyTicketPanel } from "@/components/cabinet/buy-ticket-panel"
 import { TicketCard } from "@/components/cabinet/ticket-card"
 import { TransactionsList } from "@/components/cabinet/transactions-list"
 import { FundingPanel } from "@/components/cabinet/funding-panel"
+import { ReferralPanel } from "@/components/cabinet/referral-panel"
 
 export default async function CabinetPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -21,12 +21,11 @@ export default async function CabinetPage() {
 
   await settleLegacyTickets()
 
-  const [balance, tickets, transactions, spinStatus, cards, fundingRequests] = await Promise.all([
+  const [balance, tickets, transactions, spinStatus, fundingRequests] = await Promise.all([
     getBalance(),
     getTickets(),
     getTransactions(),
     getSpinStatus(),
-    getPaymentCards(),
     getFundingRequests(),
   ])
 
@@ -40,7 +39,7 @@ export default async function CabinetPage() {
       <Panel accent className="p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-1">
-            <p className="text-sm text-muted-foreground">Привет, {firstName}! Ваш баланс</p>
+            <p className="text-sm text-muted-foreground">Привет, {firstName}! Ваш игровой баланс</p>
             <p className="flex items-baseline gap-2 font-display text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl">
               {balance.toLocaleString("ru-RU")}
               <span className="text-2xl text-gold">BYN</span>
@@ -77,7 +76,9 @@ export default async function CabinetPage() {
 
       {!hasWelcome && <WelcomeBonusCard />}
 
-      <FundingPanel cards={cards} requests={fundingRequests} />
+      <ReferralPanel />
+
+      <FundingPanel requests={fundingRequests} />
 
       <BuyTicketPanel balance={balance} />
 

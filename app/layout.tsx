@@ -24,8 +24,8 @@ const unbounded = Unbounded({
   display: 'swap',
 })
 
-const title = site.title
-const description = site.description
+const title = 'ToLoto — игровой кабинет'
+const description = 'Игровой кабинет, билеты, результаты и реферальные приглашения ToLoto. Платёжные операции обрабатываются вручную через Telegram.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
   },
   formatDetection: { telephone: false },
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false },
 }
 
 export const viewport: Viewport = {
@@ -69,7 +69,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ru" className={`${inter.variable} ${manrope.variable} ${unbounded.variable}`}>
+    <html lang="ru" className={`bg-background ${inter.variable} ${manrope.variable} ${unbounded.variable}`}>
       <body className="bg-background font-sans antialiased">
         {children}
         <PwaRegister />

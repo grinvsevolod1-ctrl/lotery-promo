@@ -1,0 +1,57 @@
+import { revalidatePath } from "next/cache"
+import { isPrivateAdmin, parseCallback, safeEqual, webhookSecret } from "@/lib/telegram-security"
+import { telegramRequest } from "@/lib/telegram"
+import { getReviewResult, processReview } from "@/lib/reviews"
+import { reviewFeedback } from "@/lib/review-feedback"
+
+export const runtime = "nodejs"
+export const maxDuration = 30
+
+type Callback = { id?: string; data?: string; from?: { id?: number }; message?: { message_id?: number; text?: string; chat?: { id: number; type?: string } } }
+
+export async function POST(request: Request) {
+  const secret = webhookSecret()
+  if (!secret || !safeEqual(request.headers.get("x-telegram-bot-api-secret-token") ?? "", secret)) return new Response("Unauthorized", { status: 401 })
+  if (Number(request.headers.get("content-length") ?? 0) > 16_384) return new Response("Too large", { status: 413 })
+  let callback: Callback | undefined
+  try {
+    const raw = await request.text()
+    if (Buffer.byteLength(raw) > 16_384) return new Response("Too large", { status: 413 })
+    callback = (JSON.parse(raw) as { callback_query?: Callback }).callback_query
+  } catch {
+    return new Response("Invalid update", { status: 400 })
+  }
+  if (!callback || !isPrivateAdmin(callback.message?.chat, callback.from?.id)) return Response.json({ ok: true })
+  let target
+  try {
+    target = parseCallback(typeof callback.data === "string" ? callback.data : "")
+  } catch {
+    return new Response("Review not configured", { status: 503 })
+  }
+  if (!target) return Response.json({ ok: true })
+  let changed: boolean
+  try {
+    changed = await processReview(target, target.decision)
+  } catch {
+    console.error("Telegram review failed")
+    return new Response("Retry later", { status: 503 })
+  }
+  revalidatePath("/admin")
+  revalidatePath("/cabinet", "layout")
+  try {
+    if (typeof callback.id === "string") await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id, text: changed ? "Решение сохранено." : "Решение уже применено или недоступно на этом этапе." })
+    if (changed && Number.isInteger(callback.message?.message_id)) {
+      const result = await getReviewResult(target)
+      if (result) await telegramRequest("editMessageText", {
+        chat_id: callback.message!.chat!.id,
+        message_id: callback.message!.message_id,
+        text: `${typeof callback.message?.text === "string" ? callback.message.text.slice(0, 2000) : `Приглашение #${target.id}`}\n\n${reviewFeedback(target, result)}`,
+        reply_markup: { inline_keyboard: [] },
+        link_preview_options: { is_disabled: true },
+      })
+    }
+  } catch {
+    console.error("Telegram review acknowledgement failed")
+  }
+  return Response.json({ ok: true })
+}

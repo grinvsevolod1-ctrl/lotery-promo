@@ -8,6 +8,20 @@ test.describe("public pages", () => {
     await expect(page.getByRole("contentinfo")).toContainText(/18\+/)
   })
 
+  test("landing has no simulated spin or fabricated winners", async ({ page }) => {
+    await page.goto("/")
+    await expect(page.getByRole("button", { name: "Крутить демо" })).toHaveCount(0)
+    await expect(page.getByRole("link", { name: "Войти и крутить", exact: true })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Последние выигрыши" })).toBeVisible()
+  })
+
+  for (const path of ["/pay/demo/1", "/pay/confirm/legacy-token"]) {
+    test(`retired payment simulation ${path} returns 404`, async ({ page }) => {
+      const response = await page.goto(path)
+      expect(response?.status()).toBe(404)
+    })
+  }
+
   test("results page lists draws or an empty state", async ({ page }) => {
     await page.goto("/results")
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/результат/i)
