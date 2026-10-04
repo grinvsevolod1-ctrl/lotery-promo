@@ -15,16 +15,16 @@ export function HeaderAuthNav() {
 
   if (!session?.user) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-2">
         <Link
           href="/sign-in"
-          className="rounded-full px-4 py-2 text-sm font-semibold text-foreground/80 transition-colors hover:text-foreground"
+          className="rounded-full px-2.5 py-2 text-sm font-semibold text-foreground/80 transition-colors hover:text-foreground sm:px-4"
         >
           Войти
         </Link>
         <Link
           href="/sign-up"
-          className="rounded-full bg-gradient-to-br from-primary to-accent px-4 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-105"
+          className="whitespace-nowrap rounded-full bg-gradient-to-br from-primary to-accent px-3 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-105 sm:px-4"
         >
           Регистрация
         </Link>
@@ -33,13 +33,13 @@ export function HeaderAuthNav() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-1 sm:gap-2">
       <Link
         href="/cabinet"
-        className="flex items-center gap-2 rounded-full bg-foreground/10 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/15"
+        className="flex min-w-0 items-center gap-2 rounded-full bg-foreground/10 px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/15 sm:px-4"
       >
-        <UserMark className="size-4" />
-        <span className="max-w-24 truncate">{session.user.name || "Кабинет"}</span>
+        <UserMark className="size-4 shrink-0" />
+        <span className="max-w-20 truncate sm:max-w-32">{session.user.name || "Кабинет"}</span>
       </Link>
       <button
         type="button"

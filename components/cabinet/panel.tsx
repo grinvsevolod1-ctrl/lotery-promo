@@ -17,8 +17,8 @@ export function Panel({ children, className, accent }: { children: ReactNode; cl
 
 export function PanelTitle({ icon, children, aside }: { icon?: ReactNode; children: ReactNode; aside?: ReactNode }) {
   return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <h2 className="flex items-center gap-2 font-display text-xl font-extrabold text-foreground">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <h2 className="flex min-w-0 items-center gap-2 font-display text-lg font-extrabold text-foreground sm:text-xl">
         {icon && <span className="text-gold">{icon}</span>}
         {children}
       </h2>

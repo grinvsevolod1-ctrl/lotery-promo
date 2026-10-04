@@ -104,6 +104,11 @@
 .animate-glow { animation: glow-pulse 2.2s ease-in-out infinite; }
 .animate-marquee { animation: marquee 30s linear infinite; }
 .animate-pop { animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.animate-feed-in { animation: feed-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 .text-shimmer {
   display: inline-block;
@@ -359,8 +364,84 @@
   color: var(--foreground);
   font-weight: 700;
 }
+.legal-prose td {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 479px) {
+  .legal-prose tbody th,
+  .legal-prose tbody td {
+    padding-inline: 0;
+  }
+  .legal-prose tbody tr:has(> th) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .legal-prose tbody tr:has(> th) > th,
+  .legal-prose tbody tr:has(> th) > td {
+    padding: 0;
+    border: 0;
+  }
+  .legal-prose tbody tr:has(> th) > th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+  }
+}
+
+/* Payment card preview: pointer tilt + flip + holographic sheen */
+.card-stage {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 30%;
+  --my: 20%;
+}
+.card-tilt {
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.25s ease-out;
+}
+.card-tilt.is-flipped {
+  transform: rotateX(var(--rx)) rotateY(calc(180deg + var(--ry)));
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.card-sheen {
+  background:
+    radial-gradient(circle at var(--mx, 30%) var(--my, 20%), oklch(1 0 0 / 0.28), transparent 45%),
+    linear-gradient(115deg, transparent 30%, oklch(0.9 0.12 200 / 0.18) 45%, oklch(0.9 0.15 330 / 0.18) 55%, transparent 70%);
+  mix-blend-mode: overlay;
+}
+.card-chip {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 6px, oklch(0.4 0.08 80 / 0.35) 6px 7px),
+    linear-gradient(135deg, oklch(0.9 0.12 90), oklch(0.7 0.13 75));
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.3);
+}
+
+/* Instant ticket: number reveal */
+@keyframes ball-reveal {
+  0% { transform: scale(0.2) rotate(-90deg); opacity: 0; }
+  70% { transform: scale(1.15) rotate(8deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.animate-ball-reveal {
+  animation: ball-reveal 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Live wins feed: new row slides in */
+@keyframes feed-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-feed-in {
+  animation: feed-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
 
 @media (prefers-reduced-motion: reduce) {
+  .card-tilt, .card-tilt.is-flipped { transition: none; }
+  .animate-ball-reveal, .animate-feed-in { animation: none !important; }
   .animate-float, .animate-spin-slow, .animate-glow, .animate-marquee, .text-shimmer,
   .animate-pop, .animate-conic, .animate-twinkle, .shine::before, .cta-shine::before {
     animation: none !important;

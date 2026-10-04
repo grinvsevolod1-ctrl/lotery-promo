@@ -15,6 +15,13 @@
       "when": 1791026257481,
       "tag": "0001_draws_spins_terms",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791105904726,
+      "tag": "0002_instant_tickets_cards",
+      "breakpoints": true
     }
   ]
 }

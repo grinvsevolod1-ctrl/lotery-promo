@@ -1,40 +1,85 @@
 /**
  * Pure lottery rules shared by the server, the cabinet UI and the tests.
  * No Node-only imports here: this file is also bundled for the browser.
+ *
+ * Every ticket is instant: the player picks numbers, the server draws the
+ * winning combination for that ticket right away and pays the prize at once.
  */
 
-export const NUMBERS_PER_TICKET = 6
-export const MAX_NUMBER = 45
 export const WELCOME_BONUS = 20
 
 /** Europe/Minsk has used UTC+3 without daylight saving since 2011. */
 export const MINSK_UTC_OFFSET_MS = 3 * 60 * 60 * 1000
-export const DRAW_HOUR_MINSK = 20
 export const MINSK_TIME_ZONE = "Europe/Minsk"
 
-export type Game = { name: string; cost: number; tone: string }
+export type GameId = "super" | "five" | "keno"
+
+export type Game = {
+  id: GameId
+  name: string
+  /** How many numbers the player marks. */
+  pick: number
+  /** Numbers range from 1 to `max`. */
+  max: number
+  cost: number
+  /** Prize in BYN by the count of matched numbers. */
+  prizes: Readonly<Record<number, number>>
+  tagline: string
+  tone: string
+}
 
 export const GAMES: readonly Game[] = [
-  { name: "Суперлото", cost: 3, tone: "from-primary to-accent" },
-  { name: "Пятёрочка", cost: 2, tone: "from-accent to-gold" },
-  { name: "КЕНО", cost: 1, tone: "from-gold to-primary" },
+  {
+    id: "keno",
+    name: "КЕНО",
+    pick: 4,
+    max: 20,
+    cost: 1,
+    prizes: { 2: 1, 3: 25, 4: 1000 },
+    tagline: "Самая частая удача",
+    tone: "from-gold to-primary",
+  },
+  {
+    id: "five",
+    name: "Пятёрочка",
+    pick: 5,
+    max: 36,
+    cost: 2,
+    prizes: { 2: 3, 3: 40, 4: 800, 5: 50000 },
+    tagline: "Баланс шанса и приза",
+    tone: "from-accent to-gold",
+  },
+  {
+    id: "super",
+    name: "Суперлото",
+    pick: 6,
+    max: 45,
+    cost: 3,
+    prizes: { 2: 4, 3: 40, 4: 400, 5: 10000, 6: 500000 },
+    tagline: "Главный суперприз",
+    tone: "from-primary to-accent",
+  },
 ]
 
-export function gameCost(name: string): number | null {
-  const game = GAMES.find((g) => g.name === name)
-  return game ? game.cost : null
+export function getGame(idOrName: string): Game | null {
+  return GAMES.find((g) => g.id === idOrName || g.name === idOrName) ?? null
 }
 
-/** Bonus prize (BYN) by the count of matched numbers. */
-export const PRIZE_BY_MATCHES: Readonly<Record<number, number>> = {
-  3: 2,
-  4: 10,
-  5: 100,
-  6: 1000,
+export function gameCost(idOrName: string): number | null {
+  return getGame(idOrName)?.cost ?? null
 }
 
-export function prizeFor(matches: number): number {
-  return PRIZE_BY_MATCHES[matches] ?? 0
+export function topPrize(game: Game): number {
+  return game.prizes[game.pick] ?? 0
+}
+
+export function prizeFor(game: Game, matches: number): number {
+  return Object.hasOwn(game.prizes, matches) ? game.prizes[matches] : 0
+}
+
+/** Smallest number of matches that pays anything in this game. */
+export function minWinningMatches(game: Game): number {
+  return Math.min(...Object.keys(game.prizes).map(Number))
 }
 
 export type WheelSegment = { label: string; amount: number; weight: number }
@@ -53,7 +98,7 @@ export const WHEEL_SEGMENTS: readonly WheelSegment[] = [
 
 export type Rng = () => number
 
-export function randomNumbers(count = NUMBERS_PER_TICKET, max = MAX_NUMBER, rng: Rng = Math.random) {
+export function randomNumbers(count: number, max: number, rng: Rng = Math.random) {
   const set = new Set<number>()
   while (set.size < count) set.add(Math.floor(rng() * max) + 1)
   return [...set].sort((a, b) => a - b)
@@ -69,7 +114,8 @@ export function pickWeighted<T extends { weight: number }>(items: readonly T[], 
   return items.length - 1
 }
 
-export function parseNumbers(value: string): number[] {
+export function parseNumbers(value: string | null | undefined): number[] {
+  if (!value) return []
   return value
     .split(",")
     .map((n) => Number(n.trim()))
@@ -81,15 +127,15 @@ export function formatNumbers(numbers: readonly number[]): string {
 }
 
 /**
- * Validates a player's pick: exactly NUMBERS_PER_TICKET distinct integers in
- * [1, MAX_NUMBER]. Returns the sorted numbers or null.
+ * Validates a player's pick for a game: exactly `game.pick` distinct integers
+ * in [1, game.max]. Returns the sorted numbers or null.
  */
-export function validateNumbers(input: unknown): number[] | null {
-  if (!Array.isArray(input) || input.length !== NUMBERS_PER_TICKET) return null
+export function validateNumbers(game: Game, input: unknown): number[] | null {
+  if (!Array.isArray(input) || input.length !== game.pick) return null
   const seen = new Set<number>()
   for (const raw of input) {
     if (typeof raw !== "number" || !Number.isInteger(raw)) return null
-    if (raw < 1 || raw > MAX_NUMBER || seen.has(raw)) return null
+    if (raw < 1 || raw > game.max || seen.has(raw)) return null
     seen.add(raw)
   }
   return [...seen].sort((a, b) => a - b)
@@ -100,18 +146,13 @@ export function countMatches(picked: readonly number[], winning: readonly number
   return picked.filter((n) => set.has(n)).length
 }
 
-/** Next draw instant strictly after `now`: DRAW_HOUR_MINSK:00 Minsk time. */
-export function nextDrawAt(now: Date = new Date()): Date {
-  const minskWallClock = new Date(now.getTime() + MINSK_UTC_OFFSET_MS)
-  let candidate =
-    Date.UTC(
-      minskWallClock.getUTCFullYear(),
-      minskWallClock.getUTCMonth(),
-      minskWallClock.getUTCDate(),
-      DRAW_HOUR_MINSK,
-    ) - MINSK_UTC_OFFSET_MS
-  if (candidate <= now.getTime()) candidate += 24 * 60 * 60 * 1000
-  return new Date(candidate)
+export type InstantOutcome = { winning: number[]; matches: number; prize: number }
+
+/** Draws the winning combination for one ticket and computes its prize. */
+export function playInstant(game: Game, picked: readonly number[], rng: Rng = Math.random): InstantOutcome {
+  const winning = randomNumbers(game.pick, game.max, rng)
+  const matches = countMatches(picked, winning)
+  return { winning, matches, prize: prizeFor(game, matches) }
 }
 
 /** Calendar day in Minsk as YYYY-MM-DD, used to limit one spin per day. */

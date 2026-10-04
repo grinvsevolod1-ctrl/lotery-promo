@@ -3,13 +3,14 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
-import { TicketMark, LogoutMark, UserMark, TrophyMark, HomeMark } from "@/components/icons"
+import { TicketMark, LogoutMark, UserMark, TrophyMark, HomeMark, WalletMark } from "@/components/icons"
 import { cn } from "@/lib/utils"
 
 const NAV = [
-  { href: "/cabinet", label: "Кабинет", icon: TicketMark },
+  { href: "/cabinet", label: "Играть", icon: TicketMark },
+  { href: "/cabinet/cards", label: "Карты", icon: WalletMark },
   { href: "/cabinet/profile", label: "Профиль", icon: UserMark },
-  { href: "/results", label: "Результаты", icon: TrophyMark },
+  { href: "/results", label: "Выигрыши", icon: TrophyMark },
 ]
 
 export function CabinetHeader() {
