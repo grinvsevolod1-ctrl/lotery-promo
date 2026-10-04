@@ -24,8 +24,8 @@ const unbounded = Unbounded({
   display: 'swap',
 })
 
-const title = 'ToLoto — тестовая демонстрация'
-const description = 'Демонстрация игрового кабинета, реферальных приглашений и внутренних заявок. Не реальная лотерея: банковских проверок и денежных переводов нет.'
+const title = 'ToLoto — игровой кабинет'
+const description = 'Игровой кабинет, билеты, результаты и реферальные приглашения ToLoto. Платёжный провайдер пока не подключён; денежных переводов нет.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -71,7 +71,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`bg-background ${inter.variable} ${manrope.variable} ${unbounded.variable}`}>
       <body className="bg-background font-sans antialiased">
-        <aside aria-label="Тестовый режим" className="border-b border-border bg-card px-4 py-3 text-center text-sm leading-relaxed text-foreground">Тестовая демонстрация, не реальная лотерея. Баланс условный, денежных переводов и банковских проверок нет.</aside>
+        <aside aria-label="Статус платежей" className="border-b border-border bg-card px-4 py-3 text-center text-sm leading-relaxed text-foreground">Баланс игровой. Платёжный провайдер не подключён: привязка банковских карт, пополнение и вывод недоступны.</aside>
         {children}
         <PwaRegister />
         <Analytics />

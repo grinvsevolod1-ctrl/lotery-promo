@@ -12,7 +12,7 @@ export default async function AdminPage() {
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-8">
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
-        <p className="text-sm leading-relaxed text-muted-foreground">Все подтверждения — только внутренние тестовые операции. Telegram-кнопки доступны только в личном чате администратора.</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">Платёжные операции и привязка карт отключены до подключения провайдера. Telegram-кнопки доступны только в личном чате администратора.</p>
         <AdminDashboard cards={cards} requests={requests} />
         <ReferralReview referrals={referrals} />
       </div>

@@ -1,10 +1,10 @@
 "use server"
 
-import { and, desc, eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { fundingRequest, paymentCard, referral, user } from "@/lib/db/schema"
+import { referral } from "@/lib/db/schema"
 import { processReview } from "@/lib/reviews"
 import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { clearAdminSession, isAdmin, setAdminSession, verifyAdminPassword } from "@/lib/admin-auth"
@@ -39,22 +39,7 @@ export type PendingCardRow = {
 
 export async function getPendingCards(): Promise<PendingCardRow[]> {
   await requireAdmin()
-  const rows = await db
-    .select({
-      id: paymentCard.id,
-      brand: paymentCard.brand,
-      last4: paymentCard.last4,
-      bankName: paymentCard.bankName,
-      cardholder: paymentCard.cardholder,
-      createdAt: paymentCard.createdAt,
-      userName: user.name,
-      userEmail: user.email,
-    })
-    .from(paymentCard)
-    .innerJoin(user, eq(paymentCard.userId, user.id))
-    .where(eq(paymentCard.status, "pending"))
-    .orderBy(desc(paymentCard.createdAt))
-  return rows
+  return []
 }
 
 async function review(target: ReviewTarget, decision: ReviewDecision) {
@@ -62,7 +47,7 @@ async function review(target: ReviewTarget, decision: ReviewDecision) {
   const changed = await processReview(target, decision)
   revalidatePath("/admin")
   revalidatePath("/cabinet", "layout")
-  if (changed) void notifyTelegram(`<b>Тестовая заявка #${target.id}</b>\n${decision === "approve" ? "Подтверждена" : "Отклонена"}. Реальных платежей нет.`)
+  if (changed) void notifyTelegram(`<b>Приглашение #${target.id}</b>\n${decision === "approve" ? "Подтверждено" : "Отклонено"}.`)
   return changed
 }
 
@@ -87,26 +72,9 @@ export type PendingFundingRow = {
 
 export async function getPendingFundingRequests(): Promise<PendingFundingRow[]> {
   await requireAdmin()
-  const rows = await db
-    .select({
-      id: fundingRequest.id,
-      type: fundingRequest.type,
-      amount: fundingRequest.amount,
-      cardId: fundingRequest.cardId,
-      createdAt: fundingRequest.createdAt,
-      userName: user.name,
-      userEmail: user.email,
-      cardLast4: paymentCard.last4,
-    })
-    .from(fundingRequest)
-    .innerJoin(user, eq(fundingRequest.userId, user.id))
-    .leftJoin(paymentCard, eq(fundingRequest.cardId, paymentCard.id))
-    .where(and(eq(fundingRequest.status, "pending"), eq(fundingRequest.note, "demo-only")))
-    .orderBy(desc(fundingRequest.createdAt))
-  return rows
+  return []
 }
 
-// Withdrawals were already debited by a `withdrawal_hold` transaction when requested.
 export async function approveFundingRequest(id: number) {
   await review({ kind: "funding", id }, "approve")
 }

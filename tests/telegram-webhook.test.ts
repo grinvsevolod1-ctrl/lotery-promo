@@ -5,11 +5,10 @@ const mocks = vi.hoisted(() => ({ processReview: vi.fn(), getReviewResult: vi.fn
 vi.mock("@/lib/reviews", () => ({ processReview: mocks.processReview, getReviewResult: mocks.getReviewResult }))
 vi.mock("@/lib/telegram", () => ({ telegramRequest: mocks.telegramRequest }))
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }))
-vi.mock("@/lib/site", () => ({ site: { url: "https://example.com" } }))
 import { POST } from "@/app/api/telegram/webhook/route"
 
-function update(data = callbackData({ kind: "funding", id: 7 }, "approve"), fromId = 123) {
-  return { callback_query: { id: "cb", data, from: { id: fromId }, message: { message_id: 12, text: "Тестовое пополнение #7", chat: { id: 123, type: "private" } } } }
+function update(data = callbackData({ kind: "referral", id: 7 }, "approve"), fromId = 123) {
+  return { callback_query: { id: "cb", data, from: { id: fromId }, message: { message_id: 12, text: "Приглашение #7", chat: { id: 123, type: "private" } } } }
 }
 function request(body: unknown, secret = webhookSecret()!, contentLength?: string) {
   return new Request("https://example.com/api/telegram/webhook", { method: "POST", headers: { "x-telegram-bot-api-secret-token": secret, ...(contentLength ? { "content-length": contentLength } : {}) }, body: JSON.stringify(body) })
@@ -21,7 +20,7 @@ beforeEach(() => {
   vi.stubEnv("TELEGRAM_CHAT_ID", "123")
   vi.clearAllMocks()
   mocks.processReview.mockResolvedValue(true)
-  mocks.getReviewResult.mockResolvedValue({ status: "awaiting_payment", type: "deposit" })
+  mocks.getReviewResult.mockResolvedValue({ status: "approved", type: "referral" })
   mocks.telegramRequest.mockResolvedValue(undefined)
 })
 afterEach(() => vi.unstubAllEnvs())
@@ -45,17 +44,18 @@ describe("Telegram webhook", () => {
     expect((await POST(request({ data: "x".repeat(20000) }))).status).toBe(413)
     expect((await POST(new Request("https://example.com", { method: "POST", headers: { "x-telegram-bot-api-secret-token": webhookSecret()! }, body: "{" }))).status).toBe(400)
   })
-  it("records approval and edits the original message with the demo link", async () => {
+  it("records referral approval without any payment link", async () => {
     expect((await POST(request(update()))).status).toBe(200)
-    expect(mocks.processReview).toHaveBeenCalledWith({ kind: "funding", id: 7, decision: "approve" }, "approve")
-    expect(mocks.telegramRequest).toHaveBeenCalledWith("editMessageText", expect.objectContaining({ message_id: 12, text: expect.stringContaining("https://example.com/pay/demo/7"), reply_markup: { inline_keyboard: [] } }))
+    expect(mocks.processReview).toHaveBeenCalledWith({ kind: "referral", id: 7, decision: "approve" }, "approve")
+    expect(mocks.telegramRequest).toHaveBeenCalledWith("editMessageText", expect.objectContaining({ message_id: 12, text: expect.stringContaining("Приглашение подтверждено."), reply_markup: { inline_keyboard: [] } }))
+    expect(JSON.stringify(mocks.telegramRequest.mock.calls)).not.toContain("/pay/")
   })
-  it.each(["code", "extra"] as const)("keeps rejection available during the %s step", async (decision) => {
-    mocks.getReviewResult.mockResolvedValue({ status: decision === "code" ? "code_required" : "extra_required", type: "card" })
+  it.each(["code", "extra"] as const)("does not expose the removed %s simulation", async (decision) => {
+    mocks.processReview.mockResolvedValue(false)
     await POST(request(update(callbackData({ kind: "card", id: 7 }, decision))))
-    expect(mocks.telegramRequest).toHaveBeenCalledWith("editMessageText", expect.objectContaining({
-      reply_markup: { inline_keyboard: [[{ text: "Отклонить тестовую привязку", callback_data: callbackData({ kind: "card", id: 7 }, "reject") }]] },
-    }))
+    expect(mocks.telegramRequest).toHaveBeenCalledTimes(1)
+    expect(mocks.telegramRequest).toHaveBeenCalledWith("answerCallbackQuery", expect.objectContaining({ text: expect.stringContaining("недоступно") }))
+    expect(mocks.getReviewResult).not.toHaveBeenCalled()
   })
   it("acknowledges an applied decision even if Telegram cannot edit the message", async () => {
     mocks.telegramRequest.mockRejectedValue(new Error("Telegram unavailable"))

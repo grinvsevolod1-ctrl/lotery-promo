@@ -18,7 +18,7 @@ export default async function CardsPage() {
       <div>
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">Мои карты</h1>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground text-pretty">
-          Добавьте предустановленную тестовую карту для симуляции внутренних заявок. Реальные банковские карты и денежные переводы не поддерживаются.
+          Здесь будут только карты, которые вы привязали самостоятельно через платёжного провайдера.
         </p>
       </div>
       <PaymentCards initial={cards} />
