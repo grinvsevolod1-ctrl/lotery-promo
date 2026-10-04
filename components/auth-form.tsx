@@ -73,6 +73,11 @@ export function AuthForm({
         setError(SIGN_UP_ERRORS[error.code ?? ""] ?? "Не удалось создать аккаунт. Проверьте данные и попробуйте снова.")
         return
       }
+      if (data?.token) {
+        router.push("/cabinet")
+        router.refresh()
+        return
+      }
       setTestMail(getTestMail(data))
       setSentTo(email)
       return
@@ -150,7 +155,7 @@ export function AuthForm({
       title={isSignUp ? "Регистрация" : "Вход в кабинет"}
       subtitle={
         isSignUp
-          ? "Создайте аккаунт, подтвердите e-mail и получите приветственный бонус"
+          ? "Создайте аккаунт и сразу получите приветственный бонус"
           : "Войдите, чтобы управлять билетами и бонусами"
       }
       footer={
