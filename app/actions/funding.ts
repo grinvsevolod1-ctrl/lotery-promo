@@ -1,6 +1,6 @@
 "use server"
 
-import { and, desc, eq, sql } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
@@ -22,6 +22,6 @@ export async function getFundingRequests(): Promise<FundingRequestRow[]> {
     id: fundingRequest.id, type: fundingRequest.type, amount: fundingRequest.amount,
     status: fundingRequest.status, note: fundingRequest.note, createdAt: fundingRequest.createdAt,
   }).from(fundingRequest)
-    .where(and(eq(fundingRequest.userId, session.user.id), sql`${fundingRequest.note} is distinct from ${"demo-only"}`))
+    .where(eq(fundingRequest.userId, session.user.id))
     .orderBy(desc(fundingRequest.createdAt)).limit(20)
 }

@@ -9,7 +9,7 @@ export function FundingPanel({ requests }: { requests: FundingRequestRow[] }) {
   return (
     <Panel className="flex flex-col gap-4 p-5 sm:p-6">
       <h2 className="font-display text-lg font-extrabold text-foreground">Пополнение и вывод</h2>
-      <p className="text-sm leading-relaxed text-muted-foreground">Пополнение и вывод недоступны до подключения платёжного провайдера. Денежные операции не выполняются.</p>
+      <p className="text-sm leading-relaxed text-muted-foreground">Автоматическое пополнение и вывод на сайте пока недоступны. Операции обрабатываются администратором вручную через Telegram-бота.</p>
       {requests.length === 0 ? <p className="text-sm text-muted-foreground">Операций пока нет.</p> : (
         <ul className="flex flex-col gap-3">
           {requests.map((request) => (

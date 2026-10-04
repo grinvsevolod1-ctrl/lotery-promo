@@ -54,8 +54,7 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
       {(error || fetchError) && <p role="alert" className="text-sm text-destructive">{error ?? "Не удалось загрузить карты."}</p>}
       <Panel className="flex flex-col gap-3 p-5">
         <h2 className="font-display text-lg font-bold text-foreground">Привязка банковской карты</h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">Платёжный провайдер пока не подключён. После подключения вы сможете самостоятельно привязать карту на его защищённой странице. Сайт не запрашивает номер карты, CVC и банковские коды.</p>
-        <button type="button" disabled className="min-h-12 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground opacity-50">Привязать карту — пока недоступно</button>
+        <p className="text-sm leading-relaxed text-muted-foreground">Самостоятельная привязка на сайте пока недоступна: карты добавляет администратор вручную через Telegram-бота. Сайт не запрашивает номер карты, CVC и банковские коды — никому их не сообщайте.</p>
       </Panel>
     </div>
   )

@@ -30,7 +30,7 @@ async function getUserId() {
 
 async function listCards(userId: string): Promise<PaymentCardView[]> {
   const rows = await db.select().from(paymentCard)
-    .where(and(eq(paymentCard.userId, userId), sql`${paymentCard.bankName} is distinct from ${"Тестовая карта (не банк)"}`))
+    .where(eq(paymentCard.userId, userId))
     .orderBy(desc(paymentCard.isDefault), asc(paymentCard.createdAt))
   return rows.map((r) => ({
     id: r.id, brand: r.brand as CardBrand, last4: r.last4, bankName: r.bankName,
