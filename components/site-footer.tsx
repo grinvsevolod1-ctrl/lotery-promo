@@ -1,33 +1,23 @@
 import Link from 'next/link'
-import { PlaneMark, OrbChatMark } from '@/components/icons'
+import { OrbChatMark } from '@/components/icons'
 import { BrandLogo } from '@/components/brand-logo'
 import { ShareButton } from '@/components/share-button'
 import { legalLinks, site } from '@/lib/site'
 
 export function SiteFooter() {
-  const socials = [
-    site.social.telegram && { label: 'Telegram', href: site.social.telegram, icon: PlaneMark },
-    site.social.vk && { label: 'ВКонтакте', href: site.social.vk, icon: OrbChatMark },
-  ].filter((s): s is { label: string; href: string; icon: typeof PlaneMark } => Boolean(s))
-
   return (
     <footer className="mt-14 bg-card">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <BrandLogo className="text-2xl" />
           <div className="flex items-center gap-2">
-            {socials.map(({ label, href, icon: Icon }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                className="grid size-11 place-items-center rounded-full bg-secondary text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
-              >
-                <Icon className="size-5" />
-              </a>
-            ))}
+            <Link
+              href="/cabinet/support"
+              className="flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-semibold text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+            >
+              <OrbChatMark className="size-5" />
+              Поддержка
+            </Link>
             <ShareButton />
           </div>
         </div>

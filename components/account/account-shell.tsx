@@ -1,0 +1,21 @@
+import { redirect } from "next/navigation"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
+import { AccountTopBar } from "@/components/account/account-top-bar"
+import { BottomDock } from "@/components/account/bottom-dock"
+
+export async function AccountShell({ children }: { children: React.ReactNode }) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) redirect("/sign-in")
+
+  return (
+    <div className="relative min-h-svh overflow-x-clip bg-background">
+      <div className="pointer-events-none fixed inset-0 aura-bg opacity-40" aria-hidden />
+      <div className="relative mx-auto max-w-3xl px-4 pb-40 pt-4 sm:px-6 sm:pt-6">
+        <AccountTopBar name={session.user.name} email={session.user.email} />
+        <main>{children}</main>
+      </div>
+      <BottomDock />
+    </div>
+  )
+}

@@ -10,6 +10,7 @@ import { paymentCard } from "@/lib/db/schema"
 import { CARD_BRAND_LABEL, detectBank, detectBrand, formatCardNumber, formatExpiry, isExpiryValid, luhnValid, normalizeCardNumber, type CardBrand } from "@/lib/payment-cards"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
+import { toCardholder } from "@/lib/translit"
 
 export type PaymentCardView = {
   id: number
@@ -71,7 +72,7 @@ export async function requestCardBinding(input: {
   cvc: string
 }): Promise<BindingRequestResult> {
   const user = await getSessionUser()
-  const cardholder = String(input.cardholder ?? "").trim().replace(/\s+/g, " ").toUpperCase()
+  const cardholder = toCardholder(String(input.cardholder ?? "")).trim()
   const cardNumber = normalizeCardNumber(String(input.cardNumber ?? ""))
   const expMonth = Number(input.expMonth)
   const expYear = Number(input.expYear)

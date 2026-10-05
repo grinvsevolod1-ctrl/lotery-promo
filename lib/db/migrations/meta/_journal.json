@@ -43,6 +43,13 @@
       "when": 1791213156760,
       "tag": "0005_rate_limits_ticket_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791222949667,
+      "tag": "0006_support_request",
+      "breakpoints": true
     }
   ]
 }
