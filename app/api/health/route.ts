@@ -20,8 +20,9 @@ export async function GET() {
       { headers: { "cache-control": "no-store" } },
     )
   } catch (error) {
+    console.error("[health] database check failed:", error)
     return NextResponse.json(
-      { ok: false, db: "down", error: error instanceof Error ? error.message : "unknown" },
+      { ok: false, db: "down" },
       { status: 503, headers: { "cache-control": "no-store" } },
     )
   }
