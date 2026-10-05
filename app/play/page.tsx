@@ -6,8 +6,10 @@ import { DailySpin } from "@/components/cabinet/daily-spin"
 import { TicketCard } from "@/components/cabinet/ticket-card"
 import { PageHeading } from "@/components/account/page-heading"
 import { AutoRefresh } from "@/components/auto-refresh"
+import { requireSession } from "@/lib/require-session"
 
 export default async function PlayPage() {
+  await requireSession()
   await settleLegacyTickets()
   const [balance, tickets, spinStatus] = await Promise.all([getBalance(), getTickets(), getSpinStatus()])
 
