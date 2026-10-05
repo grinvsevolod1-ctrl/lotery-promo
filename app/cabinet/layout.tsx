@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth"
 import { CabinetHeader } from "@/components/cabinet/cabinet-header"
 
 export const metadata: Metadata = {
-  title: "Личный кабинет — lotery.by",
+  title: "Личный кабинет — bytoloto.com",
   robots: { index: false, follow: false },
 }
 

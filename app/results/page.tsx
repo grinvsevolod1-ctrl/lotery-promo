@@ -7,8 +7,8 @@ import { getRecentWins, getWinStats } from "@/lib/draws"
 import { formatDateTime } from "@/lib/format"
 
 export const metadata: Metadata = {
-  title: "Выигрыши участников — lotery.by",
-  description: "Последние выигрыши в моментальных лотереях lotery.by: игра, сумма и время.",
+  title: "Выигрыши участников — bytoloto.com",
+  description: "Последние выигрыши в моментальных лотереях bytoloto.com: игра, сумма и время.",
   alternates: { canonical: "/results" },
 }
 

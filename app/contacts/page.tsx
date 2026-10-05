@@ -3,8 +3,8 @@ import { LegalPage } from "@/components/legal-page"
 import { site } from "@/lib/site"
 
 export const metadata: Metadata = {
-  title: "Контакты — lotery.by",
-  description: "Реквизиты оператора lotery.by и способы связи со службой поддержки.",
+  title: "Контакты — bytoloto.com",
+  description: "Реквизиты оператора bytoloto.com и способы связи со службой поддержки.",
   alternates: { canonical: "/contacts" },
 }
 

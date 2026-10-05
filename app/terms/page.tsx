@@ -4,8 +4,8 @@ import { LegalPage } from "@/components/legal-page"
 import { site } from "@/lib/site"
 
 export const metadata: Metadata = {
-  title: "Публичная оферта — lotery.by",
-  description: "Условия использования сайта lotery.by: аккаунт, бонусы, ответственность сторон, порядок изменения условий.",
+  title: "Публичная оферта — bytoloto.com",
+  description: "Условия использования сайта bytoloto.com: аккаунт, бонусы, ответственность сторон, порядок изменения условий.",
   alternates: { canonical: "/terms" },
 }
 

@@ -6,7 +6,7 @@ export function SiteHeader() {
   return (
     <header className="absolute inset-x-0 top-0 z-30">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-6">
-        <Link href="/" className="group flex shrink-0 items-center gap-2 sm:gap-2.5" aria-label="lotery.by — на главную">
+        <Link href="/" className="group flex shrink-0 items-center gap-2 sm:gap-2.5" aria-label="bytoloto.com — на главную">
           <span className="relative flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/40 transition-transform group-hover:-rotate-6 sm:size-11">
             <TicketMark className="h-6 w-6 text-primary-foreground" />
             <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-gold animate-twinkle" aria-hidden="true" />

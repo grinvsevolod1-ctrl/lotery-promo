@@ -5,8 +5,8 @@ import { site } from "@/lib/site"
 import { GAMES, WELCOME_BONUS, WHEEL_SEGMENTS, minWinningMatches } from "@/lib/lottery"
 
 export const metadata: Metadata = {
-  title: "Правила акции — lotery.by",
-  description: "Правила промо-акции lotery.by: участники, бонусы, моментальные игры, таблица выигрышей, колесо фортуны.",
+  title: "Правила акции — bytoloto.com",
+  description: "Правила промо-акции bytoloto.com: участники, бонусы, моментальные игры, таблица выигрышей, колесо фортуны.",
   alternates: { canonical: "/rules" },
 }
 

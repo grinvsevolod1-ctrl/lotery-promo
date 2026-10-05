@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth"
 import { getPaymentCards } from "@/app/actions/cards"
 import { PaymentCards } from "@/components/cabinet/payment-cards"
 
-export const metadata: Metadata = { title: "Мои карты — lotery.by" }
+export const metadata: Metadata = { title: "Мои карты — bytoloto.com" }
 
 export default async function CardsPage() {
   const session = await auth.api.getSession({ headers: await headers() })

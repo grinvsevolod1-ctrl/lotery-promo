@@ -4,8 +4,8 @@ import { LegalPage } from "@/components/legal-page"
 import { site } from "@/lib/site"
 
 export const metadata: Metadata = {
-  title: "Политика конфиденциальности — lotery.by",
-  description: "Какие персональные данные обрабатывает lotery.by, зачем, как долго хранит и как их удалить.",
+  title: "Политика конфиденциальности — bytoloto.com",
+  description: "Какие персональные данные обрабатывает bytoloto.com, зачем, как долго хранит и как их удалить.",
   alternates: { canonical: "/privacy" },
 }
 
