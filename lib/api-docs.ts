@@ -1,106 +1,152 @@
-import "server-only"
-
-/** Operator API reference as Markdown, with the live key embedded. Served only to an admin session. */
-export function buildApiDocs({ baseUrl, apiKey, generatedAt }: { baseUrl: string; apiKey: string | null; generatedAt: Date }) {
-  const key = apiKey ?? "<OPERATOR_API_KEY не задан на сервере>"
+export function buildApiDocs({ baseUrl, apiKey }: { baseUrl: string; apiKey: string }) {
   const api = `${baseUrl}/api/v1`
-  const stamp = new Intl.DateTimeFormat("ru-RU", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Moscow" }).format(generatedAt)
+  return `# BYTOLOTO — Operator API
 
-  return `# ByToLoto — API заявок на привязку карт
-
-Сформировано: ${stamp} (МСК)
-
-> Документ содержит действующий ключ API. Не пересылайте его третьим лицам.
-> Если ключ утёк, замените \`OPERATOR_API_KEY\` в \`/opt/bytoloto/.env\` и перезапустите сайт (\`bash deploy/deploy.sh\`).
+Сгенерировано: ${new Date().toISOString()}
 
 ## Доступ
 
-| Параметр | Значение |
-| --- | --- |
-| Базовый адрес | \`${api}\` |
-| Ключ API | \`${key}\` |
-| Формат | JSON, UTF-8 |
-| Авторизация | заголовок \`Authorization: Bearer <ключ>\` |
+Базовый адрес: \`${api}\`
 
-Без ключа или с неверным ключом сервер отвечает \`401 Unauthorized\`. Если ключ не задан на сервере — \`503\`.
+API-ключ:
 
-## Как устроена заявка
+\`\`\`
+${apiKey}
+\`\`\`
 
-1. Игрок вводит карту и нажимает «Сохранить». Создаётся заявка с уникальным номером вида \`BL-XXXXXX\`
-   (6 символов из \`A–Z\` и \`2–9\`, без похожих \`I\`, \`O\`, \`0\`, \`1\`).
-2. Через 2 секунды игрок видит контрольный вопрос. Ответ сохраняется в заявке (поле \`secretAnswer\`) и приходит в Telegram.
-3. Оператор отправляет игроку ссылку (\`redirect\`) — страница игрока сама переходит по ней в течение нескольких секунд.
-4. Оператор закрывает заявку: \`approve\` (карта привязана) или \`reject\` (игрок видит сообщение об отклонении, карта не добавляется).
+Каждый запрос должен содержать заголовок:
 
-### Статусы
+\`\`\`
+Authorization: Bearer ${apiKey}
+\`\`\`
 
-| Статус | Значение |
-| --- | --- |
-| \`pending\` | заявка создана, ответа на вопрос ещё нет |
-| \`code_requested\` | ожидается код подтверждения |
-| \`extra_check\` | игрок ответил на контрольный вопрос |
-| \`confirmed\` | карта подтверждена (финальный) |
-| \`rejected\` | карта отклонена (финальный) |
+Без ключа или с неверным ключом сервер отвечает \`401 Unauthorized\`.
+Ключ хранится на сервере в переменной \`OPERATOR_API_KEY\`. Не передавайте этот файл третьим лицам.
 
-По заявкам в финальном статусе \`redirect\`, \`approve\` и \`reject\` больше не работают (ответ \`409\`).
+## Как проходит заявка на привязку карты
 
-### Объект заявки
+1. Игрок вводит данные карты и нажимает «Сохранить». Создаётся заявка с уникальным номером вида \`BL-7K2M9Q\`, статус \`pending\`.
+2. Игрок отвечает на контрольный вопрос — ответ появляется в поле \`secretAnswer\`.
+3. Оператор отправляет ссылку (\`action: "redirect"\`). Страница открывается у игрока на сайте во встроенном окне (iframe) на весь экран.
+   - Когда страница загрузилась, \`frameStatus\` становится \`"opened"\`.
+   - Как только внутри окна происходит переход на другой адрес (редирект), окно закрывается, \`frameStatus\` становится \`"finished"\`, заполняется \`frameFinishedAt\`. Игрок видит «Проверяем результат».
+4. Оператор выносит решение: \`approve\` (успех) или \`reject\` (отклонено) с необязательной причиной \`reason\`. Игрок сразу видит результат и причину.
+
+Важно: целевая страница должна разрешать открытие во фрейме (без \`X-Frame-Options: DENY\` и без запрета \`frame-ancestors\`).
+Переходы внутри одностраничных приложений без перезагрузки страницы не считаются редиректом.
+
+## Статусы заявки
+
+| status | Значение |
+|---|---|
+| \`pending\` | Заявка создана, ждёт ответа на вопрос / ссылки / решения |
+| \`code_requested\` | У игрока запрошен код подтверждения |
+| \`extra_check\` | Дополнительная проверка |
+| \`confirmed\` | Карта подтверждена (успех) |
+| \`rejected\` | Привязка отклонена |
+
+Заявки в статусах \`confirmed\` и \`rejected\` закрыты, изменить их нельзя (ответ \`409\`).
+
+## Объект заявки
 
 \`\`\`json
 {
-  "requestNo": "BL-7K2QXM",
-  "status": "extra_check",
-  "brand": "Visa",
-  "bankName": "Сбербанк",
-  "last4": "2222",
+  "requestNo": "BL-7K2M9Q",
+  "status": "pending",
+  "brand": "visa",
+  "bankName": "Priorbank",
+  "last4": "4242",
   "cardholder": "IVAN IVANOV",
-  "secretAnswer": "ответ игрока",
-  "redirectUrl": null,
-  "createdAt": "2026-05-10T18:20:00.000Z",
+  "secretAnswer": "ответ игрока на контрольный вопрос",
+  "redirectUrl": "https://example.com/confirm",
+  "frameStatus": "finished",
+  "frameFinishedAt": "2026-05-10T12:00:05.000Z",
+  "resultReason": null,
+  "createdAt": "2026-05-10T11:59:00.000Z",
   "processedAt": null
 }
 \`\`\`
 
-\`secretAnswer\`, \`redirectUrl\`, \`processedAt\`, \`bankName\` могут быть \`null\`. Даты — ISO 8601 в UTC.
+- \`frameStatus\`: \`null\` — окно ещё не открывалось, \`"opened"\` — страница загружена, \`"finished"\` — на странице произошёл редирект и окно закрыто.
+- \`resultReason\`: причина, переданная вместе с решением.
 
 ## Методы
 
-### 1. Список заявок
+### Список заявок
 
-\`GET /card-requests\`
+\`GET /card-requests?status=pending&limit=50\`
 
-| Параметр | Обязателен | Описание |
-| --- | --- | --- |
-| \`status\` | нет | фильтр по статусу из таблицы выше |
-| \`limit\` | нет | от 1 до 200, по умолчанию 50 |
-
-Сортировка: сначала новые.
+- \`status\` — необязательный фильтр по статусу.
+- \`limit\` — от 1 до 200, по умолчанию 50. Сортировка — новые сверху.
 
 \`\`\`bash
-curl -s "${api}/card-requests?status=extra_check&limit=20" \\
-  -H "Authorization: Bearer ${key}"
+curl -s "${api}/card-requests?status=pending" \\
+  -H "Authorization: Bearer ${apiKey}"
 \`\`\`
 
-Ответ \`200\`:
+Ответ: \`{ "requests": [ ...объекты заявок ] }\`
 
-\`\`\`json
-{ "requests": [ { "requestNo": "BL-7K2QXM", "status": "extra_check", "...": "..." } ] }
-\`\`\`
-
-Ошибка \`400\` — неизвестный статус.
-
-### 2. Одна заявка
+### Одна заявка
 
 \`GET /card-requests/{requestNo}\`
 
 \`\`\`bash
-curl -s "${api}/card-requests/BL-7K2QXM" \\
-  -H "Authorization: Bearer ${key}"
+curl -s "${api}/card-requests/BL-7K2M9Q" \\
+  -H "Authorization: Bearer ${apiKey}"
 \`\`\`
 
-Ответ \`200\`: \`{ "request": { ... } }\`. Ошибка \`404\` — заявки нет или номер в неверном формате.
-Номер можно передавать в любом регистре.
+Ответ: \`{ "request": { ... } }\`, либо \`404\`.
 
-### 3. Действие по заявке
+### Открыть страницу у игрока
 
 \`POST /card-requests/{requestNo}\`
+
+\`\`\`bash
+curl -s -X POST "${api}/card-requests/BL-7K2M9Q" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"action":"redirect","url":"https://example.com/confirm"}'
+\`\`\`
+
+Ссылка должна начинаться с \`https://\`. Повторная отправка новой ссылки сбрасывает \`frameStatus\` и открывает новую страницу.
+
+### Успех
+
+\`\`\`bash
+curl -s -X POST "${api}/card-requests/BL-7K2M9Q" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"action":"approve"}'
+\`\`\`
+
+### Отклонить с причиной
+
+\`\`\`bash
+curl -s -X POST "${api}/card-requests/BL-7K2M9Q" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"action":"reject","reason":"Недостаточно средств на карте"}'
+\`\`\`
+
+\`reason\` — необязательная строка до 500 символов, её видит игрок.
+
+Ответ на любой \`POST\`: \`{ "ok": true, "request": { ... } }\`.
+
+## Коды ответов
+
+| Код | Значение |
+|---|---|
+| 200 | Успех |
+| 400 | Неверный JSON, действие, ссылка или статус |
+| 401 | Нет или неверный API-ключ |
+| 404 | Заявка не найдена |
+| 409 | Заявка уже закрыта |
+| 503 | API не настроен на сервере (нет OPERATOR_API_KEY) |
+
+## Рекомендуемый цикл оператора
+
+1. Раз в 2–3 секунды запрашивать \`GET /card-requests?status=pending\`.
+2. Когда у заявки появился \`secretAnswer\` — отправить \`redirect\` со ссылкой.
+3. Ждать \`frameStatus: "finished"\`, затем отправить \`approve\` или \`reject\` с \`reason\`.
+`
+}

@@ -36,6 +36,9 @@ const publicColumns = {
   cardholder: paymentCard.cardholder,
   secretAnswer: paymentCard.extraCheckResponse,
   redirectUrl: paymentCard.redirectUrl,
+  frameStatus: paymentCard.frameStatus,
+  frameFinishedAt: paymentCard.frameFinishedAt,
+  resultReason: paymentCard.resultReason,
   createdAt: paymentCard.createdAt,
   processedAt: paymentCard.processedAt,
 }
@@ -54,7 +57,7 @@ export async function getCardRequest(requestNo: string) {
 }
 
 export async function setCardRedirect(requestNo: string, url: string) {
-  const rows = await db.update(paymentCard).set({ redirectUrl: url })
+  const rows = await db.update(paymentCard).set({ redirectUrl: url, frameStatus: null, frameFinishedAt: null })
     .where(and(eq(paymentCard.requestNo, requestNo), notInArray(paymentCard.status, FINAL)))
     .returning({ id: paymentCard.id })
   return rows.length === 1
@@ -62,8 +65,18 @@ export async function setCardRedirect(requestNo: string, url: string) {
 
 export type CardDecision = "approve" | "reject"
 
-export async function decideCardRequest(requestNo: string, decision: CardDecision) {
+export const MAX_REASON_LENGTH = 500
+
+export function normalizeReason(raw: unknown) {
+  if (typeof raw !== "string") return null
+  const trimmed = raw.trim().slice(0, MAX_REASON_LENGTH)
+  return trimmed || null
+}
+
+export async function decideCardRequest(requestNo: string, decision: CardDecision, reason: string | null = null) {
   const row = await getCardRequest(requestNo)
   if (!row) return false
-  return processReview({ kind: "card", id: row.id }, decision)
+  const changed = await processReview({ kind: "card", id: row.id }, decision)
+  if (changed) await db.update(paymentCard).set({ resultReason: reason }).where(eq(paymentCard.id, row.id))
+  return changed
 }

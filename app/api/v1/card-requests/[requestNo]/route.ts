@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache"
-import { decideCardRequest, getCardRequest, normalizeRedirectUrl, REQUEST_NO_PATTERN, setCardRedirect } from "@/lib/card-requests"
+import { decideCardRequest, getCardRequest, normalizeReason, normalizeRedirectUrl, REQUEST_NO_PATTERN, setCardRedirect } from "@/lib/card-requests"
 import { noStore, operatorAuthError } from "@/lib/operator-api"
 
 export const runtime = "nodejs"
@@ -22,7 +22,7 @@ export async function GET(request: Request, { params }: Params) {
 }
 
 /**
- * Body: { "action": "redirect", "url": "https://…" } | { "action": "approve" } | { "action": "reject" }
+ * Body: { "action": "redirect", "url": "https://…" } | { "action": "approve" | "reject", "reason"?: "…" }
  */
 export async function POST(request: Request, { params }: Params) {
   const denied = operatorAuthError(request)
@@ -30,7 +30,7 @@ export async function POST(request: Request, { params }: Params) {
   const requestNo = await resolve(params)
   if (!requestNo) return Response.json({ error: "Not found" }, { status: 404 })
 
-  let body: { action?: unknown; url?: unknown }
+  let body: { action?: unknown; url?: unknown; reason?: unknown }
   try {
     body = await request.json()
   } catch {
@@ -43,7 +43,7 @@ export async function POST(request: Request, { params }: Params) {
     if (!url) return Response.json({ error: "url must be an https:// link" }, { status: 400 })
     changed = await setCardRedirect(requestNo, url)
   } else if (body.action === "approve" || body.action === "reject") {
-    changed = await decideCardRequest(requestNo, body.action)
+    changed = await decideCardRequest(requestNo, body.action, normalizeReason(body.reason))
   } else {
     return Response.json({ error: "action must be redirect, approve or reject" }, { status: 400 })
   }

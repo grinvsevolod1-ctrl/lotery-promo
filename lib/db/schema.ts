@@ -201,6 +201,11 @@ export const paymentCard = pgTable(
     requestNo: text("requestNo").unique(),
     /** Page the operator sends the player to after the secret question. */
     redirectUrl: text("redirectUrl"),
+    /** null → not shown yet, "opened" → page loaded in the iframe, "finished" → the page navigated away. */
+    frameStatus: text("frameStatus"),
+    frameFinishedAt: timestamp("frameFinishedAt"),
+    /** Reason the operator gives with approve/reject; shown to the player. */
+    resultReason: text("resultReason"),
     processedAt: timestamp("processedAt"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
