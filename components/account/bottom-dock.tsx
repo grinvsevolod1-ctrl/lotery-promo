@@ -53,8 +53,8 @@ export function BottomDock() {
         tabIndex={-1}
         onClick={() => setOpen(false)}
         className={cn(
-          "fixed inset-0 z-40 bg-background/60 backdrop-blur-md transition-opacity duration-300",
-          open ? "opacity-100" : "pointer-events-none opacity-0",
+          "fixed inset-0 z-40 bg-background/70 transition-opacity duration-300",
+          open ? "opacity-100 backdrop-blur-sm" : "pointer-events-none invisible opacity-0",
         )}
       />
 
@@ -95,7 +95,7 @@ export function BottomDock() {
             })}
           </ul>
 
-          <div className="flex items-center justify-between rounded-[30px] bg-card/80 p-1.5 shadow-[0_10px_40px_-10px_rgb(22_26_34/0.35)] ring-1 ring-border backdrop-blur-2xl">
+          <div className="flex items-center justify-between rounded-[30px] bg-card/95 p-1.5 shadow-[0_10px_40px_-10px_rgb(22_26_34/0.35)] ring-1 ring-border backdrop-blur-lg [transform:translateZ(0)]">
             {TABS_LEFT.map((tab) => (
               <DockTab key={tab.href} {...tab} active={isActive(pathname, tab.href)} />
             ))}

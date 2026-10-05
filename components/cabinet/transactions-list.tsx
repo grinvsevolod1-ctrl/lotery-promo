@@ -27,7 +27,7 @@ export function TransactionsList({ transactions }: { transactions: Transaction[]
       {transactions.map((tx) => (
         <li
           key={tx.id}
-          className="grain relative flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-card/70 px-4 py-3 backdrop-blur-xl"
+          className="grain relative flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-card px-4 py-3"
         >
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{tx.description}</p>

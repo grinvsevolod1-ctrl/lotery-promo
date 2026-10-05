@@ -23,7 +23,7 @@ export function WelcomeBonusCard() {
 
   return (
     <div className="orbit-border rounded-3xl">
-      <div className="grain relative flex flex-col items-start justify-between gap-4 rounded-3xl border border-gold/40 bg-card/80 p-6 backdrop-blur-xl sm:flex-row sm:items-center">
+      <div className="grain relative flex flex-col items-start justify-between gap-4 rounded-3xl border border-gold/40 bg-card p-6 sm:flex-row sm:items-center">
         <div className="flex items-center gap-4">
           <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gold/15 text-gold ring-1 ring-gold/30">
             <CoinMark className="size-6" />

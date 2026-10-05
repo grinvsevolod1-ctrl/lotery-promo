@@ -36,7 +36,7 @@ export function AccountTopBar({ name, email }: { name: string; email: string }) 
   }, [open])
 
   return (
-    <header className="sticky top-3 z-40 mb-6 flex items-center justify-between gap-3 rounded-full bg-card/70 py-2 pl-5 pr-2 shadow-sm ring-1 ring-border backdrop-blur-2xl">
+    <header className="sticky top-3 z-40 mb-6 flex items-center justify-between gap-3 rounded-full bg-card/90 py-2 pl-5 pr-2 shadow-sm ring-1 ring-border backdrop-blur-lg [transform:translateZ(0)]">
       <BrandLogo className="text-[24px] sm:text-[26px]" />
 
       <div ref={rootRef} className="relative">

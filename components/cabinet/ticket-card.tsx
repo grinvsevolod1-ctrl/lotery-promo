@@ -21,7 +21,7 @@ export function TicketCard({ ticket }: { ticket: TicketRow }) {
   return (
     <li
       className={cn(
-        "grain relative flex overflow-hidden rounded-2xl border bg-card/80 backdrop-blur-xl",
+        "grain relative flex overflow-hidden rounded-2xl border bg-card",
         isWin ? "border-gold/50 shadow-lg shadow-gold/10" : "border-border/60",
       )}
     >

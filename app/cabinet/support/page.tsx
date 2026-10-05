@@ -22,7 +22,7 @@ export default async function SupportPage() {
           <h2 className="mb-3 font-display text-xl font-extrabold text-foreground">Мои обращения</h2>
           <ul className="flex flex-col gap-3">
             {requests.map((r) => (
-              <li key={r.id} className="rounded-3xl bg-card/70 p-4 ring-1 ring-border backdrop-blur">
+              <li key={r.id} className="rounded-3xl bg-card p-4 ring-1 ring-border">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-bold text-foreground">
                     №{r.id} · {SUPPORT_TOPICS[r.topic] ?? r.topic}
