@@ -5,7 +5,7 @@
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/bytoloto}"
-REPO_URL="${REPO_URL:-https://github.com/grinvsevolod1-ctrl/lotery-promo.git}"
+REPO_URL="${REPO_URL:-git@github.com:grinvsevolod1-ctrl/lotery-promo.git}"
 BRANCH="${BRANCH:-master}"
 DOMAIN="${DOMAIN:-bytoloto.com}"
 
