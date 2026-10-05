@@ -20,11 +20,20 @@ export function AdminDashboard({ cards, requests }: { cards: PendingCardRow[]; r
           <h1 className="font-display text-2xl font-extrabold text-foreground">Админ-панель</h1>
           <p className="text-sm text-muted-foreground">Ручное подтверждение карт и заявок</p>
         </div>
-        <form action={adminLogout}>
-          <button type="submit" className="rounded-full border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-foreground/5">
-            Выйти
-          </button>
-        </form>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <a
+            href="/api/admin/api-docs"
+            download
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          >
+            Документация API
+          </a>
+          <form action={adminLogout}>
+            <button type="submit" className="rounded-full border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-foreground/5">
+              Выйти
+            </button>
+          </form>
+        </div>
       </header>
 
       <section>

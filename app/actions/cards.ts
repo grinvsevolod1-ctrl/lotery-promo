@@ -1,7 +1,7 @@
 "use server"
 
 import { createHmac } from "node:crypto"
-import { and, asc, count, desc, eq, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, isNull, notInArray, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
@@ -27,6 +27,8 @@ export type PaymentCardView = {
   extraCheckResponse: string | null
   requestNo: string | null
   redirectUrl: string | null
+  frameStatus: string | null
+  resultReason: string | null
 }
 
 type CardsResult = { ok: true; cards: PaymentCardView[] }
@@ -66,7 +68,26 @@ async function listCards(userId: string): Promise<PaymentCardView[]> {
     isDefault: r.isDefault, status: r.status,
     extraCheckMessage: r.extraCheckMessage, extraCheckResponse: r.extraCheckResponse,
     requestNo: r.requestNo, redirectUrl: r.redirectUrl,
+    frameStatus: r.frameStatus, resultReason: r.resultReason,
   }))
+}
+
+/** The confirmation page reports iframe progress so the operator API can see when the player left the page. */
+export async function reportCardFrame(id: number, event: "opened" | "finished"): Promise<CardsResult> {
+  const userId = await getUserId()
+  if (!Number.isInteger(id) || id <= 0 || (event !== "opened" && event !== "finished")) throw new Error("Invalid card")
+  const [row] = await db.update(paymentCard)
+    .set(event === "finished" ? { frameStatus: "finished", frameFinishedAt: new Date() } : { frameStatus: "opened" })
+    .where(and(
+      eq(paymentCard.id, id), eq(paymentCard.userId, userId),
+      notInArray(paymentCard.status, ["confirmed", "rejected"]),
+      event === "finished" ? sql`true` : isNull(paymentCard.frameStatus),
+    ))
+    .returning({ requestNo: paymentCard.requestNo })
+  if (row && event === "finished") {
+    void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\nСтраница пройдена`)
+  }
+  return { ok: true, cards: await listCards(userId) }
 }
 
 export async function getPaymentCards() {

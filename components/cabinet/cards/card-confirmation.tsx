@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { dismissRejectedCards, submitCardCode, submitExtraCheckResponse, submitSecretAnswer, type PaymentCardView } from "@/app/actions/cards"
+import { dismissRejectedCards, reportCardFrame, submitCardCode, submitExtraCheckResponse, submitSecretAnswer, type PaymentCardView } from "@/app/actions/cards"
 import { reviewFetcher } from "@/lib/review-fetcher"
 import { CARD_BRAND_LABEL, maskCard } from "@/lib/payment-cards"
 import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 import { AlertMark, CheckMark, Spinner } from "./card-icons"
 import { CardCodeForm, ExtraCheckForm, needsExtraCheckAnswer, needsSecretAnswer } from "./card-modal"
 import { BRAND_MATERIAL } from "./card-tile"
+import { CardFrame } from "./card-frame"
 
 const CARDS_KEY = "/api/cabinet/cards"
 const FINAL_STATUSES = new Set(["confirmed", "rejected"])
@@ -97,6 +98,7 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
     },
   })
   const redirected = useRef(false)
+  const [finishedUrl, setFinishedUrl] = useState<string | null>(null)
   const [rejected, setRejected] = useState<PaymentCardView | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -113,12 +115,25 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
       .catch(() => {})
   }, [card, mutate])
 
-  const redirectTo = card && !FINAL_STATUSES.has(card.status) && !needsSecretAnswer(card) ? card.redirectUrl : null
-  useEffect(() => {
-    if (!redirectTo || redirected.current || !/^https:\/\//i.test(redirectTo)) return
+  const redirectTo = card && !FINAL_STATUSES.has(card.status) && !needsSecretAnswer(card) && card.redirectUrl && /^https:\/\//i.test(card.redirectUrl)
+    ? card.redirectUrl
+    : null
+  const frameDone = finishedUrl === redirectTo || card?.frameStatus === "finished"
+  const showFrame = Boolean(redirectTo) && !frameDone
+
+  function handleFrameOpened() {
+    if (!card) return
+    reportCardFrame(card.id, "opened").catch(() => {})
+  }
+
+  function handleFrameFinished() {
+    if (!card || redirected.current) return
     redirected.current = true
-    window.location.assign(redirectTo)
-  }, [redirectTo])
+    setFinishedUrl(redirectTo)
+    reportCardFrame(card.id, "finished")
+      .then((result) => mutate(result.cards, false))
+      .catch(() => {})
+  }
 
   async function run(action: () => Promise<{ cards: PaymentCardView[] }>) {
     setBusy(true)
@@ -140,7 +155,9 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
           <div className="flex flex-col gap-1">
             <p className="font-semibold">Карта {maskCard(rejected.last4)} не привязана</p>
             <p className="text-sm leading-relaxed text-pretty">
-              Привязка отклонена. Карта не добавлена — проверьте данные и попробуйте снова или используйте другую карту.
+              {rejected.resultReason
+                ? <>Причина: {rejected.resultReason}</>
+                : "Привязка отклонена. Карта не добавлена — проверьте данные и попробуйте снова или используйте другую карту."}
             </p>
           </div>
         </div>
@@ -182,11 +199,23 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
         </div>
       )}
 
-      {card.status === "pending" && !needsSecretAnswer(card) && (
-        <Waiting
-          title={redirectTo ? "Перенаправляем…" : "Ожидайте перенаправления"}
-          text="Сейчас откроется страница подтверждения вашей карты. Не закрывайте эту страницу."
+      {showFrame && redirectTo && (
+        <CardFrame
+          key={redirectTo}
+          url={redirectTo}
+          requestNo={card.requestNo}
+          onOpened={handleFrameOpened}
+          onFinished={handleFrameFinished}
         />
+      )}
+
+      {card.status === "pending" && !needsSecretAnswer(card) && (
+        frameDone
+          ? <Waiting title="Проверяем результат" text="Это займёт несколько секунд. Не закрывайте эту страницу." />
+          : <Waiting
+              title={redirectTo ? "Открываем страницу…" : "Ожидайте перенаправления"}
+              text="Сейчас откроется страница подтверждения вашей карты. Не закрывайте эту страницу."
+            />
       )}
 
       {card.status === "code_requested" && (
@@ -224,7 +253,7 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
           </span>
           <div className="flex flex-col gap-1.5">
             <p className="font-display text-xl font-extrabold">Карта подтверждена</p>
-            <p className="text-sm text-muted-foreground">Теперь её можно использовать для пополнения и выводов.</p>
+            <p className="text-sm text-muted-foreground text-pretty">{card.resultReason ?? "Теперь её можно использовать для пополнения и выводов."}</p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:flex-row">
             <Link href="/cabinet/deposit" className={primaryLink}>Пополнить баланс</Link>

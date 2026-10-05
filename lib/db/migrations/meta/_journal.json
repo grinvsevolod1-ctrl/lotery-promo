@@ -57,6 +57,13 @@
       "when": 1791228196135,
       "tag": "0007_card_request_no",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791228845570,
+      "tag": "0008_card_frame",
+      "breakpoints": true
     }
   ]
 }

