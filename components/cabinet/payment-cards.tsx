@@ -110,8 +110,7 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
         <BindingRequestForm
           onCancel={() => setFormOpen(false)}
           onDone={async (next) => {
-            await mutate(next, false)
-            setFormOpen(false)
+                await mutate(next, false)
           }}
         />
       ) : (
@@ -222,12 +221,6 @@ function CardTile({
           </button>
         </div>
       </div>
-      {card.status === "pending" && (
-        <div className="relative flex items-center gap-2.5 rounded-2xl bg-background/60 p-3 backdrop-blur">
-          <Spinner className="size-4 shrink-0 text-foreground/70" />
-          <p className="text-xs leading-relaxed text-foreground/80">Ожидайте решения администратора по привязке карты.</p>
-        </div>
-      )}
       {awaitingExtraCheckMessage && (
         <div className="relative flex items-center gap-2.5 rounded-2xl bg-background/60 p-3 backdrop-blur">
           <Spinner className="size-4 shrink-0 text-foreground/70" />
@@ -404,6 +397,7 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
   const [cvc, setCvc] = useState("")
   const [showCvc, setShowCvc] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const digits = normalizeCardNumber(cardNumber).slice(0, 16)
@@ -445,7 +439,10 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
         cvc: cvcDigits,
       })
       if (!res.ok) setError(res.error)
-      else await onDone(res.cards)
+      else {
+        setRedirecting(true)
+        await onDone(res.cards)
+      }
     } catch (e) {
       setError(actionErrorMessage(e, "Не удалось отправить заявку. Проверьте интернет и попробуйте ещё раз."))
     } finally {
@@ -463,6 +460,28 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
   const previewExpiry = expiryClean || "ММ/ГГ"
 
   const field = fieldClass
+
+  if (redirecting) {
+    return (
+      <Panel className="p-5 sm:p-6">
+        <div role="status" aria-live="polite" className="flex flex-col items-center gap-5 py-10 text-center">
+          <span className="relative grid size-16 place-items-center rounded-full bg-primary/10">
+            <span className="absolute inset-0 animate-ping rounded-full bg-primary/15 [animation-duration:1.8s]" />
+            <Spinner className="size-7 text-primary" />
+          </span>
+          <div className="flex max-w-xs flex-col gap-2">
+            <p className="font-display text-xl font-extrabold text-balance">Карта сохранена</p>
+            <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
+              Ожидайте перенаправления на страницу подтверждения вашей карты.
+            </p>
+          </div>
+          <button type="button" onClick={onCancel} className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
+            Вернуться к картам
+          </button>
+        </div>
+      </Panel>
+    )
+  }
 
   return (
     <Panel className="p-5 sm:p-6">

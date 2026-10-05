@@ -3,29 +3,39 @@
 import Link from "next/link"
 import { useEffect, useState, type ComponentType } from "react"
 import { usePathname } from "next/navigation"
-import { ArrowDownMark, CloverMark, GaugeMark, OrbChatMark, ShareMark, TicketMark, TrophyMark, WalletMark } from "@/components/icons"
+import {
+  ArrowDownMark,
+  CloverMark,
+  GaugeMark,
+  OrbChatMark,
+  ShareMark,
+  TicketMark,
+  TrophyMark,
+  UserMark,
+  WalletMark,
+} from "@/components/icons"
 import { cn } from "@/lib/utils"
 
 type Icon = ComponentType<{ className?: string }>
+type NavItem = { href: string; label: string; icon: Icon }
 
-const TABS_LEFT: { href: string; label: string; icon: Icon }[] = [
+const TABS_LEFT: NavItem[] = [
   { href: "/cabinet", label: "Кабинет", icon: GaugeMark },
   { href: "/play", label: "Игры", icon: TicketMark },
 ]
-const TABS_RIGHT: { href: string; label: string; icon: Icon }[] = [
+const TABS_RIGHT: NavItem[] = [
   { href: "/cabinet/wins", label: "Выигрыши", icon: TrophyMark },
   { href: "/cabinet/cards", label: "Карты", icon: WalletMark },
 ]
-
-// Fan of quick actions laid out on an arc above the centre button (degrees, 180 = left).
-const ACTIONS: { href: string; label: string; icon: Icon; angle: number }[] = [
-  { href: "/play#buy", label: "Билет", icon: TicketMark, angle: 162 },
-  { href: "/play#spin", label: "Колесо", icon: CloverMark, angle: 126 },
-  { href: "/cabinet#funding", label: "Пополнить", icon: ArrowDownMark, angle: 90 },
-  { href: "/cabinet#referral", label: "Друзья", icon: ShareMark, angle: 54 },
-  { href: "/cabinet/support", label: "Поддержка", icon: OrbChatMark, angle: 18 },
+const ACTIONS: NavItem[] = [
+  { href: "/play#buy", label: "Билет", icon: TicketMark },
+  { href: "/play#spin", label: "Колесо", icon: CloverMark },
+  { href: "/cabinet#funding", label: "Пополнить", icon: ArrowDownMark },
+  { href: "/cabinet#referral", label: "Друзья", icon: ShareMark },
+  { href: "/cabinet/support", label: "Поддержка", icon: OrbChatMark },
+  { href: "/cabinet/profile", label: "Профиль", icon: UserMark },
 ]
-const RADIUS = 122
+
 const EASE = "ease-[cubic-bezier(0.32,0.72,0,1)]"
 
 function isActive(pathname: string, href: string) {
@@ -53,8 +63,8 @@ export function BottomDock() {
         tabIndex={-1}
         onClick={() => setOpen(false)}
         className={cn(
-          "fixed inset-0 z-40 bg-background/70 transition-opacity duration-300",
-          open ? "opacity-100 backdrop-blur-sm" : "pointer-events-none invisible opacity-0",
+          "fixed inset-0 z-40 bg-foreground/20 backdrop-blur-[6px] transition-opacity duration-300",
+          open ? "opacity-100" : "pointer-events-none invisible opacity-0",
         )}
       />
 
@@ -63,44 +73,45 @@ export function BottomDock() {
         className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),12px)]"
       >
         <div className="relative w-full max-w-md">
-          <ul id="quick-actions" aria-hidden={!open} className="pointer-events-none absolute bottom-7 left-1/2 size-0">
-            {ACTIONS.map(({ href, label, icon: Icon, angle }, i) => {
-              const rad = (angle * Math.PI) / 180
-              const x = Math.cos(rad) * RADIUS
-              const y = -Math.sin(rad) * RADIUS
-              return (
+          <div
+            id="quick-actions"
+            aria-hidden={!open}
+            className={cn(
+              "absolute inset-x-0 bottom-full mb-4 origin-bottom rounded-[28px] bg-card/95 p-3 shadow-[0_24px_60px_-20px_rgb(22_26_34/0.45)] ring-1 ring-border backdrop-blur-xl transition-[transform,opacity] duration-500 [transform:translateZ(0)]",
+              EASE,
+              open ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none translate-y-4 scale-95 opacity-0",
+            )}
+          >
+            <p className="px-2 pb-2 pt-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Быстрые действия</p>
+            <ul className="grid grid-cols-3 gap-2">
+              {ACTIONS.map(({ href, label, icon: Icon }, i) => (
                 <li
                   key={href}
-                  className={cn("absolute left-0 top-0 transition-[transform,opacity] duration-500", EASE, open ? "opacity-100" : "opacity-0")}
-                  style={{
-                    transform: open ? `translate(calc(${x}px - 50%), calc(${y}px - 50%)) scale(1)` : "translate(-50%, -50%) scale(0.3)",
-                    transitionDelay: open ? `${i * 35}ms` : "0ms",
-                  }}
+                  className={cn("transition-[transform,opacity] duration-500", EASE, open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0")}
+                  style={{ transitionDelay: open ? `${60 + i * 25}ms` : "0ms" }}
                 >
                   <Link
                     href={href}
                     tabIndex={open ? 0 : -1}
                     onClick={() => setOpen(false)}
-                    className={cn("group flex flex-col items-center gap-1.5", open && "pointer-events-auto")}
+                    className="flex flex-col items-center gap-2 rounded-2xl px-1 py-3 text-center transition-colors duration-200 hover:bg-muted active:scale-[0.97]"
                   >
-                    <span className="grid size-14 place-items-center rounded-full bg-card text-primary shadow-xl ring-1 ring-border transition-transform duration-200 group-hover:scale-110 group-active:scale-95">
+                    <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
                       <Icon className="size-6" />
                     </span>
-                    <span className="whitespace-nowrap rounded-full bg-card/90 px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-sm">
-                      {label}
-                    </span>
+                    <span className="text-xs font-semibold leading-tight text-foreground">{label}</span>
                   </Link>
                 </li>
-              )
-            })}
-          </ul>
+              ))}
+            </ul>
+          </div>
 
-          <div className="flex items-center justify-between rounded-[30px] bg-card/95 p-1.5 shadow-[0_10px_40px_-10px_rgb(22_26_34/0.35)] ring-1 ring-border backdrop-blur-lg [transform:translateZ(0)]">
+          <div className="flex items-center rounded-[30px] bg-card/95 p-1.5 shadow-[0_10px_40px_-10px_rgb(22_26_34/0.35)] ring-1 ring-border backdrop-blur-lg [transform:translateZ(0)]">
             {TABS_LEFT.map((tab) => (
               <DockTab key={tab.href} {...tab} active={isActive(pathname, tab.href)} />
             ))}
 
-            <div className="flex w-16 shrink-0 justify-center">
+            <div className="flex w-[72px] shrink-0 justify-center">
               <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
@@ -108,15 +119,11 @@ export function BottomDock() {
                 aria-controls="quick-actions"
                 aria-label={open ? "Закрыть быстрые действия" : "Быстрые действия"}
                 className={cn(
-                  "relative -mt-9 grid size-16 place-items-center rounded-full bg-gradient-to-br from-primary to-gold text-primary-foreground shadow-[0_12px_30px_-6px] shadow-primary/60 ring-4 ring-background transition-transform duration-500 active:scale-90",
+                  "grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-8px] shadow-primary/70 transition-transform duration-300 active:scale-90",
                   EASE,
-                  open && "rotate-[135deg]",
                 )}
               >
-                <span className={cn("absolute font-display text-3xl font-black transition-[opacity,transform] duration-300", open ? "scale-50 opacity-0" : "opacity-100")}>!</span>
-                <svg viewBox="0 0 24 24" aria-hidden="true" className={cn("size-7 transition-[opacity,transform] duration-300", open ? "opacity-100" : "scale-50 opacity-0")} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
+                <DockToggleIcon open={open} />
               </button>
             </div>
 
@@ -130,7 +137,23 @@ export function BottomDock() {
   )
 }
 
-function DockTab({ href, label, icon: Icon, active }: { href: string; label: string; icon: Icon; active: boolean }) {
+// Four dots that collapse into a cross: reads as "more actions" without any glyph.
+function DockToggleIcon({ open }: { open: boolean }) {
+  const dot = cn("absolute size-[7px] rounded-full bg-current transition-[transform,opacity] duration-300", EASE)
+  const bar = cn("absolute h-[2.5px] w-5 rounded-full bg-current transition-[transform,opacity] duration-300", EASE)
+  return (
+    <span aria-hidden="true" className="relative grid size-6 place-items-center">
+      <span className={cn(dot, open ? "scale-0 opacity-0" : "-translate-x-[5px] -translate-y-[5px]")} />
+      <span className={cn(dot, open ? "scale-0 opacity-0" : "translate-x-[5px] -translate-y-[5px]")} />
+      <span className={cn(dot, open ? "scale-0 opacity-0" : "-translate-x-[5px] translate-y-[5px]")} />
+      <span className={cn(dot, open ? "scale-0 opacity-0" : "translate-x-[5px] translate-y-[5px]")} />
+      <span className={cn(bar, open ? "rotate-45 opacity-100" : "rotate-0 scale-50 opacity-0")} />
+      <span className={cn(bar, open ? "-rotate-45 opacity-100" : "rotate-0 scale-50 opacity-0")} />
+    </span>
+  )
+}
+
+function DockTab({ href, label, icon: Icon, active }: NavItem & { active: boolean }) {
   return (
     <Link
       href={href}
@@ -140,8 +163,8 @@ function DockTab({ href, label, icon: Icon, active }: { href: string; label: str
         active ? "bg-primary/12 text-primary" : "text-muted-foreground hover:text-foreground",
       )}
     >
-      <Icon className={cn("size-[22px] transition-transform duration-300", EASE, active && "-translate-y-px scale-110")} />
-      <span className="truncate">{label}</span>
+      <Icon className="size-[22px]" />
+      <span className="w-full truncate px-0.5 text-center">{label}</span>
     </Link>
   )
 }
