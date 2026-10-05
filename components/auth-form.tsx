@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthShell, FormMessage } from "@/components/auth-shell"
-import { Turnstile, TURNSTILE_ENABLED } from "@/components/turnstile"
 
 const VERIFY_CALLBACK = "/verify-email"
 
@@ -18,8 +17,6 @@ const SIGN_UP_ERRORS: Record<string, string> = {
   USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "Пользователь с таким e-mail уже зарегистрирован.",
   TERMS_NOT_ACCEPTED: "Подтвердите, что вам есть 18 лет и вы согласны с правилами.",
   PASSWORD_TOO_SHORT: "Пароль слишком короткий — минимум 8 символов.",
-  VERIFICATION_FAILED: "Проверка «я не робот» не пройдена. Попробуйте ещё раз.",
-  MISSING_RESPONSE: "Пройдите проверку «я не робот».",
 }
 
 export function AuthForm({
@@ -34,7 +31,6 @@ export function AuthForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [termsAccepted, setTermsAccepted] = useState(false)
-  const [captcha, setCaptcha] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
@@ -51,10 +47,6 @@ export function AuthForm({
         setError(SIGN_UP_ERRORS.TERMS_NOT_ACCEPTED)
         return
       }
-      if (TURNSTILE_ENABLED && !captcha) {
-        setError(SIGN_UP_ERRORS.MISSING_RESPONSE)
-        return
-      }
       setLoading(true)
       const { data, error } = await authClient.signUp.email({
         email,
@@ -63,11 +55,9 @@ export function AuthForm({
         callbackURL: VERIFY_CALLBACK,
         // Checked server-side in lib/auth.ts; the API refuses sign-ups without it.
         termsAccepted: true,
-        fetchOptions: captcha ? { headers: { "x-captcha-response": captcha } } : undefined,
       } as Parameters<typeof authClient.signUp.email>[0])
       setLoading(false)
       if (error) {
-        setCaptcha(null)
         setError(SIGN_UP_ERRORS[error.code ?? ""] ?? "Не удалось создать аккаунт. Проверьте данные и попробуйте снова.")
         return
       }
@@ -244,7 +234,6 @@ export function AuthForm({
                 .
               </span>
             </label>
-            <Turnstile action="signup" onToken={setCaptcha} />
           </>
         )}
 

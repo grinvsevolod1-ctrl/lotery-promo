@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth"
 import { APIError, createAuthMiddleware } from "better-auth/api"
-import { captcha } from "better-auth/plugins"
 import { pool } from "@/lib/db"
 import {
   sendChangeEmailConfirmation,
@@ -64,8 +63,6 @@ const vercelOrigins = isDev
 // default). Their hops are skipped when resolving the client IP from
 // X-Forwarded-For, so rate limits apply to real visitors, not to the proxy.
 const trustedProxies = splitList(process.env.TRUSTED_PROXIES ?? "127.0.0.1,::1")
-
-const turnstileSecret = process.env.TURNSTILE_SECRET_KEY
 
 // E-mail confirmation is off for now: users are signed in right after sign-up.
 // Set REQUIRE_EMAIL_VERIFICATION=1 to require a confirmed address again.
@@ -192,13 +189,4 @@ export const auth = betterAuth({
         }
       : {}),
   },
-  plugins: turnstileSecret
-    ? [
-        captcha({
-          provider: "cloudflare-turnstile",
-          secretKey: turnstileSecret,
-          endpoints: ["/sign-up/email", "/request-password-reset"],
-        }),
-      ]
-    : [],
 })
