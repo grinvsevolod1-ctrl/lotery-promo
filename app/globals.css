@@ -239,16 +239,26 @@
 }
 
 /* Scroll reveal — staggered entrance */
-@keyframes reveal-up {
-  from { opacity: 0; transform: translateY(34px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+/* Opacity-only so content never shifts under the user's finger while scrolling */
+@keyframes reveal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .reveal {
   opacity: 0;
 }
 .reveal.is-visible {
-  animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: reveal-fade 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
   animation-delay: var(--reveal-delay, 0ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; }
+  .reveal.is-visible { animation: none; }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
 }
 
 /* Pointer-follow aura — a soft magenta/gold light that trails the cursor */

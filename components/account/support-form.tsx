@@ -38,7 +38,7 @@ export function SupportForm() {
 
   if (sentId) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-3xl bg-card/80 p-8 text-center ring-1 ring-border backdrop-blur animate-in fade-in zoom-in-95 duration-300">
+      <div className="flex flex-col items-center gap-3 rounded-3xl bg-card p-8 text-center ring-1 ring-border animate-in fade-in zoom-in-95 duration-300">
         <span className="grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30">
           <CheckMark className="size-7" />
         </span>
@@ -54,7 +54,7 @@ export function SupportForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5 rounded-3xl bg-card/80 p-5 ring-1 ring-border backdrop-blur sm:p-6">
+    <form onSubmit={onSubmit} className="flex flex-col gap-5 rounded-3xl bg-card p-5 ring-1 ring-border sm:p-6">
       <fieldset className="flex flex-col gap-2.5">
         <legend className="mb-2.5 text-sm font-medium text-muted-foreground">Тема</legend>
         <div className="flex flex-wrap gap-2">

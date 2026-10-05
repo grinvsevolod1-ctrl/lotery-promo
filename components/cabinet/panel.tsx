@@ -5,8 +5,8 @@ export function Panel({ children, className, accent }: { children: ReactNode; cl
   return (
     <div
       className={cn(
-        "grain relative overflow-hidden rounded-3xl border border-border/60 backdrop-blur-xl",
-        accent ? "bg-gradient-to-br from-primary/20 to-accent/10" : "bg-card/70",
+        "grain relative overflow-hidden rounded-3xl border border-border/60",
+        accent ? "bg-gradient-to-br from-primary/20 to-accent/10" : "bg-card",
         className,
       )}
     >

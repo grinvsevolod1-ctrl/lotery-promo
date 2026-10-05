@@ -54,7 +54,7 @@ export default async function CabinetPage() {
           </Link>
           <Link
             href="#funding"
-            className="flex h-14 items-center justify-center gap-2 rounded-full bg-card/80 text-base font-semibold text-foreground ring-1 ring-border transition active:scale-[0.97]"
+            className="flex h-14 items-center justify-center gap-2 rounded-full bg-card text-base font-semibold text-foreground ring-1 ring-border transition active:scale-[0.97]"
           >
             <WalletMark className="size-5" />
             Пополнить
@@ -92,7 +92,7 @@ function Stat({ href, label, value, icon }: { href: string; label: string; value
   return (
     <Link
       href={href}
-      className="group flex flex-col gap-3 rounded-3xl bg-card/70 p-4 ring-1 ring-border backdrop-blur transition active:scale-[0.97]"
+      className="group flex flex-col gap-3 rounded-3xl bg-card p-4 ring-1 ring-border transition active:scale-[0.97]"
     >
       <span className="flex items-center justify-between text-primary">
         {icon}

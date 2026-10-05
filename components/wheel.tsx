@@ -2,11 +2,12 @@
 
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 
+const INK = '#161a22'
 const PALETTE = [
-  { fill: 'oklch(0.45 0.22 305)', text: 'oklch(0.98 0 0)' },
-  { fill: 'oklch(0.82 0.17 85)', text: 'oklch(0.2 0.05 300)' },
-  { fill: 'oklch(0.62 0.26 350)', text: 'oklch(0.98 0 0)' },
-  { fill: 'oklch(0.38 0.2 300)', text: 'oklch(0.98 0 0)' },
+  { fill: '#ff6416', text: '#ffffff' },
+  { fill: '#ffffff', text: INK },
+  { fill: '#1f5be0', text: '#ffffff' },
+  { fill: '#f3f4f6', text: INK },
 ]
 
 export const SPIN_DURATION_MS = 4200
@@ -66,21 +67,14 @@ export const Wheel = forwardRef<
     return (
       <div className={className} style={{ width: size, maxWidth: '100%' }}>
         <div className="relative">
-          <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
-            <svg width="34" height="40" viewBox="0 0 34 40" aria-hidden="true">
-              <path d="M17 40 L2 8 A17 12 0 0 1 32 8 Z" fill="oklch(0.82 0.17 85)" stroke="oklch(0.2 0.05 300)" strokeWidth="2" />
-              <circle cx="17" cy="10" r="4" fill="oklch(0.2 0.05 300)" />
+          <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-[40%] drop-shadow-[0_4px_8px_rgb(22_26_34/0.25)]">
+            <svg width="30" height="36" viewBox="0 0 30 36" aria-hidden="true">
+              <path d="M15 36 L3 9 A13 13 0 1 1 27 9 Z" fill={INK} />
+              <circle cx="15" cy="12" r="4.5" fill="#ff6416" />
             </svg>
           </div>
 
-          <div
-            className="rounded-full p-2"
-            style={{
-              background:
-                'conic-gradient(from 0deg, oklch(0.82 0.17 85), oklch(0.62 0.26 350), oklch(0.45 0.22 305), oklch(0.82 0.17 85))',
-              boxShadow: '0 0 60px -10px oklch(0.62 0.26 350 / 0.7), inset 0 0 0 4px oklch(0.2 0.05 300)',
-            }}
-          >
+          <div className="rounded-full bg-white p-2.5 shadow-[0_24px_60px_-20px_rgb(22_26_34/0.35),inset_0_0_0_1px_rgb(22_26_34/0.08)]">
             <svg
               viewBox={`0 0 ${size} ${size}`}
               className="block w-full"
@@ -97,7 +91,7 @@ export const Wheel = forwardRef<
                 const color = PALETTE[i % PALETTE.length]
                 return (
                   <g key={`${label}-${i}`}>
-                    <path d={segmentPath(i)} fill={color.fill} stroke="oklch(0.2 0.05 300)" strokeWidth="2" />
+                    <path d={segmentPath(i)} fill={color.fill} stroke="rgb(22 26 34 / 0.08)" strokeWidth="1" />
                     <text
                       x={pos.x}
                       y={pos.y}
@@ -113,8 +107,8 @@ export const Wheel = forwardRef<
                   </g>
                 )
               })}
-              <circle cx={center} cy={center} r={size * 0.08} fill="oklch(0.2 0.05 300)" />
-              <circle cx={center} cy={center} r={size * 0.08} fill="none" stroke="oklch(0.82 0.17 85)" strokeWidth="3" />
+              <circle cx={center} cy={center} r={size * 0.1} fill="#ffffff" stroke="rgb(22 26 34 / 0.1)" strokeWidth="1" />
+              <circle cx={center} cy={center} r={size * 0.045} fill={INK} />
             </svg>
           </div>
         </div>
