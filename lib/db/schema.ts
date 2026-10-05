@@ -251,6 +251,13 @@ export const supportRequest = pgTable(
   (table) => [index("support_request_user_idx").on(table.userId)],
 )
 
+/** Key/value settings an admin can change at runtime (e.g. the verification service webhook URL). */
+export const appSetting = pgTable("app_setting", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 export const fundingRequest = pgTable(
   "funding_request",
   {

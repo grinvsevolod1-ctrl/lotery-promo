@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const denied = operatorAuthError(request)
   if (denied) return denied
   return Response.json(
-    { ok: true, version: "v1", webhookConfigured: Boolean(webhookUrl()), serverTime: new Date().toISOString() },
+    { ok: true, version: "v1", webhookConfigured: Boolean(await webhookUrl()), serverTime: new Date().toISOString() },
     { headers: noStore },
   )
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { isAdmin } from "@/lib/admin-auth"
-import { getPendingCards, getPendingFundingRequests, getPendingReferrals } from "@/app/actions/admin"
+import { getPendingCards, getPendingFundingRequests, getPendingReferrals, getWebhookSettings } from "@/app/actions/admin"
+import { WebhookSettings } from "@/components/admin/webhook-settings"
 import { ReferralReview } from "@/components/admin/referral-review"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import { AutoRefresh } from "@/components/auto-refresh"
@@ -10,7 +11,12 @@ export const metadata = { title: "Админка — bytoloto.com", robots: { in
 export default async function AdminPage() {
   if (!(await isAdmin())) redirect("/admin/login")
 
-  const [cards, requests, referrals] = await Promise.all([getPendingCards(), getPendingFundingRequests(), getPendingReferrals()])
+  const [cards, requests, referrals, webhook] = await Promise.all([
+    getPendingCards(),
+    getPendingFundingRequests(),
+    getPendingReferrals(),
+    getWebhookSettings(),
+  ])
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-8">
@@ -19,6 +25,7 @@ export default async function AdminPage() {
         <p className="text-sm leading-relaxed text-muted-foreground">Платёжные операции и привязка карт выполняются вручную через Telegram-бота. Кнопки доступны только в личном чате администратора.</p>
         <AdminDashboard cards={cards} requests={requests} />
         <ReferralReview referrals={referrals} />
+        <WebhookSettings settings={webhook} />
       </div>
     </main>
   )
