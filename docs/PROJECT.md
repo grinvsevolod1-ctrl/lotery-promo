@@ -94,7 +94,8 @@ docker compose logs app --since 2m
 | `sign-in`, `sign-up`, `forgot-password`, `reset-password`, `verify-email` | Авторизация (оболочка `components/auth-shell.tsx`) |
 | `cabinet/layout.tsx` | Проверка сессии + `AccountShell` (шапка + нижний док) |
 | `cabinet/page.tsx` | Обзор: баланс, бонус, пополнение, рефералы, операции |
-| `cabinet/cards` | Привязка и управление картами |
+| `cabinet/cards` | Привязка и управление картами. Отклонённая карта: алерт игроку → удаляется (`dismissRejectedCards`). Удаление через своё модальное окно, не `confirm()` |
+| `cabinet/deposit` | Пополнение: сумма (пресеты 10/20/50/100 или своя, 5–1000 BYN) + подтверждённая карта → заявка в Telegram «Подтвердить/Отклонить» → при одобрении `lib/reviews.ts` зачисляет транзакцию `deposit` |
 | `cabinet/wins` | История выигрышей |
 | `cabinet/profile` | Имя, пароль, почта, сессии, удаление аккаунта |
 | `cabinet/support` | Форма обращения в поддержку |
@@ -125,7 +126,8 @@ docker compose logs app --since 2m
 | `cabinet/card-brand-mark.tsx` | Логотипы Visa/Mastercard/Белкарт |
 | `cabinet/buy-ticket-panel.tsx`, `number-picker.tsx`, `ticket-card.tsx` | Покупка и отображение билетов |
 | `cabinet/daily-spin.tsx` | Ежедневное колесо в кабинете |
-| `cabinet/funding-panel.tsx`, `withdraw-form.tsx` | Пополнение и вывод |
+| `cabinet/funding-panel.tsx`, `withdraw-form.tsx` | Заявки и вывод |
+| `cabinet/deposit-form.tsx` | Форма пополнения (кнопка «Пополнить» в доке ведёт на `/cabinet/deposit`) |
 | `cabinet/referral-panel.tsx`, `referral-link.tsx` | Рефералы |
 | `cabinet/profile-view.tsx` | Настройки профиля |
 | `cabinet/transactions-list.tsx`, `welcome-bonus-card.tsx`, `panel.tsx` | Операции, бонус, базовая карточка |

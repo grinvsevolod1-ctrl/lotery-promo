@@ -70,6 +70,14 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
           description: `Возврат: заявка на вывод #${target.id} отклонена`,
         })
       }
+      if (row.type === "deposit" && status === "approved") {
+        await tx.insert(transaction).values({
+          userId: row.userId,
+          type: "deposit",
+          amount: row.amount,
+          description: `Пополнение баланса #${target.id}`,
+        })
+      }
       return true
     })
   }
