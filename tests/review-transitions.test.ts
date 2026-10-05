@@ -14,7 +14,7 @@ describe("review transitions", () => {
     expect(nextReviewStatus("card", "pending", "reject")).toBe("rejected")
     expect(nextReviewStatus("card", "pending", "code")).toBe("code_requested")
     expect(nextReviewStatus("card", "pending", "extra")).toBe("extra_check")
-    expect(nextReviewStatus("card", "pending", "approve")).toBeNull()
+    expect(nextReviewStatus("card", "pending", "approve")).toBe("confirmed")
     expect(nextReviewStatus("card", "pending", "checkout")).toBeNull()
     for (const status of ["code_requested", "extra_check", "confirmed", "rejected"]) {
       for (const decision of ["approve", "reject", "code", "extra", "checkout"] as const) {

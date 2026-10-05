@@ -31,7 +31,7 @@ export function configureWebhook() {
   if (!origin || !secret) return Promise.resolve()
   const url = new URL("/api/telegram/webhook", origin)
   if (url.protocol !== "https:") return Promise.resolve()
-  webhookRegistration ??= telegramRequest("setWebhook", { url: url.toString(), secret_token: secret, allowed_updates: ["callback_query"] }).catch((error) => {
+  webhookRegistration ??= telegramRequest("setWebhook", { url: url.toString(), secret_token: secret, allowed_updates: ["callback_query", "message"] }).catch((error) => {
     webhookRegistration = null
     throw error
   })
@@ -61,7 +61,10 @@ async function sendTelegram(text: string, target?: ReviewTarget) {
                 { text: "Код", callback_data: callbackData(target, "code") },
                 { text: "Доп. проверка", callback_data: callbackData(target, "extra") },
               ],
-              [{ text: "Отклонить", callback_data: callbackData(target, "reject") }],
+              [
+                { text: "Подтвердить", callback_data: callbackData(target, "approve") },
+                { text: "Отклонить", callback_data: callbackData(target, "reject") },
+              ],
             ] }
           : undefined
     await telegramRequest("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", reply_markup: controls })

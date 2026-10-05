@@ -7,6 +7,7 @@ export function reviewFeedback(target: ReviewTarget, result: { status: string; t
     return "Решение сохранено. Статус в кабинете обновится автоматически."
   }
   if (target.kind === "card" && result.type === "card") {
+    if (result.status === "confirmed") return "Карта подтверждена и привязана."
     if (result.status === "rejected") return "Заявка на карту отклонена."
     if (result.status === "code_requested") return "У пользователя запрошен код. Ждём ответ в кабинете."
     if (result.status === "extra_check") return "Карта отправлена на доп. проверку."

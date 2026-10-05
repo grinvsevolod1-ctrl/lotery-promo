@@ -36,10 +36,20 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
     return rows.length === 1
   }
   if (target.kind === "card") {
-    const rows = await db.update(paymentCard).set({ status, processedAt: new Date() })
-      .where(and(eq(paymentCard.id, target.id), eq(paymentCard.status, "pending")))
-      .returning({ id: paymentCard.id })
-    return rows.length === 1
+    return db.transaction(async (tx) => {
+      // A repeated extra check must start from a blank question, otherwise the cabinet shows the old one.
+      const resetExtra = status === "extra_check" ? { extraCheckMessage: null, extraCheckResponse: null } : {}
+      const [row] = await tx.update(paymentCard).set({ status, processedAt: new Date(), ...resetExtra })
+        .where(and(eq(paymentCard.id, target.id), eq(paymentCard.status, "pending")))
+        .returning({ id: paymentCard.id, userId: paymentCard.userId })
+      if (!row) return false
+      if (status === "confirmed") {
+        const [existingDefault] = await tx.select({ id: paymentCard.id }).from(paymentCard)
+          .where(and(eq(paymentCard.userId, row.userId), eq(paymentCard.isDefault, true))).limit(1)
+        if (!existingDefault) await tx.update(paymentCard).set({ isDefault: true }).where(eq(paymentCard.id, row.id))
+      }
+      return true
+    })
   }
   return false
 }

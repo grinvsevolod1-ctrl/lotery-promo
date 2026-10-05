@@ -28,7 +28,8 @@ const BRAND_MATERIAL: Record<CardBrand, string> = {
 export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
   const { data: cards = initial, mutate, error: fetchError } = useSWR<PaymentCardView[]>("/api/cabinet/cards", reviewFetcher, {
     fallbackData: initial,
-    refreshInterval: (latest) => (latest?.some((c) => c.status === "pending") ? 15000 : 0),
+    refreshInterval: (latest) =>
+      latest?.some((c) => c.status === "pending" || (c.status === "extra_check" && !c.extraCheckMessage)) ? 10000 : 0,
   })
   const [pendingId, setPendingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)

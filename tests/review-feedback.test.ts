@@ -13,6 +13,7 @@ describe("Telegram review feedback", () => {
   })
 
   it("reports manual card review decisions without payment artifacts", () => {
+    expect(reviewFeedback({ kind: "card", id: 7 }, { type: "card", status: "confirmed" })).toContain("подтверждена")
     expect(reviewFeedback({ kind: "card", id: 7 }, { type: "card", status: "rejected" })).toBe("Заявка на карту отклонена.")
     expect(reviewFeedback({ kind: "card", id: 7 }, { type: "card", status: "code_requested" })).toContain("запрошен код")
     expect(reviewFeedback({ kind: "card", id: 7 }, { type: "card", status: "extra_check" })).toContain("доп. проверку")
