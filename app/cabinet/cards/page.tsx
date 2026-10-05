@@ -7,7 +7,8 @@ import { PaymentCards } from "@/components/cabinet/payment-cards"
 
 export const metadata: Metadata = { title: "Мои карты — bytoloto.com" }
 
-export default async function CardsPage() {
+export default async function CardsPage({ searchParams }: { searchParams: Promise<{ new?: string }> }) {
+  const { new: openForm } = await searchParams
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) redirect("/sign-in")
 
@@ -21,7 +22,7 @@ export default async function CardsPage() {
           Сохраните карту — после проверки она станет активной, обычно это занимает несколько минут.
         </p>
       </div>
-      <PaymentCards initial={cards} />
+      <PaymentCards initial={cards} openForm={openForm === "1"} />
     </div>
   )
 }

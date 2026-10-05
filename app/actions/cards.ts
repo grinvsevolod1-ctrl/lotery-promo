@@ -27,7 +27,7 @@ export type PaymentCardView = {
 }
 
 type CardsResult = { ok: true; cards: PaymentCardView[] }
-export type BindingRequestResult = { ok: true; cards: PaymentCardView[] } | { ok: false; error: string }
+export type BindingRequestResult = { ok: true; cardId: number; cards: PaymentCardView[] } | { ok: false; error: string }
 
 const MAX_CARDS = 5
 const MAX_PENDING = 2
@@ -124,7 +124,7 @@ export async function requestCardBinding(input: {
   ].join("\n"), { kind: "card", id: created.id })
 
   revalidatePath("/cabinet/cards")
-  return { ok: true, cards: await listCards(user.id) }
+  return { ok: true, cardId: created.id, cards: await listCards(user.id) }
 }
 
 export async function submitCardCode(id: number, code: string): Promise<CardsResult> {
