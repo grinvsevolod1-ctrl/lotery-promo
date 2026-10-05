@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { LegalPage } from "@/components/legal-page"
-import { operatorRequisites, site } from "@/lib/site"
+import { site } from "@/lib/site"
 
 export const metadata: Metadata = {
   title: "Публичная оферта — bytoloto.com",
@@ -19,7 +19,7 @@ export default function TermsPage() {
       <h2>1. Термины</h2>
       <ul>
         <li>
-          <strong>Оператор</strong> — {site.operator.name} ({operatorRequisites}).
+          <strong>Оператор</strong> — администрация сайта {site.name}.
         </li>
         <li>
           <strong>Сайт</strong> — {site.url} и все его страницы.

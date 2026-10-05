@@ -4,7 +4,7 @@ import { site } from "@/lib/site"
 
 export const metadata: Metadata = {
   title: "Контакты — bytoloto.com",
-  description: "Реквизиты оператора bytoloto.com и способы связи со службой поддержки.",
+  description: "Способы связи со службой поддержки bytoloto.com.",
   alternates: { canonical: "/contacts" },
 }
 
@@ -27,30 +27,6 @@ export default function ContactsPage() {
           </li>
         )}
       </ul>
-
-      <h2>Реквизиты оператора</h2>
-      <table>
-        <tbody>
-          <tr>
-            <th>Наименование</th>
-            <td>{site.operator.name}</td>
-          </tr>
-          {site.operator.unp && (
-            <tr>
-              <th>УНП</th>
-              <td>{site.operator.unp}</td>
-            </tr>
-          )}
-          <tr>
-            <th>Адрес</th>
-            <td>{site.operator.address}</td>
-          </tr>
-          <tr>
-            <th>Сайт</th>
-            <td>{site.url}</td>
-          </tr>
-        </tbody>
-      </table>
 
       <h2>Что указать в обращении</h2>
       <p>

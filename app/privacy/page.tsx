@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { LegalPage } from "@/components/legal-page"
-import { operatorRequisites, site } from "@/lib/site"
+import { site } from "@/lib/site"
 
 export const metadata: Metadata = {
   title: "Политика конфиденциальности — bytoloto.com",
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
     >
       <h2>1. Оператор персональных данных</h2>
       <p>
-        Оператором персональных данных является <strong>{site.operator.name}</strong> ({operatorRequisites}). Обработка осуществляется в соответствии с Законом Республики Беларусь от 7 мая 2021 г.
+        Оператором персональных данных является администрация сайта <strong>{site.name}</strong>. Обработка осуществляется в соответствии с Законом Республики Беларусь от 7 мая 2021 г.
         № 99-З «О защите персональных данных».
       </p>
 
