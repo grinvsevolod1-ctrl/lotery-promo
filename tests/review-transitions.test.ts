@@ -2,9 +2,14 @@ import { describe, expect, it } from "vitest"
 import { nextReviewStatus } from "@/lib/review-transitions"
 
 describe("review transitions", () => {
-  it("keeps every funding decision disabled until a payment provider is connected", () => {
-    for (const status of ["pending", "awaiting_payment", "approved"]) {
-      for (const decision of ["approve", "reject", "code", "extra", "checkout"] as const) {
+  it("lets a pending funding request be approved or rejected exactly once", () => {
+    expect(nextReviewStatus("funding", "pending", "approve")).toBe("approved")
+    expect(nextReviewStatus("funding", "pending", "reject")).toBe("rejected")
+    for (const decision of ["code", "extra", "checkout"] as const) {
+      expect(nextReviewStatus("funding", "pending", decision)).toBeNull()
+    }
+    for (const status of ["awaiting_payment", "approved", "rejected"]) {
+      for (const decision of ["approve", "reject"] as const) {
         expect(nextReviewStatus("funding", status, decision)).toBeNull()
       }
     }

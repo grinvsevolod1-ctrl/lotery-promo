@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { getBalance, getSpinStatus, getTickets, getTransactions } from "@/app/actions/cabinet"
 import { getFundingRequests } from "@/app/actions/funding"
+import { getPaymentCards } from "@/app/actions/cards"
 import { settleLegacyTickets } from "@/lib/draws"
 import { TicketMark, TrophyMark, WalletMark } from "@/components/icons"
 import { EmptyState, Panel } from "@/components/cabinet/panel"
@@ -22,12 +23,13 @@ export default async function CabinetPage() {
 
   await settleLegacyTickets()
 
-  const [balance, tickets, transactions, spinStatus, fundingRequests] = await Promise.all([
+  const [balance, tickets, transactions, spinStatus, fundingRequests, cards] = await Promise.all([
     getBalance(),
     getTickets(),
     getTransactions(),
     getSpinStatus(),
     getFundingRequests(),
+    getPaymentCards(),
   ])
 
   const hasWelcome = transactions.some((t) => t.type === "welcome")
@@ -80,7 +82,7 @@ export default async function CabinetPage() {
 
       <ReferralPanel />
 
-      <FundingPanel requests={fundingRequests} />
+      <FundingPanel requests={fundingRequests} cards={cards} balance={balance} />
 
       <BuyTicketPanel balance={balance} />
 
