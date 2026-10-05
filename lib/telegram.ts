@@ -1,6 +1,6 @@
 import { after } from "next/server"
-import { site } from "@/lib/site"
-import { callbackData, webhookSecret, type ReviewTarget } from "@/lib/telegram-security"
+import { isForeignDeployment } from "@/lib/deployment-guard"
+import { callbackData, type ReviewTarget } from "@/lib/telegram-security"
 
 export function escapeTelegram(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -8,7 +8,7 @@ export function escapeTelegram(value: string) {
 
 export async function telegramRequest(method: "sendMessage" | "setWebhook" | "answerCallbackQuery" | "editMessageReplyMarkup" | "editMessageText", body: Record<string, unknown>) {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim()
-  if (!token) throw new Error("Telegram not configured")
+  if (!token || isForeignDeployment()) throw new Error("Telegram not configured")
   const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -20,33 +20,12 @@ export async function telegramRequest(method: "sendMessage" | "setWebhook" | "an
   if (!result.ok) throw new Error("Telegram request rejected")
 }
 
-// setWebhook is idempotent, but calling it on every notification wastes Telegram API quota.
-// Register once per process; a failed attempt clears the cache so the next call retries.
-let webhookRegistration: Promise<void> | null = null
-
-export function configureWebhook() {
-  if (process.env.NODE_ENV !== "production" || (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production")) return Promise.resolve()
-  const origin = site.url
-  const secret = webhookSecret()
-  if (!origin || !secret) return Promise.resolve()
-  const url = new URL("/api/telegram/webhook", origin)
-  if (url.protocol !== "https:") return Promise.resolve()
-  webhookRegistration ??= telegramRequest("setWebhook", { url: url.toString(), secret_token: secret, allowed_updates: ["callback_query", "message"] }).catch((error) => {
-    webhookRegistration = null
-    throw error
-  })
-  return webhookRegistration
-}
-
+// The bot webhook is never registered automatically: any other deployment holding the same token
+// would re-point the bot to itself and steal operator replies. It is set once from the server.
 async function sendTelegram(text: string, target?: ReviewTarget) {
   const chatId = process.env.TELEGRAM_CHAT_ID?.trim()
-  if (!chatId || !process.env.TELEGRAM_BOT_TOKEN) return
+  if (!chatId || !process.env.TELEGRAM_BOT_TOKEN || isForeignDeployment()) return
   try {
-    try {
-      await configureWebhook()
-    } catch {
-      console.error("Telegram webhook registration failed; notification will still be sent")
-    }
     const canReview = target && process.env.ADMIN_SECRET && /^\d+$/.test(chatId)
     const controls = !canReview
       ? undefined

@@ -1,17 +1,7 @@
 import type { Instrumentation } from "next"
 
 export async function register() {
-  // Tickets are instant now: no background draw scheduler is needed.
-  if (process.env.NEXT_RUNTIME !== "nodejs") return
-  // On Vercel every cold start would re-register the webhook; there it is
-  // registered lazily, once per instance, before the first notification.
-  if (process.env.VERCEL) return
-  const { configureWebhook } = await import("@/lib/telegram")
-  try {
-    await configureWebhook()
-  } catch {
-    console.error("Telegram webhook registration failed at startup; notification delivery will retry")
-  }
+  // Nothing to start: tickets are instant and the Telegram webhook is set manually on the server.
 }
 
 // Structured server error log: picked up by Vercel/PM2/docker log drains, so
