@@ -84,7 +84,7 @@ export function SupportForm() {
           minLength={10}
           maxLength={2000}
           rows={6}
-          placeholder="Расскажите, что случилось. Не указывайте CVC и коды из SMS."
+          placeholder="Расскажите, что случилось."
           className={cn(fieldClass, "min-h-40 resize-none py-4 leading-relaxed")}
         />
         <span className="self-end text-[11px] tabular-nums">{message.length}/2000</span>

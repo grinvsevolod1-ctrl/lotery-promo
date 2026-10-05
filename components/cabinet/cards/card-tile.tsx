@@ -126,13 +126,13 @@ export function CardTile({
         </Link>
       )}
       {card.status === "extra_check" && !card.extraCheckMessage && (
-        <CardNotice>Администратор проводит дополнительную проверку. Ожидайте вопрос.</CardNotice>
+        <CardNotice>Идёт дополнительная проверка. Ожидайте вопрос.</CardNotice>
       )}
       {needsExtraCheckAnswer(card) && (
-        <CardCta onClick={onOpenAction} disabled={disabled}>Администратор задал вопрос. Нажмите, чтобы ответить.</CardCta>
+        <CardCta onClick={onOpenAction} disabled={disabled}>Нужен ответ на вопрос. Нажмите, чтобы ответить.</CardCta>
       )}
       {card.status === "extra_check" && Boolean(card.extraCheckMessage) && Boolean(card.extraCheckResponse) && (
-        <CardNotice>Ответ отправлен. Ожидайте решения администратора.</CardNotice>
+        <CardNotice>Ответ отправлен. Ожидайте решения.</CardNotice>
       )}
       {card.status === "code_requested" && (
         <CardCta onClick={onOpenAction} disabled={disabled}>Нужен код подтверждения. Нажмите, чтобы ввести.</CardCta>

@@ -41,7 +41,7 @@ export function WithdrawForm({ cards, balance, hasPending }: { cards: CardOption
       const result = await requestWithdrawal({ amount: Number(amount), cardId: Number(cardId) })
       if (result.ok) {
         setAmount("")
-        setMessage({ ok: true, text: "Заявка отправлена. Сумма зарезервирована до решения администратора." })
+        setMessage({ ok: true, text: "Заявка отправлена. Сумма зарезервирована до завершения вывода." })
       } else {
         setMessage({ ok: false, text: result.error })
       }

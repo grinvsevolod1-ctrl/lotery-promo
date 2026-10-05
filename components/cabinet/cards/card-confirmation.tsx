@@ -132,7 +132,7 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
           <div className="flex flex-col gap-1">
             <p className="font-semibold">Карта {maskCard(rejected.last4)} не привязана</p>
             <p className="text-sm leading-relaxed text-pretty">
-              Банк или администратор отклонил привязку. Карта не добавлена — проверьте данные и попробуйте снова или используйте другую карту.
+              Привязка отклонена. Карта не добавлена — проверьте данные и попробуйте снова или используйте другую карту.
             </p>
           </div>
         </div>
@@ -184,13 +184,13 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
       )}
 
       {card.status === "extra_check" && !card.extraCheckMessage && (
-        <Waiting title="Дополнительная проверка" text="Администратор проверяет карту. Скоро здесь появится вопрос." />
+        <Waiting title="Дополнительная проверка" text="Проверяем карту. Скоро здесь появится вопрос." />
       )}
 
       {needsExtraCheckAnswer(card) && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <h2 className="font-display text-lg font-bold">Вопрос администратора</h2>
+            <h2 className="font-display text-lg font-bold">Дополнительный вопрос</h2>
             <p className="text-sm leading-relaxed text-muted-foreground text-pretty">{card.extraCheckMessage}</p>
           </div>
           <ExtraCheckForm disabled={busy} onSubmit={(response) => run(() => submitExtraCheckResponse(card.id, response))} />
