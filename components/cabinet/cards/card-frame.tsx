@@ -11,7 +11,8 @@ const STALL_MS = 12000
  * Full-screen iframe for the operator's confirmation page. A cross-origin iframe hides its URL,
  * but every navigation fires `load` — the first load is the page itself, any later one means the
  * page redirected, so the frame collapses and the result is read from the API.
- * Pages that forbid embedding render blank, so they are detected up front and opened in a new tab.
+ * Pages that forbid embedding would render blank, so they keep the loader up until a working
+ * link is issued (a new link changes `url` and re-runs the check).
  */
 export function CardFrame({
   cardId,
@@ -29,7 +30,6 @@ export function CardFrame({
   const loads = useRef(0)
   const [loaded, setLoaded] = useState(false)
   const [stalled, setStalled] = useState(false)
-  const [openedInTab, setOpenedInTab] = useState(false)
   const { data } = useSWR(["card-frameable", cardId, url], () => checkCardFrameable(cardId), {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
@@ -46,10 +46,10 @@ export function CardFrame({
   }, [])
 
   useEffect(() => {
-    if (checking || blocked || loaded) return
+    if (loaded) return
     const timer = setTimeout(() => setStalled(true), STALL_MS)
     return () => clearTimeout(timer)
-  }, [checking, blocked, loaded])
+  }, [loaded])
 
   function handleLoad() {
     loads.current += 1
@@ -61,15 +61,7 @@ export function CardFrame({
     }
   }
 
-  function openInTab() {
-    window.open(url, "_blank", "noopener")
-    if (!openedInTab) {
-      setOpenedInTab(true)
-      onOpened()
-    }
-  }
-
-  const showFallback = blocked || stalled
+  const showIframe = !checking && !blocked
 
   return (
     <div
@@ -78,78 +70,42 @@ export function CardFrame({
       aria-label="Подтверждение карты"
       className="fixed inset-0 z-[100] flex flex-col bg-background"
     >
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 pb-3 pt-[max(env(safe-area-inset-top),12px)]">
+      <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 pb-3 pt-[max(env(safe-area-inset-top),12px)]">
         <div className="flex min-w-0 flex-col">
           <p className="font-display text-base font-bold">Подтверждение карты</p>
           {requestNo && <p className="font-mono text-xs text-muted-foreground">№ {requestNo}</p>}
         </div>
-        {!checking && !blocked && (
-          <button
-            type="button"
-            onClick={openInTab}
-            className="shrink-0 rounded-full px-3 py-2 text-xs font-semibold text-primary ring-1 ring-primary/30 transition-colors hover:bg-primary/10"
-          >
-            Открыть в новой вкладке
-          </button>
-        )}
       </header>
       <div className="relative min-h-0 flex-1">
-        {checking && <Loading />}
-
-        {!checking && !blocked && (
-          <>
-            {!loaded && !stalled && <Loading />}
-            <iframe
-              src={url}
-              title="Страница подтверждения карты"
-              onLoad={handleLoad}
-              referrerPolicy="no-referrer"
-              sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-              allow="payment"
-              className="absolute inset-0 size-full border-0 bg-white"
-            />
-          </>
+        {showIframe && (
+          <iframe
+            src={url}
+            title="Страница подтверждения карты"
+            onLoad={handleLoad}
+            referrerPolicy="no-referrer"
+            sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+            allow="payment"
+            className="absolute inset-0 size-full border-0 bg-white"
+          />
         )}
-
-        {showFallback && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background p-5">
-            <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
-              {openedInTab ? (
-                <>
-                  <Spinner className="size-7 text-primary" />
-                  <p className="font-display text-lg font-bold">Ждём подтверждения</p>
-                  <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-                    Завершите подтверждение в открывшейся вкладке. Результат появится здесь автоматически.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-display text-lg font-bold">Откройте страницу подтверждения</p>
-                  <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-                    Страница банка открывается в отдельной вкладке. После подтверждения вернитесь сюда — результат появится автоматически.
-                  </p>
-                </>
-              )}
-              <button
-                type="button"
-                onClick={openInTab}
-                className="inline-flex h-12 w-full items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                {openedInTab ? "Открыть ещё раз" : "Открыть страницу"}
-              </button>
-            </div>
-          </div>
-        )}
+        {!loaded && <Loading stalled={stalled || blocked} />}
       </div>
     </div>
   )
 }
 
-function Loading() {
+function Loading({ stalled }: { stalled: boolean }) {
   return (
-    <div role="status" className="absolute inset-0 grid place-items-center">
-      <Spinner className="size-7 text-primary" />
-      <span className="sr-only">Загружаем страницу</span>
+    <div role="status" className="absolute inset-0 z-10 flex items-center justify-center bg-background p-6">
+      <div className="flex max-w-xs flex-col items-center gap-4 text-center">
+        <Spinner className="size-8 text-primary" />
+        <p className="font-display text-lg font-bold">Загружаем страницу подтверждения</p>
+        <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
+          {stalled
+            ? "Готовим страницу — это может занять немного больше времени. Не закрывайте окно."
+            : "Пожалуйста, подождите несколько секунд."}
+        </p>
+      </div>
     </div>
   )
 }
