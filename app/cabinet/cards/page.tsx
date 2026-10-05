@@ -18,7 +18,7 @@ export default async function CardsPage() {
       <div>
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">Мои карты</h1>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground text-pretty">
-          Отправьте заявку — администратор привяжет карту и подтвердит её здесь.
+          Сохраните карту — после проверки она станет активной, обычно это занимает несколько минут.
         </p>
       </div>
       <PaymentCards initial={cards} />

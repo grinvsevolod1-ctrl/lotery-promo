@@ -222,6 +222,19 @@ export const referral = pgTable("referral", {
 })
 
 /** Deposit/withdrawal requests, approved or rejected manually by an admin for now. */
+export const supportRequest = pgTable(
+  "support_request",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId").notNull(),
+    topic: text("topic").notNull(),
+    message: text("message").notNull(),
+    status: text("status").notNull().default("open"), // "open" | "closed"
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [index("support_request_user_idx").on(table.userId)],
+)
+
 export const fundingRequest = pgTable(
   "funding_request",
   {

@@ -22,7 +22,7 @@ export function FortuneWheel() {
             Крутите колесо в личном кабинете и получайте до {wheelMax} BYN на игровой баланс.
           </p>
           <Link
-            href={session?.user ? '/cabinet#spin' : '/sign-in'}
+            href={session?.user ? '/play#spin' : '/sign-in'}
             className="mt-6 inline-flex h-12 items-center rounded-full bg-white px-7 text-sm font-extrabold uppercase tracking-wide text-[#5a12d6] transition-transform hover:scale-[1.03]"
           >
             {session?.user ? 'Крутить колесо' : 'Участвовать'}

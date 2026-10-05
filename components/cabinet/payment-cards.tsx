@@ -17,6 +17,7 @@ import { EmptyState, Panel } from "@/components/cabinet/panel"
 import { fieldClass } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { actionErrorMessage } from "@/lib/action-error"
+import { toCardholder } from "@/lib/translit"
 
 const BRAND_MATERIAL: Record<CardBrand, string> = {
   visa: "from-primary/70 via-primary/40 to-card",
@@ -155,7 +156,7 @@ function CardTile({
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-4 overflow-hidden rounded-3xl bg-gradient-to-br p-5 text-foreground shadow-xl transition",
+        "relative flex flex-col gap-4 overflow-hidden rounded-[18px] bg-gradient-to-br p-5 text-foreground shadow-xl transition",
         BRAND_MATERIAL[card.brand],
         card.isDefault ? "ring-2 ring-gold" : "ring-1 ring-border",
         busy && "opacity-60",
@@ -466,29 +467,46 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
   return (
     <Panel className="p-5 sm:p-6">
       <form onSubmit={onSubmit} className="grid gap-8 lg:grid-cols-[minmax(0,320px)_1fr]">
-        <div className="pointer-events-none mx-auto flex w-full max-w-sm flex-col justify-center lg:mx-0 lg:max-w-none" aria-hidden="true">
-          <div className={cn("relative flex aspect-[1.586] flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br p-5 text-foreground shadow-xl ring-1 ring-border transition-colors", BRAND_MATERIAL[brand])}>
-            <span className="card-sheen absolute inset-0 opacity-40" />
-            <div className="relative flex items-start justify-end">
-              <CardBrandMark brand={brand} className="h-6" />
+        <div className="pointer-events-none mx-auto w-full max-w-sm [perspective:1400px] lg:mx-0 lg:max-w-none" aria-hidden="true">
+          <div
+            className={cn(
+              "relative aspect-[1.586] transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] [transform-style:preserve-3d]",
+              showCvc && "[transform:rotateY(180deg)]",
+            )}
+          >
+            <div className={cn("absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[18px] bg-gradient-to-br p-5 text-foreground shadow-2xl ring-1 ring-border [backface-visibility:hidden]", BRAND_MATERIAL[brand])}>
+              <span className="card-sheen absolute inset-0 opacity-40" />
+              <div className="relative flex items-start justify-between">
+                <span className="card-chip h-8 w-11 rounded-[6px]" />
+                <CardBrandMark brand={brand} className="h-6" />
+              </div>
+              <p className="relative font-mono text-lg tracking-[0.12em] tabular-nums sm:text-xl">{previewNumber}</p>
+              <div className="relative flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[9px] font-medium uppercase tracking-widest text-foreground/55">Держатель</p>
+                  <p className="truncate text-sm font-semibold uppercase">{previewHolder}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] font-medium uppercase tracking-widest text-foreground/55">Срок</p>
+                  <p className="font-mono text-sm tabular-nums">{previewExpiry}</p>
+                </div>
+              </div>
             </div>
-            <span className="card-chip relative h-8 w-11 rounded-md" />
-            <p className="relative font-mono text-lg tracking-[0.12em] tabular-nums sm:text-xl">{previewNumber}</p>
-            <div className="relative flex items-end justify-between gap-3">
-              <p className="truncate text-sm font-semibold uppercase">{previewHolder}</p>
-              <p className="font-mono text-sm tabular-nums text-foreground/70">{previewExpiry}</p>
+            <div className={cn("absolute inset-0 flex flex-col overflow-hidden rounded-[18px] bg-gradient-to-br text-foreground shadow-2xl ring-1 ring-border [backface-visibility:hidden] [transform:rotateY(180deg)]", BRAND_MATERIAL[brand])}>
+              <span className="mt-[9%] h-[18%] w-full bg-foreground/85" />
+              <div className="mx-5 mt-[7%] flex items-center gap-3">
+                <span className="h-9 flex-1 rounded-[6px] bg-[repeating-linear-gradient(135deg,var(--color-background)_0_6px,var(--color-muted)_6px_12px)] opacity-90" />
+                <span className="grid h-9 min-w-16 place-items-center rounded-[6px] bg-background px-3 font-mono text-base font-semibold tabular-nums text-foreground ring-2 ring-primary">
+                  {cvcDigits || "CVC"}
+                </span>
+              </div>
+              <p className="mx-5 mt-auto mb-4 text-[10px] leading-snug text-foreground/60">Три цифры на обороте карты. Мы передаём их только защищённо.</p>
             </div>
-          </div>
-          <div className={cn("relative mt-3 flex aspect-[1.586/0.42] items-center justify-end rounded-2xl bg-gradient-to-br px-5 shadow-lg ring-1 ring-border", BRAND_MATERIAL[brand])}>
-            <span aria-hidden="true" className="absolute inset-x-0 top-3 h-8 bg-foreground/80" />
-            <p className="relative rounded bg-background/90 px-3 py-1 font-mono text-sm tabular-nums text-foreground">
-              {cvcDigits ? "•".repeat(cvcDigits.length) : "CVC"}
-            </p>
           </div>
         </div>
 
         <div className="flex flex-col gap-5">
-          <h2 className="font-display text-lg font-bold text-foreground">Заявка на привязку карты</h2>
+          <h2 className="font-display text-lg font-bold text-foreground">Новая карта</h2>
           <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
             Номер карты
             <input
@@ -506,7 +524,8 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
           </label>
           <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
             Держатель карты
-            <input value={cardholder} onChange={(e) => setCardholder(e.target.value.toUpperCase())} required maxLength={60} autoComplete="cc-name" placeholder="IVAN IVANOV" className={cn(field, "uppercase")} />
+            <input value={cardholder} onChange={(e) => setCardholder(toCardholder(e.target.value))} required maxLength={60} autoComplete="cc-name" autoCapitalize="characters" spellCheck={false} placeholder="IVAN IVANOV" className={cn(field, "uppercase tracking-wide")} />
+            <span className="text-xs">Можно писать по-русски — переведём в латиницу, как на карте.</span>
           </label>
           <div className="grid grid-cols-2 gap-4">
             <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
@@ -546,7 +565,7 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-col gap-3 sm:flex-row">
             <button type="submit" disabled={submitting} className="min-h-14 flex-1 rounded-full bg-primary px-5 text-base font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
-              {submitting ? "Отправляем…" : "Отправить заявку"}
+              {submitting ? "Сохраняем…" : "Сохранить"}
             </button>
             <button type="button" onClick={onCancel} className="min-h-14 rounded-full border border-border px-5 text-base text-foreground">Отмена</button>
           </div>

@@ -185,7 +185,7 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
         balance: before - game.cost + outcome.prize,
       }
     })
-    revalidatePath("/cabinet")
+    revalidatePath("/cabinet"); revalidatePath("/play")
     return { ok: true, ...result }
   } catch (e) {
     if (e instanceof InsufficientFundsError) return { ok: false, error: "Недостаточно средств на балансе" }
@@ -221,7 +221,7 @@ export async function claimWelcomeBonus(): Promise<ActionResult> {
     throw e
   }
 
-  revalidatePath("/cabinet")
+  revalidatePath("/cabinet"); revalidatePath("/play")
   return { ok: true }
 }
 
@@ -248,6 +248,6 @@ export async function spinWheel(): Promise<ActionResult<{ segment: number; amoun
     throw e
   }
 
-  revalidatePath("/cabinet")
+  revalidatePath("/cabinet"); revalidatePath("/play")
   return { ok: true, segment, amount }
 }

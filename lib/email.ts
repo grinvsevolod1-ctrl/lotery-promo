@@ -119,15 +119,20 @@ export function escapeHtml(value: string) {
 // ─── Branded layout ───────────────────────────────────────────────────
 
 const COLORS = {
-  page: "#f3eefa",
+  page: "#edeff1",
   card: "#ffffff",
-  violet: "#2a0f4a",
-  ink: "#1d1430",
-  body: "#3b2f52",
-  muted: "#7a6d90",
-  pink: "#d8268f",
-  gold: "#e0b64a",
+  violet: "#161a22",
+  ink: "#161a22",
+  body: "#3a404c",
+  muted: "#5e6470",
+  pink: "#ff6416",
+  gold: "#ff6416",
+  blue: "#1f5be0",
+  line: "#e6e8ec",
 }
+
+/** The site's wordmark (BY TO!LOTO) rebuilt in table-safe inline HTML. */
+const LOGO_HTML = `<a href="${SITE_URL}" style="text-decoration:none;font-family:${"Inter,-apple-system,'Segoe UI',Roboto,Arial,Helvetica,sans-serif"};font-weight:900;text-transform:uppercase;letter-spacing:-0.02em;line-height:1;"><span style="font-size:14px;color:${"#1f5be0"};margin-right:2px;">by</span><span style="font-size:26px;color:${"#ff6416"};">to!</span><span style="font-size:26px;color:${"#1f5be0"};">loto</span></a>`
 
 const FONT = "Inter,-apple-system,'Segoe UI',Roboto,Arial,Helvetica,sans-serif"
 
@@ -176,10 +181,11 @@ export function renderLayout({
   </head>
   <body style="margin:0;padding:32px 16px;background:${COLORS.page};font-family:${FONT};color:${COLORS.ink};">
     <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</span>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:${COLORS.card};border-radius:20px;overflow:hidden;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:${COLORS.card};border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(22,26,34,0.08);">
       <tr>
-        <td style="padding:22px 32px;background:${COLORS.violet};font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;">${escapeHtml(SITE_NAME).replace(/\.by$/, "")}<span style="color:${COLORS.gold};">.by</span></td>
+        <td style="padding:26px 32px 22px;background:${COLORS.card};border-bottom:1px solid ${COLORS.line};">${LOGO_HTML}</td>
       </tr>
+      <tr><td style="height:4px;line-height:4px;font-size:0;background:${COLORS.pink};">&nbsp;</td></tr>
       <tr>
         <td style="padding:28px 32px 8px;font-size:20px;font-weight:800;color:${COLORS.ink};">${escapeHtml(title)}</td>
       </tr>
@@ -226,7 +232,7 @@ export async function sendVerificationEmail({ to, name, url }: { to: string; nam
 export async function sendPasswordResetEmail({ to, name, url }: { to: string; name: string; url: string }) {
   const greeting = greet(name)
   const body = "Мы получили запрос на смену пароля. Перейдите по ссылке, чтобы задать новый пароль."
-  const note = "Ссылка действует 1 час. Если вы не запрашивали смену пароля, ничего делать не нужно — пароль останется прежним."
+  const note = "Ссылка действует 1 час. Если вы не запрашивали смену пароля, ничего делать не нужн�� — пароль останется прежним."
 
   await sendMail({
     to,
@@ -286,6 +292,37 @@ export async function sendDeleteAccountEmail({ to, name, url }: { to: string; na
       content: paragraph(escapeHtml(greeting)) + paragraph(escapeHtml(body)),
       cta: { label: "Удалить аккаунт", url },
       note,
+    }),
+  })
+}
+
+export async function sendSupportReceivedEmail({
+  to,
+  name,
+  id,
+  topic,
+  message,
+}: {
+  to: string
+  name: string
+  id: number
+  topic: string
+  message: string
+}) {
+  const greeting = greet(name)
+  const body = `Ваше обращение №${id} зарегистрировано. Специалист поддержки уже получил его и ответит на этот адрес.`
+  const quote = `<div style="margin:4px 0 18px;padding:14px 16px;border-radius:14px;background:${COLORS.page};font-size:14px;line-height:1.55;color:${COLORS.body};"><div style="font-weight:700;color:${COLORS.ink};margin-bottom:6px;">${escapeHtml(topic)}</div>${escapeHtml(message).replace(/\n/g, "<br>")}</div>`
+
+  await sendMail({
+    to,
+    subject: `Обращение №${id} зарегистрировано — ${SITE_NAME}`,
+    text: `${greeting}\n\n${body}\n\nТема: ${topic}\n${message}\n\n${SITE_URL}/cabinet/support`,
+    html: renderLayout({
+      title: `Обращение №${id} принято`,
+      preheader: body,
+      content: paragraph(escapeHtml(greeting)) + paragraph(escapeHtml(body)) + quote,
+      cta: { label: "Мои обращения", url: `${SITE_URL}/cabinet/support` },
+      note: "Обычно отвечаем в течение нескольких часов. Не пересылайте в обращении коды из SMS и CVC карты.",
     }),
   })
 }

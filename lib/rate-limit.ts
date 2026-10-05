@@ -36,6 +36,7 @@ export const LIMITS = {
   cardReply: { max: 10, windowSec: 600 },
   cardManage: { max: 30, windowSec: 60 },
   withdrawal: { max: 5, windowSec: 600 },
+  support: { max: 3, windowSec: 600 },
 } as const
 
 export async function allowUserAction(userId: string, action: keyof typeof LIMITS) {

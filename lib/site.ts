@@ -26,10 +26,6 @@ export const site = {
     email: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@bytoloto.com",
     hours: process.env.NEXT_PUBLIC_SUPPORT_HOURS ?? "ежедневно с 9:00 до 21:00",
   },
-  social: {
-    telegram: process.env.NEXT_PUBLIC_TELEGRAM_URL ?? "",
-    vk: process.env.NEXT_PUBLIC_VK_URL ?? "",
-  },
   /** Promotion period shown in the rules and on the landing page. */
   promoPeriod: { from: "01.08.2025", to: "31.12.2026" },
   legalUpdatedAt: "01.10.2026",

@@ -21,11 +21,9 @@ export default function ContactsPage() {
           E-mail: <a href={`mailto:${site.operator.email}`}>{site.operator.email}</a>
         </li>
         <li>Время работы: {site.operator.hours}</li>
-        {site.social.telegram && (
-          <li>
-            Telegram: <a href={site.social.telegram} rel="noopener noreferrer" target="_blank">{site.social.telegram}</a>
-          </li>
-        )}
+        <li>
+          Обращение из личного кабинета: <a href="/cabinet/support">раздел «Поддержка»</a> — номер обращения придёт на почту.
+        </li>
       </ul>
 
       <h2>Что указать в обращении</h2>
