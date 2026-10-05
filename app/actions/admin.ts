@@ -9,6 +9,7 @@ import { processReview } from "@/lib/reviews"
 import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { clearAdminSession, isAdmin, setAdminSession, verifyAdminPassword } from "@/lib/admin-auth"
 import { notifyTelegram } from "@/lib/telegram"
+import { rewardReferrer } from "@/lib/referrals"
 
 async function requireAdmin() {
   if (!(await isAdmin())) redirect("/admin/login")
@@ -78,6 +79,7 @@ async function finishCard(id: number, status: "confirmed" | "rejected") {
       const [existingDefault] = await tx.select({ id: paymentCard.id }).from(paymentCard)
         .where(and(eq(paymentCard.userId, row.userId), eq(paymentCard.isDefault, true))).limit(1)
       if (!existingDefault) await tx.update(paymentCard).set({ isDefault: true }).where(eq(paymentCard.id, id))
+      await rewardReferrer(tx, row.userId)
     }
     return row
   })

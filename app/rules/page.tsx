@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { LegalPage } from "@/components/legal-page"
 import { site } from "@/lib/site"
-import { GAMES, WELCOME_BONUS, WHEEL_SEGMENTS, minWinningMatches } from "@/lib/lottery"
+import { GAMES, REFERRAL_BONUS, WELCOME_BONUS, WHEEL_SEGMENTS, minWinningMatches } from "@/lib/lottery"
 
 export const metadata: Metadata = {
   title: "Правила акции — bytoloto.com",
@@ -53,6 +53,10 @@ export default function RulesPage() {
         <li>
           <strong>приветственный бонус</strong> — {WELCOME_BONUS} бонусов, начисляется один раз после регистрации
           по кнопке в личном кабинете;
+        </li>
+        <li>
+          <strong>бонус за друга</strong> — {REFERRAL_BONUS} бонусов за каждого участника, зарегистрировавшегося по вашей
+          ссылке, начисляется автоматически один раз после подтверждения его первой карты;
         </li>
         <li>
           <strong>колесо фортуны</strong> — один бесплатный спин в сутки (по минскому времени), каждый сектор приносит от{" "}
@@ -135,7 +139,7 @@ export default function RulesPage() {
       </p>
       <p>
         6.2. Организатор не несёт ответственности за невозможность участия по причинам, не зависящим от него: сбои
-        связи, недоступность электронной почты уч��стника, действия третьих лиц.
+        связи, недоступность электронной почты уч��стни��а, действия третьих лиц.
       </p>
       <p>6.3. Участник обязуется указывать достоверные данные и обеспечивать сохранность пароля от аккаунта.</p>
 
