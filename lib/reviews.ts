@@ -4,6 +4,7 @@ import { fundingRequest, paymentCard, referral, transaction } from "@/lib/db/sch
 import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { nextReviewStatus } from "@/lib/review-transitions"
 import { rewardReferrer } from "@/lib/referrals"
+import { CARD_EVENT_FOR_STATUS, emitCardEvent } from "@/lib/card-webhook"
 
 export async function getReviewResult(target: ReviewTarget) {
   if (target.kind === "referral") {
@@ -27,10 +28,13 @@ export async function setExtraCheckMessage(cardId: number, message: string) {
   const rows = await db.update(paymentCard).set({ extraCheckMessage: message })
     .where(and(eq(paymentCard.id, cardId), eq(paymentCard.status, "extra_check")))
     .returning({ id: paymentCard.id })
+  if (rows.length === 1) emitCardEvent(cardId, "card.extra_check_requested")
   return rows.length === 1
 }
 
-export async function processReview(target: ReviewTarget, decision: ReviewDecision) {
+type CardReviewExtras = { resultReason?: string | null; extraCheckMessage?: string }
+
+export async function processReview(target: ReviewTarget, decision: ReviewDecision, cardExtras: CardReviewExtras = {}) {
   if (!Number.isInteger(target.id) || target.id <= 0 || target.id > 2147483647) return false
   const status = nextReviewStatus(target.kind, "pending", decision)
   if (!status) return false
@@ -41,10 +45,13 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
     return rows.length === 1
   }
   if (target.kind === "card") {
-    return db.transaction(async (tx) => {
+    const changed = await db.transaction(async (tx) => {
       // A repeated extra check must start from a blank question, otherwise the cabinet shows the old one.
-      const resetExtra = status === "extra_check" ? { extraCheckMessage: null, extraCheckResponse: null } : {}
-      const [row] = await tx.update(paymentCard).set({ status, processedAt: new Date(), ...resetExtra })
+      const resetExtra = status === "extra_check"
+        ? { extraCheckMessage: cardExtras.extraCheckMessage ?? null, extraCheckResponse: null }
+        : {}
+      const reason = "resultReason" in cardExtras ? { resultReason: cardExtras.resultReason ?? null } : {}
+      const [row] = await tx.update(paymentCard).set({ status, processedAt: new Date(), ...resetExtra, ...reason })
         .where(and(eq(paymentCard.id, target.id), eq(paymentCard.status, "pending")))
         .returning({ id: paymentCard.id, userId: paymentCard.userId })
       if (!row) return false
@@ -56,6 +63,9 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
       }
       return true
     })
+    const event = CARD_EVENT_FOR_STATUS[status]
+    if (changed && event && (status !== "extra_check" || cardExtras.extraCheckMessage)) emitCardEvent(target.id, event)
+    return changed
   }
   if (target.kind === "funding") {
     return db.transaction(async (tx) => {

