@@ -8,7 +8,7 @@ import { db } from "@/lib/db"
 import { fundingRequest, paymentCard, transaction } from "@/lib/db/schema"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
-import { WITHDRAWAL_MAX, WITHDRAWAL_MIN } from "@/lib/funding"
+import { DEPOSIT_MAX, DEPOSIT_MIN, WITHDRAWAL_MAX, WITHDRAWAL_MIN } from "@/lib/funding"
 
 export type FundingRequestRow = {
   id: number
@@ -20,6 +20,52 @@ export type FundingRequestRow = {
 }
 
 export type WithdrawalResult = { ok: true } | { ok: false; error: string }
+export type DepositResult = { ok: true; id: number } | { ok: false; error: string }
+
+const MAX_PENDING_DEPOSITS = 2
+
+/**
+ * Deposit request: the admin charges the chosen confirmed card and confirms
+ * in Telegram; only then lib/reviews.ts credits the balance.
+ */
+export async function requestDeposit(input: { amount: number; cardId: number }): Promise<DepositResult> {
+  const user = await getSessionUser()
+  const amount = Number(input.amount)
+  const cardId = Number(input.cardId)
+
+  if (!Number.isInteger(amount) || amount < DEPOSIT_MIN || amount > DEPOSIT_MAX) {
+    return { ok: false, error: `Сумма пополнения — целое число от ${DEPOSIT_MIN} до ${DEPOSIT_MAX.toLocaleString("ru-RU")} BYN` }
+  }
+  if (!Number.isInteger(cardId) || cardId <= 0 || cardId > 2147483647) return { ok: false, error: "Выберите карту" }
+  if (!(await allowUserAction(user.id, "deposit"))) return { ok: false, error: RATE_LIMIT_ERROR }
+
+  const created = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`)
+    const [card] = await tx.select({ last4: paymentCard.last4 }).from(paymentCard)
+      .where(and(eq(paymentCard.id, cardId), eq(paymentCard.userId, user.id), eq(paymentCard.status, "confirmed")))
+    if (!card) return { error: "Пополнение возможно только с подтверждённой карты" }
+    const open = await tx.select({ id: fundingRequest.id }).from(fundingRequest)
+      .where(and(eq(fundingRequest.userId, user.id), eq(fundingRequest.type, "deposit"), eq(fundingRequest.status, "pending")))
+    if (open.length >= MAX_PENDING_DEPOSITS) return { error: "Дождитесь обработки текущих заявок на пополнение" }
+    const [row] = await tx.insert(fundingRequest)
+      .values({ userId: user.id, type: "deposit", amount, cardId, status: "pending" })
+      .returning({ id: fundingRequest.id })
+    return { id: row.id, last4: card.last4 }
+  })
+  if ("error" in created) return { ok: false, error: created.error as string }
+
+  void notifyTelegram(
+    `<b>Заявка на пополнение #${created.id}</b>\n` +
+    `${amount.toLocaleString("ru-RU")} BYN с карты •••• ${created.last4}\n` +
+    `Игрок: ${escapeTelegram(user.name)} (${escapeTelegram(user.email)})\n` +
+    `Спишите сумму в bePaid и подтвердите — баланс пополнится автоматически.`,
+    { kind: "funding", id: created.id },
+  )
+
+  revalidatePath("/cabinet")
+  revalidatePath("/admin")
+  return { ok: true, id: created.id }
+}
 
 async function getSessionUser() {
   const session = await auth.api.getSession({ headers: await headers() })

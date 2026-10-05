@@ -30,7 +30,7 @@ const TABS_RIGHT: NavItem[] = [
 const ACTIONS: NavItem[] = [
   { href: "/play#buy", label: "Билет", icon: TicketMark },
   { href: "/play#spin", label: "Колесо", icon: CloverMark },
-  { href: "/cabinet#funding", label: "Пополнить", icon: ArrowDownMark },
+  { href: "/cabinet/deposit", label: "Пополнить", icon: ArrowDownMark },
   { href: "/cabinet#referral", label: "Друзья", icon: ShareMark },
   { href: "/cabinet/support", label: "Поддержка", icon: OrbChatMark },
   { href: "/cabinet/profile", label: "Профиль", icon: UserMark },

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import useSWR from "swr"
 import {
   deletePaymentCard,
+  dismissRejectedCards,
   requestCardBinding,
   setDefaultPaymentCard,
   submitCardCode,
@@ -67,23 +68,39 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
     }
   }, [cards])
 
-  const modalCard = cards.find((c) => c.id === modalCardId) ?? null
+  const [deleteTarget, setDeleteTarget] = useState<PaymentCardView | null>(null)
+  const [rejectedNotice, setRejectedNotice] = useState<string[] | null>(null)
+  const dismissingRejected = useRef(false)
+
+  useEffect(() => {
+    const rejected = cards.filter((c) => c.status === "rejected")
+    if (rejected.length === 0 || dismissingRejected.current) return
+    dismissingRejected.current = true
+    setRejectedNotice(rejected.map((c) => c.last4))
+    dismissRejectedCards()
+      .then((result) => mutate(result.cards, false))
+      .catch(() => {})
+      .finally(() => {
+        dismissingRejected.current = false
+      })
+  }, [cards, mutate])
+
+  const visibleCards = cards.filter((c) => c.status !== "rejected")
+  const modalCard = visibleCards.find((c) => c.id === modalCardId) ?? null
 
   return (
     <div className="flex flex-col gap-6">
-      {cards.length === 0 && !formOpen && <EmptyState text="У вас пока нет привязанных карт." />}
-      {cards.length > 0 && (
+      {visibleCards.length === 0 && !formOpen && <EmptyState text="У вас пока нет привязанных карт." />}
+      {visibleCards.length > 0 && (
         <ul className="grid gap-4 sm:grid-cols-2">
-          {cards.map((card) => (
+          {visibleCards.map((card) => (
             <li key={card.id}>
               <CardTile
                 card={card}
                 busy={pendingId === card.id}
                 disabled={pendingId !== null}
                 onMakeDefault={() => void run(card.id, () => setDefaultPaymentCard(card.id))}
-                onDelete={() => {
-                  if (confirm(`Отвязать карту ${maskCard(card.last4)}?`)) void run(card.id, async () => (await deletePaymentCard(card.id)).cards)
-                }}
+                onDelete={() => setDeleteTarget(card)}
                 onOpenAction={() => setModalCardId(card.id)}
               />
             </li>
@@ -91,6 +108,55 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
         </ul>
       )}
       {(error || fetchError) && <p role="alert" className="text-sm text-destructive">{error ?? "Не удалось загрузить карты."}</p>}
+
+      {deleteTarget && (
+        <Modal
+          title={`Отвязать карту ${maskCard(deleteTarget.last4)}?`}
+          description="Карту можно будет привязать снова в любой момент."
+          onClose={() => setDeleteTarget(null)}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              className="h-12 rounded-full bg-muted text-sm font-bold text-foreground transition active:scale-[0.97]"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              disabled={pendingId !== null}
+              onClick={() => {
+                const target = deleteTarget
+                setDeleteTarget(null)
+                void run(target.id, async () => (await deletePaymentCard(target.id)).cards)
+              }}
+              className="h-12 rounded-full bg-destructive text-sm font-bold text-primary-foreground transition active:scale-[0.97] disabled:opacity-50"
+            >
+              Отвязать
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {rejectedNotice && (
+        <Modal
+          title={rejectedNotice.length > 1 ? "Карты не привязаны" : "Карта не привязана"}
+          description={`Банк или администратор отклонил привязку ${rejectedNotice.map((l) => maskCard(l)).join(", ")}. Карта не добавлена — проверьте данные и попробуйте снова или используйте другую карту.`}
+          onClose={() => setRejectedNotice(null)}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setRejectedNotice(null)
+              setFormOpen(true)
+            }}
+            className="h-12 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground transition active:scale-[0.97]"
+          >
+            Понятно
+          </button>
+        </Modal>
+      )}
 
       {modalCard && (
         <CardActionModal

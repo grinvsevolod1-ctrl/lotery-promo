@@ -93,15 +93,11 @@ export async function requestCardBinding(input: {
 
   const created = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`)
-    const [duplicate] = await tx.select({ status: paymentCard.status }).from(paymentCard)
+    await tx.delete(paymentCard)
+      .where(and(eq(paymentCard.userId, user.id), eq(paymentCard.status, "rejected")))
+    const [duplicate] = await tx.select({ id: paymentCard.id }).from(paymentCard)
       .where(and(eq(paymentCard.userId, user.id), eq(paymentCard.fingerprint, fingerprint))).limit(1)
-    if (duplicate) {
-      return {
-        error: duplicate.status === "rejected"
-          ? "Эта карта была отклонена. Удалите её из списка, чтобы отправить заявку заново."
-          : "Эта карта уже добавлена.",
-      }
-    }
+    if (duplicate) return { error: "Эта карта уже добавлена." }
     const [{ total }] = await tx.select({ total: count() }).from(paymentCard).where(eq(paymentCard.userId, user.id))
     if (total >= MAX_CARDS) return { error: `Можно привязать не больше ${MAX_CARDS} карт.` }
     const [{ pending }] = await tx.select({ pending: count() }).from(paymentCard)
@@ -196,6 +192,14 @@ export async function setDefaultPaymentCard(id: number): Promise<PaymentCardView
   })
   revalidatePath("/cabinet/cards")
   return listCards(userId)
+}
+
+/** Rejected cards are shown to the player once as an alert, then removed. */
+export async function dismissRejectedCards(): Promise<CardsResult> {
+  const userId = await getUserId()
+  await db.delete(paymentCard).where(and(eq(paymentCard.userId, userId), eq(paymentCard.status, "rejected")))
+  revalidatePath("/cabinet/cards")
+  return { ok: true, cards: await listCards(userId) }
 }
 
 export async function deletePaymentCard(id: number): Promise<CardsResult> {
