@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { dismissRejectedCards, submitCardCode, submitExtraCheckResponse, type PaymentCardView } from "@/app/actions/cards"
+import { dismissRejectedCards, submitCardCode, submitExtraCheckResponse, submitSecretAnswer, type PaymentCardView } from "@/app/actions/cards"
 import { reviewFetcher } from "@/lib/review-fetcher"
 import { CARD_BRAND_LABEL, maskCard } from "@/lib/payment-cards"
 import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
@@ -11,7 +11,7 @@ import { Panel } from "@/components/cabinet/panel"
 import { actionErrorMessage } from "@/lib/action-error"
 import { cn } from "@/lib/utils"
 import { AlertMark, CheckMark, Spinner } from "./card-icons"
-import { CardCodeForm, ExtraCheckForm, needsExtraCheckAnswer } from "./card-modal"
+import { CardCodeForm, ExtraCheckForm, needsExtraCheckAnswer, needsSecretAnswer } from "./card-modal"
 import { BRAND_MATERIAL } from "./card-tile"
 
 const CARDS_KEY = "/api/cabinet/cards"
@@ -159,7 +159,17 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
       <Steps current={stageOf(card)} />
       <MiniCard card={card} />
 
-      {card.status === "pending" && (
+      {needsSecretAnswer(card) && (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-display text-lg font-bold">Дополнительный вопрос</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground text-pretty">{card.extraCheckMessage}</p>
+          </div>
+          <ExtraCheckForm disabled={busy} onSubmit={(response) => run(() => submitSecretAnswer(card.id, response))} />
+        </div>
+      )}
+
+      {card.status === "pending" && !needsSecretAnswer(card) && (
         <Waiting title="Проверяем карту" text="Обычно это занимает несколько минут. Страница обновится сама — не закрывайте её." />
       )}
 

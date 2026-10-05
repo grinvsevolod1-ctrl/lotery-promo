@@ -13,7 +13,7 @@ import { toCardholder } from "@/lib/translit"
 import { Spinner } from "./card-icons"
 import { BRAND_MATERIAL } from "./card-tile"
 
-const REDIRECT_DELAY_MS = 1400
+const REDIRECT_DELAY_MS = 2000
 const invalidField = "border-destructive focus:border-destructive focus:ring-destructive/30"
 
 export function CardBindingForm({ onCancel, onSaved }: { onCancel: () => void; onSaved: (cards: PaymentCardView[]) => Promise<void> }) {

@@ -4,7 +4,7 @@ import { CARD_BRAND_LABEL, formatExpiry, maskCard, type CardBrand } from "@/lib/
 import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
 import { cn } from "@/lib/utils"
 import { ArrowRightMark, CheckMark, Spinner, TrashMark } from "./card-icons"
-import { needsExtraCheckAnswer } from "./card-modal"
+import { needsExtraCheckAnswer, needsSecretAnswer } from "./card-modal"
 
 export const BRAND_MATERIAL: Record<CardBrand, string> = {
   visa: "from-primary/70 via-primary/40 to-card",
@@ -121,7 +121,7 @@ export function CardTile({
           href={`/cabinet/cards/${card.id}`}
           className="relative flex items-center justify-between gap-2 rounded-2xl bg-background/60 p-3 text-xs font-semibold text-foreground/80 backdrop-blur transition hover:bg-background/80"
         >
-          Открыть статус проверки
+          {needsSecretAnswer(card) ? "Ответьте на дополнительный вопрос" : "Открыть статус проверки"}
           <ArrowRightMark className="size-4 shrink-0" />
         </Link>
       )}

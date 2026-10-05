@@ -7,7 +7,6 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } from "@/lib/email"
-import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { recordReferral, REFERRAL_COOKIE } from "@/lib/referrals"
 
 const isDev = process.env.NODE_ENV === "development"
@@ -141,18 +140,6 @@ export const auth = betterAuth({
           message: "Подтвердите возраст 18+ и согласие с правилами",
           code: "TERMS_NOT_ACCEPTED",
         })
-      }
-    }),
-    after: createAuthMiddleware(async (ctx) => {
-      // Fire-and-forget: a Telegram outage must never affect the auth response.
-      if (ctx.path === "/sign-up/email" || ctx.path === "/sign-in/email") {
-        const returned = ctx.context.returned
-        const ok = returned && typeof returned === "object" && !(returned instanceof APIError) && !(returned instanceof Response)
-        if (ok) {
-          const body = ctx.body as { email?: string; name?: string } | undefined
-          const label = ctx.path === "/sign-up/email" ? "Регистрация" : "Вход"
-          void notifyTelegram(`<b>${label}</b>\n${body?.name ? `Имя: ${escapeTelegram(body.name)}\n` : ""}Email: ${escapeTelegram(body?.email ?? "—")}`)
-        }
       }
     }),
   },
