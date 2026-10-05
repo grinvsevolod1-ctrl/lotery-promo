@@ -1,25 +1,50 @@
+# The site sits behind the Cloudflare proxy (orange cloud), so:
+#   - TLS between Cloudflare and this server uses the certificate in ./deploy/certs
+#     (a Cloudflare Origin Certificate, or the self-signed fallback created by setup-server.sh);
+#   - the real visitor IP is taken from CF-Connecting-IP, but only when the request
+#     actually comes from a Cloudflare range, so it cannot be spoofed by hitting the origin directly.
 {
 	email {$ACME_EMAIL}
+	auto_https disable_certs
+	servers {
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
+(origin_tls) {
+	tls /certs/origin.pem /certs/origin.key
+}
+
+(proxy_app) {
+	reverse_proxy app:3000 {
+		# The app trusts these headers from Caddy, so they are always rebuilt from the verified client IP.
+		header_up -CF-Connecting-IP
+		header_up X-Real-IP {client_ip}
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Forwarded-Proto https
+	}
 }
 
 {$SITE_DOMAIN} {
+	import origin_tls
 	encode zstd gzip
 
-	# Long-lived caching for hashed Next.js assets
 	@static path /_next/static/*
 	header @static Cache-Control "public, max-age=31536000, immutable"
 
 	header -Server
-	reverse_proxy app:3000
+	import proxy_app
 }
 
-# Redirect www -> apex
 www.{$SITE_DOMAIN} {
+	import origin_tls
 	redir https://{$SITE_DOMAIN}{uri} permanent
 }
 
 # Self-hosted Umami (only reachable when the "analytics" profile is up)
 {$STATS_DOMAIN} {
+	import origin_tls
 	encode zstd gzip
 	reverse_proxy umami:3000
 }

@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth"
 import { ProfileView, type SessionInfo } from "@/components/cabinet/profile-view"
 
 export const metadata: Metadata = {
-  title: "Профиль — lotery.by",
+  title: "Профиль — bytoloto.com",
   robots: { index: false, follow: false },
 }
 

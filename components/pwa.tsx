@@ -75,7 +75,7 @@ export function InstallAppButton({ className }: { className?: string }) {
       return
     }
     if (state === 'ios') {
-      window.alert('Нажмите «Поделиться» в Safari и выберите «На экран “Домой”», чтобы установить lotery.by как приложение.')
+      window.alert('Нажмите «Поделиться» в Safari и выберите «На экран “Домой”», чтобы установить bytoloto.com как приложение.')
       return
     }
     window.alert('Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».')

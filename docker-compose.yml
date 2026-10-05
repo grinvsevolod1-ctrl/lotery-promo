@@ -4,14 +4,14 @@
 #   docker compose up -d --build
 #   docker compose --profile analytics up -d   # optional: self-hosted Umami
 #
-# Caddy terminates TLS (Let's Encrypt) and proxies to the app; Postgres data,
+# Caddy terminates TLS behind Cloudflare (certificate in ./deploy/certs) and proxies to the app; Postgres data,
 # certificates and daily dumps live in named volumes / ./backups.
 
 x-app-build: &app-build
   context: .
   args:
     NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
-    NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-lotery.by}
+    NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-bytoloto.com}
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     NEXT_PUBLIC_UMAMI_SCRIPT_URL: ${NEXT_PUBLIC_UMAMI_SCRIPT_URL:-}
     NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
@@ -81,11 +81,12 @@ services:
       - "443:443"
       - "443:443/udp"
     environment:
-      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env (e.g. lotery.by)}
-      STATS_DOMAIN: ${STATS_DOMAIN:-stats.localhost}
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env (e.g. bytoloto.com)}
+      STATS_DOMAIN: ${STATS_DOMAIN:-stats.${SITE_DOMAIN}}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/certs:/certs:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { LottoBall } from "@/components/lotto-ball"
 
 export const metadata: Metadata = {
-  title: "Нет соединения — lotery.by",
+  title: "Нет соединения — bytoloto.com",
   robots: { index: false, follow: false },
 }
 

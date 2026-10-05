@@ -9,7 +9,7 @@ export function ShareButton() {
 
   const share = async () => {
     const url = window.location.origin
-    const data = { title: document.title, text: 'Ежедневный тираж и бонусы на lotery.by', url }
+    const data = { title: document.title, text: 'Ежедневный тираж и бонусы на bytoloto.com', url }
     try {
       if (navigator.share && (!navigator.canShare || navigator.canShare(data))) {
         await navigator.share(data)

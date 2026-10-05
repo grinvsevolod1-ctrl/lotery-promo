@@ -23,3 +23,7 @@ test-results/
 playwright-report/
 mail-outbox/
 backups/
+
+# TLS keys and DB dumps on the VPS
+/deploy/certs/
+/backups/

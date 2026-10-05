@@ -1,7 +1,7 @@
 import type { SVGProps } from 'react'
 
 /*
- * Authorial icon set for lotery.by.
+ * Authorial icon set for bytoloto.com.
  * Hand-built geometric marks — no third-party icon library.
  * All icons share a 24x24 canvas, 1.8 stroke, round joins for a cohesive look.
  */

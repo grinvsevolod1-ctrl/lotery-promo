@@ -20,7 +20,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       >
         <main style={{ maxWidth: 420 }}>
           <p style={{ color: "#e0b64a", fontSize: 12, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" }}>
-            lotery.by
+            bytoloto.com
           </p>
           <h1 style={{ fontSize: 28, fontWeight: 800, margin: "12px 0 8px" }}>Сайт временно недоступен</h1>
           <p style={{ color: "#c9bfe0", lineHeight: 1.5 }}>
