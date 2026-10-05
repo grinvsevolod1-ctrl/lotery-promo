@@ -6,6 +6,10 @@ set -eu
 KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"
 mkdir -p /backups
 
+# The app applies migrations on start; dumping immediately after a fresh deploy
+# would capture a half-empty schema and leave it as the only copy for a day.
+sleep "${BACKUP_INITIAL_DELAY:-600}"
+
 while true; do
   stamp="$(date +%Y-%m-%d_%H%M)"
   target="/backups/lotery-${stamp}.dump"

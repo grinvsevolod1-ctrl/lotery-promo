@@ -100,7 +100,7 @@ function Stat({ href, label, value, icon }: { href: string; label: string; value
       </span>
       <span>
         <span className="block font-display text-xl font-extrabold tabular-nums text-foreground">{value}</span>
-        <span className="block truncate text-[11px] text-muted-foreground">{label}</span>
+        <span className="block text-balance text-[11px] leading-tight text-muted-foreground">{label}</span>
       </span>
     </Link>
   )
