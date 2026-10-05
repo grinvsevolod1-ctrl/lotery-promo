@@ -34,6 +34,8 @@ export const RATE_LIMIT_ERROR = "Слишком много запросов. П�
 /** Per-user limits for actions that touch money or the admin queue. */
 export const LIMITS = {
   buyTicket: { max: 30, windowSec: 60 },
+  plinko: { max: 120, windowSec: 60 },
+  scratch: { max: 40, windowSec: 60 },
   spin: { max: 10, windowSec: 60 },
   welcome: { max: 5, windowSec: 60 },
   cardBinding: { max: 5, windowSec: 600 },

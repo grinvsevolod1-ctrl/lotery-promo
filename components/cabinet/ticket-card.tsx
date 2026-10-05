@@ -1,4 +1,6 @@
 import { CloverMark } from "@/components/icons"
+import { ScratchSymbolBadge } from "@/components/games/scratch/scratch-symbol"
+import type { ScratchSymbol } from "@/lib/games/scratch"
 import { BallRow } from "@/components/lotto-ball"
 import { formatDateTime } from "@/lib/format"
 import { parseNumbers } from "@/lib/lottery"
@@ -11,9 +13,51 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   lose: { label: "Без выигрыша", cls: "bg-foreground/10 text-muted-foreground" },
 }
 
+type GameDetailsData =
+  | { kind: "plinko"; rows: number; risk: string; multiplier: number }
+  | { kind: "scratch"; fields: ScratchSymbol[]; matches: number; multiplier: number; winningSymbol: ScratchSymbol | null }
+
+const RISK_LABELS: Record<string, string> = { low: "Минимум", medium: "Средний", high: "Высокий" }
+
+function readDetails(value: unknown): GameDetailsData | null {
+  if (!value || typeof value !== "object") return null
+  const kind = (value as { kind?: unknown }).kind
+  return kind === "plinko" || kind === "scratch" ? (value as GameDetailsData) : null
+}
+
+function GameDetails({ details, cost }: { details: GameDetailsData; cost: number }) {
+  if (details.kind === "plinko") {
+    return (
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <span className="rounded-full bg-foreground/10 px-2.5 py-1">Ставка {cost} BYN</span>
+        <span className="rounded-full bg-foreground/10 px-2.5 py-1">Риск: {RISK_LABELS[details.risk] ?? details.risk}</span>
+        <span className="rounded-full bg-foreground/10 px-2.5 py-1">{details.rows} пинов</span>
+        <span className="rounded-full bg-primary/15 px-2.5 py-1 font-bold text-primary">x{details.multiplier}</span>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-1.5">
+        {details.fields.map((s, i) => (
+          <ScratchSymbolBadge
+            key={i}
+            symbol={s}
+            className={cn("w-8", details.winningSymbol && s !== details.winningSymbol && "opacity-35 grayscale")}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Билет {cost} BYN · {details.matches > 0 ? `${details.matches} одинаковых, x${details.multiplier}` : "без совпадений"}
+      </p>
+    </div>
+  )
+}
+
 export function TicketCard({ ticket }: { ticket: TicketRow }) {
   const status = STATUS[ticket.status] ?? STATUS.pending
-  const numbers = parseNumbers(ticket.numbers)
+  const details = readDetails(ticket.details)
+  const numbers = details ? [] : parseNumbers(ticket.numbers)
   const winning = ticket.winningNumbers ? parseNumbers(ticket.winningNumbers) : null
   const hits = new Set(winning ?? [])
   const isWin = ticket.status === "win"
@@ -40,7 +84,8 @@ export function TicketCard({ ticket }: { ticket: TicketRow }) {
           <div className="min-w-0">
             <p className="font-display text-base font-extrabold text-foreground">{ticket.game}</p>
             <p className="text-xs text-muted-foreground">
-              Моментальный · {formatDateTime(ticket.createdAt)}
+              {details?.kind === "plinko" ? "Plinko" : details?.kind === "scratch" ? "Скретч-билет" : "Моментальный"} ·{" "}
+              {formatDateTime(ticket.createdAt)}
             </p>
           </div>
           <span className={cn("shrink-0 rounded-full px-3 py-1 text-xs font-bold", status.cls)}>
@@ -48,9 +93,13 @@ export function TicketCard({ ticket }: { ticket: TicketRow }) {
           </span>
         </div>
 
-        <BallRow numbers={numbers} highlight={hits} size="md" />
+        {details ? (
+          <GameDetails details={details} cost={ticket.cost} />
+        ) : (
+          <BallRow numbers={numbers} highlight={hits} size="md" />
+        )}
 
-        {winning && (
+        {!details && winning && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span>Выпало:</span>
             <BallRow numbers={winning} size="sm" tone="muted" />

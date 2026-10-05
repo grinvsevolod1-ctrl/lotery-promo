@@ -10,6 +10,7 @@ import {
   index,
   uniqueIndex,
   bigint,
+  jsonb,
 } from "drizzle-orm/pg-core"
 
 // ─── Better Auth tables ───────────────────────────────────────────────
@@ -124,6 +125,8 @@ export const ticket = pgTable(
      * seededRng(). Replaying it reproduces the draw exactly for disputes.
      */
     seed: text("seed"),
+    /** Game-specific round data (Plinko path and settings, scratch-card fields). */
+    details: jsonb("details"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [

@@ -46,6 +46,7 @@ export type TicketRow = {
   prize: number
   createdAt: Date
   winningNumbers: string | null
+  details: unknown
 }
 
 export async function getTickets(): Promise<TicketRow[]> {
@@ -61,6 +62,7 @@ export async function getTickets(): Promise<TicketRow[]> {
       prize: ticket.prize,
       createdAt: ticket.createdAt,
       winningNumbers: ticket.winningNumbers,
+      details: ticket.details,
     })
     .from(ticket)
     .where(eq(ticket.userId, userId))

@@ -3,7 +3,8 @@ import { settleLegacyTickets } from "@/lib/draws"
 import { PageHeading } from "@/components/account/page-heading"
 import { BalanceBadge } from "@/components/play/balance-badge"
 import { GameCard } from "@/components/play/game-card"
-import { CloverMark, TicketMark, TrophyMark } from "@/components/icons"
+import { BurstMark, CloverMark, CoinMark, TicketMark, TrophyMark } from "@/components/icons"
+import { SCRATCH_GAME_NAME } from "@/lib/games/scratch"
 import { requireSession } from "@/lib/require-session"
 
 export default async function PlayPage() {
@@ -28,6 +29,21 @@ export default async function PlayPage() {
           icon={<TicketMark className="size-6" />}
           status="Доступна"
           accent
+        />
+        <GameCard
+          href="/play/scratch"
+          title={SCRATCH_GAME_NAME}
+          description="Сотрите 6 полей — три и больше одинаковых символов приносят выигрыш до x100."
+          icon={<BurstMark className="size-6" />}
+          status="Новинка"
+          accent
+        />
+        <GameCard
+          href="/play/plinko"
+          title="Plinko"
+          description="Шарик падает сквозь пины в лунку с множителем. Выбирайте риск и количество пинов."
+          icon={<CoinMark className="size-6" />}
+          status="Новинка"
         />
         <GameCard
           href="/play/wheel"
