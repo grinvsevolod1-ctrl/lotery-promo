@@ -8,7 +8,7 @@ export default async function SignInPage({
 }: {
   searchParams: Promise<{ reset?: string }>
 }) {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null)
   if (session?.user) redirect("/cabinet")
 
   const { reset } = await searchParams

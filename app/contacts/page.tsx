@@ -20,11 +20,6 @@ export default function ContactsPage() {
         <li>
           E-mail: <a href={`mailto:${site.operator.email}`}>{site.operator.email}</a>
         </li>
-        {site.operator.phone && (
-          <li>
-            Телефон: <a href={`tel:${site.operator.phone.replace(/[^\d+]/g, "")}`}>{site.operator.phone}</a>
-          </li>
-        )}
         <li>Время работы: {site.operator.hours}</li>
         {site.social.telegram && (
           <li>
@@ -40,10 +35,12 @@ export default function ContactsPage() {
             <th>Наименование</th>
             <td>{site.operator.name}</td>
           </tr>
-          <tr>
-            <th>УНП</th>
-            <td>{site.operator.unp}</td>
-          </tr>
+          {site.operator.unp && (
+            <tr>
+              <th>УНП</th>
+              <td>{site.operator.unp}</td>
+            </tr>
+          )}
           <tr>
             <th>Адрес</th>
             <td>{site.operator.address}</td>

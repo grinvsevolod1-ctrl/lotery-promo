@@ -4,6 +4,8 @@ import Link from "next/link"
 import { useState, useTransition } from "react"
 import { requestWithdrawal } from "@/app/actions/funding"
 import { WITHDRAWAL_MAX, WITHDRAWAL_MIN } from "@/lib/funding"
+import { fieldClass } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 type CardOption = { id: number; last4: string; bankName: string | null; isDefault: boolean }
 
@@ -61,7 +63,7 @@ export function WithdrawForm({ cards, balance, hasPending }: { cards: CardOption
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder={`от ${WITHDRAWAL_MIN}`}
-            className="h-11 rounded-xl border border-border bg-card px-3 text-base font-normal text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(fieldClass, "font-normal")}
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-semibold text-foreground">
@@ -69,7 +71,7 @@ export function WithdrawForm({ cards, balance, hasPending }: { cards: CardOption
           <select
             value={cardId}
             onChange={(e) => setCardId(e.target.value)}
-            className="h-11 rounded-xl border border-border bg-card px-3 text-base font-normal text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(fieldClass, "font-normal")}
           >
             {cards.map((c) => (
               <option key={c.id} value={c.id}>
@@ -85,7 +87,7 @@ export function WithdrawForm({ cards, balance, hasPending }: { cards: CardOption
       <button
         type="submit"
         disabled={pending || balance < WITHDRAWAL_MIN}
-        className="h-11 rounded-full bg-primary text-sm font-extrabold uppercase tracking-wide text-primary-foreground transition-opacity disabled:opacity-50"
+        className="h-13 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground transition-[transform,opacity] duration-200 active:scale-[0.97] disabled:opacity-50"
       >
         {pending ? "Отправляем…" : "Вывести"}
       </button>

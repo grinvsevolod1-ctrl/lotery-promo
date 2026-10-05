@@ -14,6 +14,7 @@ import { reviewFetcher } from "@/lib/review-fetcher"
 import { CARD_BRAND_LABEL, detectBrand, formatCardNumber, formatExpiry, isExpiryValid, luhnValid, maskCard, normalizeCardNumber, parseExpiry, type CardBrand } from "@/lib/payment-cards"
 import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
 import { EmptyState, Panel } from "@/components/cabinet/panel"
+import { fieldClass } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 const BRAND_MATERIAL: Record<CardBrand, string> = {
@@ -307,7 +308,7 @@ function CardActionModal({
 }) {
   const [value, setValue] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const field = "min-h-14 w-full rounded-2xl border border-border/60 bg-background/60 px-4 text-base text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+  const field = fieldClass
 
   if (card.status === "extra_check" && card.extraCheckMessage && !card.extraCheckResponse) {
     return (
@@ -459,7 +460,7 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
   const previewHolder = cardholder || "ИМЯ ФАМИЛИЯ"
   const previewExpiry = expiryClean || "ММ/ГГ"
 
-  const field = "min-h-14 w-full rounded-2xl border border-border/60 bg-background/60 px-4 text-base text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+  const field = fieldClass
 
   return (
     <Panel className="p-5 sm:p-6">
