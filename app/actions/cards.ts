@@ -90,6 +90,40 @@ export async function reportCardFrame(id: number, event: "opened" | "finished"):
   return { ok: true, cards: await listCards(userId) }
 }
 
+/**
+ * Many pages forbid embedding (X-Frame-Options / CSP frame-ancestors) and render as a blank iframe.
+ * Checked server-side because the browser hides that reason; unreachable pages fall back to the iframe.
+ */
+export async function checkCardFrameable(id: number): Promise<{ frameable: boolean }> {
+  const userId = await getUserId()
+  if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
+  const [row] = await db.select({ url: paymentCard.redirectUrl }).from(paymentCard)
+    .where(and(eq(paymentCard.id, id), eq(paymentCard.userId, userId)))
+  let target: URL
+  try {
+    target = new URL(row?.url ?? "")
+  } catch {
+    return { frameable: false }
+  }
+  const host = target.hostname
+  if (target.protocol !== "https:" || host === "localhost" || /^[\d.]+$/.test(host) || host.includes(":")) return { frameable: false }
+  try {
+    const res = await fetch(target, {
+      redirect: "follow",
+      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1" },
+      signal: AbortSignal.timeout(6000),
+    })
+    void res.body?.cancel()
+    const xfo = res.headers.get("x-frame-options")?.toLowerCase() ?? ""
+    if (xfo.includes("deny") || xfo.includes("sameorigin")) return { frameable: false }
+    const ancestors = res.headers.get("content-security-policy")?.match(/frame-ancestors([^;]*)/i)?.[1].trim().toLowerCase()
+    if (ancestors && !ancestors.split(/\s+/).some((s) => s === "*" || s === "https:" || s.includes("bytoloto.com"))) return { frameable: false }
+    return { frameable: true }
+  } catch {
+    return { frameable: true }
+  }
+}
+
 export async function getPaymentCards() {
   return listCards(await getUserId())
 }

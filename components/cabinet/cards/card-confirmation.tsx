@@ -202,6 +202,7 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
       {showFrame && redirectTo && (
         <CardFrame
           key={redirectTo}
+          cardId={card.id}
           url={redirectTo}
           requestNo={card.requestNo}
           onOpened={handleFrameOpened}
