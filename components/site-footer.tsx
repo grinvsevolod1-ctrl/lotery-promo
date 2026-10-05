@@ -36,11 +36,8 @@ export function SiteFooter() {
           <div className="flex flex-col gap-2">
             <p className="text-xs font-bold uppercase tracking-widest text-foreground">Контакты</p>
             <p className="text-muted-foreground">{site.operator.address}</p>
-            <p className="text-muted-foreground">УНП {site.operator.unp}</p>
+            {site.operator.unp && <p className="text-muted-foreground">УНП {site.operator.unp}</p>}
             <p className="text-muted-foreground">{site.operator.hours}</p>
-            <a href={`tel:${site.operator.phone.replace(/[^\d+]/g, '')}`} className="font-semibold text-accent hover:underline">
-              {site.operator.phone}
-            </a>
             <a href={`mailto:${site.operator.email}`} className="font-semibold text-accent hover:underline">
               {site.operator.email}
             </a>

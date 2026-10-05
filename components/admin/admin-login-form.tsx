@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { adminLogin } from "@/app/actions/admin"
+import { fieldClass } from "@/components/ui/input"
 
 export function AdminLoginForm() {
   const router = useRouter()
@@ -32,13 +33,13 @@ export function AdminLoginForm() {
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Пароль администратора"
         autoFocus
-        className="h-11 rounded-xl border border-border/60 bg-background px-4 text-sm text-foreground outline-none focus:border-primary"
+        className={fieldClass}
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <button
         type="submit"
         disabled={pending || password.length === 0}
-        className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition disabled:opacity-50"
+        className="h-13 rounded-2xl bg-primary text-[17px] font-semibold text-primary-foreground transition disabled:opacity-50"
       >
         {pending ? "Проверка…" : "Войти"}
       </button>

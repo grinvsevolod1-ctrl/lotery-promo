@@ -24,11 +24,12 @@ export const site = {
     "Моментальные лотереи bytoloto.com: выберите числа, купите билет и сразу узнайте результат. Выигрыш мгновенно зачисляется на баланс.",
   operator: {
     name: process.env.NEXT_PUBLIC_OPERATOR_NAME ?? "ООО «Лотери Промо»",
-    unp: process.env.NEXT_PUBLIC_OPERATOR_UNP ?? "193748215",
+    // Left empty until the operator's own registration number is known; every
+    // place that shows it hides the line instead of printing a placeholder.
+    unp: process.env.NEXT_PUBLIC_OPERATOR_UNP ?? "",
     address:
       process.env.NEXT_PUBLIC_OPERATOR_ADDRESS ?? "220030, Республика Беларусь, г. Минск, ул. Интернациональная, д. 36, пом. 4",
     email: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@bytoloto.com",
-    phone: process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? "+375 (17) 388-42-15",
     hours: process.env.NEXT_PUBLIC_SUPPORT_HOURS ?? "ежедневно с 9:00 до 21:00",
   },
   social: {
@@ -39,6 +40,11 @@ export const site = {
   promoPeriod: { from: "01.08.2025", to: "31.12.2026" },
   legalUpdatedAt: "01.10.2026",
 }
+
+/** "УНП …, address" for legal texts, without the УНП part while it is unset. */
+export const operatorRequisites = [site.operator.unp && `УНП ${site.operator.unp}`, site.operator.address]
+  .filter(Boolean)
+  .join(", ")
 
 export const legalLinks = [
   { href: "/rules", label: "Правила акции" },

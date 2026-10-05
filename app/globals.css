@@ -226,6 +226,18 @@
   animation: flip-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Short, transform-only entrance in the spirit of iOS sheets */
+@keyframes apple-rise {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.apple-rise {
+  animation: apple-rise 0.45s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .apple-rise { animation: none; }
+}
+
 /* Scroll reveal — staggered entrance */
 @keyframes reveal-up {
   from { opacity: 0; transform: translateY(34px) scale(0.98); }
