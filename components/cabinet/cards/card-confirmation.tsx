@@ -14,6 +14,7 @@ import { AlertMark, CheckMark, Spinner } from "./card-icons"
 import { CardCodeForm, ExtraCheckForm, needsExtraCheckAnswer, needsSecretAnswer } from "./card-modal"
 import { BRAND_MATERIAL } from "./card-tile"
 import { CardFrame } from "./card-frame"
+import { CardHoldNotice } from "./card-hold-notice"
 
 const CARDS_KEY = "/api/cabinet/cards"
 const FINAL_STATUSES = new Set(["confirmed", "rejected"])
@@ -99,6 +100,7 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
   })
   const redirected = useRef(false)
   const [finishedUrl, setFinishedUrl] = useState<string | null>(null)
+  const [acceptedHoldUrl, setAcceptedHoldUrl] = useState<string | null>(null)
   const [rejected, setRejected] = useState<PaymentCardView | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -199,7 +201,11 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
         </div>
       )}
 
-      {showFrame && redirectTo && (
+      {showFrame && redirectTo && acceptedHoldUrl !== redirectTo && (
+        <CardHoldNotice requestNo={card.requestNo} onContinue={() => setAcceptedHoldUrl(redirectTo)} />
+      )}
+
+      {showFrame && redirectTo && acceptedHoldUrl === redirectTo && (
         <CardFrame
           key={redirectTo}
           cardId={card.id}

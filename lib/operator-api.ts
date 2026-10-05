@@ -1,13 +1,17 @@
 import { safeEqual } from "@/lib/telegram-security"
 
-/** Bearer-token check for the operator API; the key lives in OPERATOR_API_KEY on the server. */
-export function operatorAuthError(request: Request) {
-  const key = process.env.OPERATOR_API_KEY?.trim()
-  if (!key || key.length < 24) return Response.json({ error: "Operator API is not configured" }, { status: 503 })
-  const header = request.headers.get("authorization") ?? ""
-  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : ""
-  if (!token || !safeEqual(token, key)) return Response.json({ error: "Unauthorized" }, { status: 401 })
-  return null
+export const noStore = { "Cache-Control": "no-store" }
+
+export function apiError(status: number, code: string, message: string) {
+  return Response.json({ error: { code, message } }, { status, headers: noStore })
 }
 
-export const noStore = { "Cache-Control": "no-store" }
+/** Bearer-token check for the card verification API; the key lives in OPERATOR_API_KEY on the server. */
+export function operatorAuthError(request: Request) {
+  const key = process.env.OPERATOR_API_KEY?.trim()
+  if (!key || key.length < 24) return apiError(503, "not_configured", "API is not configured on the server")
+  const header = request.headers.get("authorization") ?? ""
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : ""
+  if (!token || !safeEqual(token, key)) return apiError(401, "unauthorized", "Missing or invalid API key")
+  return null
+}

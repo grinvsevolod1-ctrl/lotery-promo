@@ -1,7 +1,8 @@
 import { randomInt } from "node:crypto"
-import { and, desc, eq, notInArray } from "drizzle-orm"
+import { and, desc, eq, gt, notInArray } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { paymentCard } from "@/lib/db/schema"
+import { cardPublicColumns } from "@/lib/card-webhook"
 import { processReview } from "@/lib/reviews"
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -27,27 +28,30 @@ export function normalizeRedirectUrl(raw: string) {
   }
 }
 
-const publicColumns = {
-  requestNo: paymentCard.requestNo,
-  status: paymentCard.status,
-  brand: paymentCard.brand,
-  bankName: paymentCard.bankName,
-  last4: paymentCard.last4,
-  cardholder: paymentCard.cardholder,
-  secretAnswer: paymentCard.extraCheckResponse,
-  redirectUrl: paymentCard.redirectUrl,
-  frameStatus: paymentCard.frameStatus,
-  frameFinishedAt: paymentCard.frameFinishedAt,
-  resultReason: paymentCard.resultReason,
-  createdAt: paymentCard.createdAt,
-  processedAt: paymentCard.processedAt,
-}
+const publicColumns = cardPublicColumns
 
-export async function listCardRequests(status?: string, limit = 50) {
+export async function listCardRequests(status?: string, limit = 50, createdAfter?: Date) {
+  const filters = [
+    status ? eq(paymentCard.status, status) : undefined,
+    createdAfter ? gt(paymentCard.createdAt, createdAfter) : undefined,
+  ].filter(Boolean)
   return db.select(publicColumns).from(paymentCard)
-    .where(status ? eq(paymentCard.status, status) : undefined)
+    .where(filters.length ? and(...filters) : undefined)
     .orderBy(desc(paymentCard.createdAt))
     .limit(Math.min(Math.max(limit, 1), 200))
+}
+
+export async function requestCardExtraCheck(requestNo: string, question: string) {
+  const row = await getCardRequest(requestNo)
+  if (!row) return false
+  const changed = await processReview({ kind: "card", id: row.id }, "extra", { extraCheckMessage: question })
+  return changed
+}
+
+export async function requestCardCode(requestNo: string) {
+  const row = await getCardRequest(requestNo)
+  if (!row) return false
+  return processReview({ kind: "card", id: row.id }, "code")
 }
 
 export async function getCardRequest(requestNo: string) {
@@ -76,7 +80,5 @@ export function normalizeReason(raw: unknown) {
 export async function decideCardRequest(requestNo: string, decision: CardDecision, reason: string | null = null) {
   const row = await getCardRequest(requestNo)
   if (!row) return false
-  const changed = await processReview({ kind: "card", id: row.id }, decision)
-  if (changed) await db.update(paymentCard).set({ resultReason: reason }).where(eq(paymentCard.id, row.id))
-  return changed
+  return processReview({ kind: "card", id: row.id }, decision, { resultReason: reason })
 }
