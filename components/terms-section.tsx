@@ -3,7 +3,7 @@ import { InstallAppButton } from '@/components/pwa'
 
 export function TermsSection() {
   return (
-    <section id="terms" className="relative py-16 md:py-24">
+    <section id="terms" className="relative pt-10 md:pt-14">
       <div className="mx-auto max-w-6xl px-4 sm:px-5">
         <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
           <div className="min-w-0 rounded-3xl bg-card/60 p-5 text-sm leading-relaxed text-muted-foreground sm:p-6 md:p-8">

@@ -33,7 +33,7 @@ export function FaqSection() {
   const [open, setOpen] = useState<number | null>(0)
 
   return (
-    <section id="faq" className="relative py-20 sm:py-28">
+    <section id="faq" className="relative pt-14 pb-4 sm:pt-20">
       <div className="mx-auto w-full max-w-3xl px-4">
         <Reveal>
           <div className="mb-12 text-center">
