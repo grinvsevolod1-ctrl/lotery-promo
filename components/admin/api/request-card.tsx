@@ -35,4 +35,24 @@ const inputClass =
 const primaryButton = "rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
 const ghostButton = "rounded-full border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-foreground/5 disabled:opacity-50"
 
-function Field({ label
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="break-words text-sm text-foreground">{children}</dd>
+    </div>
+  )
+}
+
+export function RequestCard({ request }: { request: AdminCardRequest }) {
+  const [pending, startTransition] = useTransition()
+  const [result, setResult] = useState<ActionResult | null>(null)
+  const [url, setUrl] = useState("")
+  const [question, setQuestion] = useState("")
+  const [reason, setReason] = useState("")
+
+  const isOpen = request.status === "pending" || request.status === "code_requested" || request.status === "extra_check"
+  const statusLabel = isCardStatus(request.status) ? CARD_STATUS_LABELS[request.status] : request.status
+
+  const run = (action: () => Promise<ActionResult>, onOk?: () => void) =>
+    startTransition(async () =>
