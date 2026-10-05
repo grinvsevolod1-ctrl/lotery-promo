@@ -7,6 +7,7 @@ export function nextReviewStatus(kind: ReviewKind, status: string, decision: Rev
     return decision === "approve" ? "approved" : "rejected"
   }
   if (kind === "card") {
+    if (decision === "approve") return "confirmed"
     if (decision === "reject") return "rejected"
     if (decision === "code") return "code_requested"
     if (decision === "extra") return "extra_check"
