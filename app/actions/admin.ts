@@ -10,6 +10,8 @@ import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { clearAdminSession, isAdmin, setAdminSession, verifyAdminPassword } from "@/lib/admin-auth"
 import { notifyTelegram } from "@/lib/telegram"
 import { rewardReferrer } from "@/lib/referrals"
+import { SETTING_KEYS, getSetting, setSetting } from "@/lib/settings"
+import { lastDelivery, normalizeWebhookUrl, sendTestWebhook, type DeliveryResult } from "@/lib/card-webhook"
 
 async function requireAdmin() {
   if (!(await isAdmin())) redirect("/admin/login")
@@ -25,6 +27,42 @@ export async function adminLogin(password: string): Promise<{ ok: true } | { ok:
   }
   await setAdminSession()
   return { ok: true }
+}
+
+export type WebhookSettings = { url: string; fromEnv: boolean; apiKeySet: boolean; last: DeliveryResult | null }
+
+export async function getWebhookSettings(): Promise<WebhookSettings> {
+  await requireAdmin()
+  const [saved, last] = await Promise.all([getSetting(SETTING_KEYS.cardWebhookUrl).catch(() => null), lastDelivery()])
+  const envUrl = normalizeWebhookUrl(process.env.CARD_WEBHOOK_URL)
+  return {
+    url: normalizeWebhookUrl(saved) ?? envUrl ?? "",
+    fromEnv: !normalizeWebhookUrl(saved) && Boolean(envUrl),
+    apiKeySet: Boolean(process.env.OPERATOR_API_KEY?.trim()),
+    last,
+  }
+}
+
+export async function saveWebhookUrl(raw: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin()
+  const value = typeof raw === "string" ? raw.trim() : ""
+  if (!value) {
+    await setSetting(SETTING_KEYS.cardWebhookUrl, null)
+    revalidatePath("/admin")
+    return { ok: true }
+  }
+  const url = normalizeWebhookUrl(value)
+  if (!url) return { ok: false, error: "Нужен корректный адрес, начинающийся с https://" }
+  await setSetting(SETTING_KEYS.cardWebhookUrl, url)
+  revalidatePath("/admin")
+  return { ok: true }
+}
+
+export async function testWebhook(): Promise<DeliveryResult> {
+  await requireAdmin()
+  const result = await sendTestWebhook()
+  revalidatePath("/admin")
+  return result
 }
 
 export async function adminLogout() {

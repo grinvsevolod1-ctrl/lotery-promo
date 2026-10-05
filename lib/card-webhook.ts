@@ -2,6 +2,7 @@ import { createHmac, randomUUID } from "node:crypto"
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { paymentCard } from "@/lib/db/schema"
+import { SETTING_KEYS, getSetting, setSetting } from "@/lib/settings"
 
 export type CardEvent =
   | "card.created"
@@ -14,6 +15,7 @@ export type CardEvent =
   | "card.extra_check_answered"
   | "card.confirmed"
   | "card.rejected"
+  | "ping"
 
 const RETRY_DELAYS_MS = [0, 2000, 10000]
 const TIMEOUT_MS = 8000
@@ -35,11 +37,37 @@ export const cardPublicColumns = {
   processedAt: paymentCard.processedAt,
 }
 
-export function webhookUrl() {
-  const raw = process.env.CARD_WEBHOOK_URL?.trim()
+export type DeliveryResult = {
+  ok: boolean
+  event: string
+  status: number | null
+  error: string | null
+  at: string
+}
+
+/** Returns the URL if it is a valid https URL, otherwise null. */
+export function normalizeWebhookUrl(raw: string | null | undefined) {
+  const value = raw?.trim()
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" && value.length <= 500 ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
+/** URL set in the admin panel wins over the CARD_WEBHOOK_URL env var. */
+export async function webhookUrl() {
+  const fromDb = await getSetting(SETTING_KEYS.cardWebhookUrl).catch(() => null)
+  return normalizeWebhookUrl(fromDb) ?? normalizeWebhookUrl(process.env.CARD_WEBHOOK_URL)
+}
+
+export async function lastDelivery(): Promise<DeliveryResult | null> {
+  const raw = await getSetting(SETTING_KEYS.cardWebhookLastDelivery).catch(() => null)
   if (!raw) return null
   try {
-    return new URL(raw).protocol === "https:" ? raw : null
+    return JSON.parse(raw) as DeliveryResult
   } catch {
     return null
   }
@@ -58,39 +86,54 @@ export const CARD_EVENT_FOR_STATUS: Record<string, CardEvent> = {
   extra_check: "card.extra_check_requested",
 }
 
-async function deliver(url: string, body: string, secret: string, event: CardEvent, eventId: string) {
-  for (const delay of RETRY_DELAYS_MS) {
-    if (delay) await new Promise((resolve) => setTimeout(resolve, delay))
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "BYTOLOTO-Webhook/1",
-          "X-Bytoloto-Event": event,
-          "X-Bytoloto-Event-Id": eventId,
-          "X-Bytoloto-Signature": signWebhook(body, secret),
-        },
-        body,
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-        redirect: "error",
-      })
-      if (response.ok) return
-      if (response.status >= 400 && response.status < 500 && response.status !== 429) return
-    } catch {
-      // network error or timeout — retry
-    }
+async function attempt(url: string, body: string, secret: string, event: CardEvent, eventId: string) {
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "BYTOLOTO-Webhook/1",
+        "X-Bytoloto-Event": event,
+        "X-Bytoloto-Event-Id": eventId,
+        "X-Bytoloto-Signature": signWebhook(body, secret),
+      },
+      body,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      redirect: "error",
+    })
+    return { status: response.status, error: response.ok ? null : `HTTP ${response.status}` }
+  } catch (error) {
+    const message = error instanceof Error && error.name === "TimeoutError" ? "Таймаут 8 с" : "Сервис недоступен"
+    return { status: null, error: message }
   }
-  console.error(`[card-webhook] delivery failed: ${event} ${eventId}`)
+}
+
+async function recordDelivery(result: DeliveryResult) {
+  await setSetting(SETTING_KEYS.cardWebhookLastDelivery, JSON.stringify(result)).catch(() => {})
+}
+
+async function deliver(url: string, body: string, secret: string, event: CardEvent, eventId: string, retries = RETRY_DELAYS_MS) {
+  let last: { status: number | null; error: string | null } = { status: null, error: "Не отправлено" }
+  for (const delay of retries) {
+    if (delay) await new Promise((resolve) => setTimeout(resolve, delay))
+    last = await attempt(url, body, secret, event, eventId)
+    if (!last.error) break
+    if (last.status && last.status >= 400 && last.status < 500 && last.status !== 429) break
+  }
+  const result: DeliveryResult = { ok: !last.error, event, status: last.status, error: last.error, at: new Date().toISOString() }
+  await recordDelivery(result)
+  if (!result.ok) console.error(`[card-webhook] delivery failed: ${event} ${eventId} ${last.error}`)
+  return result
 }
 
 /** Fire-and-forget: notifies the verification service about a change in a card request. */
 export function emitCardEvent(cardId: number, event: CardEvent, data?: Record<string, string>) {
-  const url = webhookUrl()
   const secret = process.env.OPERATOR_API_KEY?.trim()
-  if (!url || !secret) return
+  if (!secret) return
   void (async () => {
     try {
+      const url = await webhookUrl()
+      if (!url) return
       const [request] = await db.select(cardPublicColumns).from(paymentCard).where(eq(paymentCard.id, cardId)).limit(1)
       if (!request) return
       const eventId = randomUUID()
@@ -100,4 +143,16 @@ export function emitCardEvent(cardId: number, event: CardEvent, data?: Record<st
       console.error("[card-webhook] failed to build event", error)
     }
   })()
+}
+
+/** Sends a single signed `ping` event and waits for the answer — used by the admin "Test" button. */
+export async function sendTestWebhook(): Promise<DeliveryResult> {
+  const secret = process.env.OPERATOR_API_KEY?.trim()
+  const url = await webhookUrl()
+  const at = new Date().toISOString()
+  if (!secret) return { ok: false, event: "ping", status: null, error: "На сервере не задан OPERATOR_API_KEY", at }
+  if (!url) return { ok: false, event: "ping", status: null, error: "Адрес сервиса не указан", at }
+  const eventId = randomUUID()
+  const body = JSON.stringify({ id: eventId, event: "ping", createdAt: at, data: {}, request: null })
+  return deliver(url, body, secret, "ping", eventId, [0])
 }
