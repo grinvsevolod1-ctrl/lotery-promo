@@ -28,13 +28,18 @@
 ssh -i ~/.ssh/bytoloto_tmp root@31.77.189.137
 cd /opt/bytoloto && git pull --ff-only
 export DEPLOYMENT_VERSION=$(git rev-parse --short HEAD)
-docker compose build app && docker compose up -d
+docker compose build migrate app      # migrate ОБЯЗАТЕЛЬНО, иначе новые миграции не применятся
+docker compose run --rm migrate         # применяет миграции lib/db/migrations
+docker compose up -d
 docker compose logs app --since 2m
 ```
 
+Сервисы compose: `app`, `db` (Postgres), `migrate` (одноразовый), `caddy`, `backup`. Проверка таблицы:
+`docker compose exec -T db sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\dt"'`
+
 - `.env` на сервере: `/opt/bytoloto/.env` (бэкапы `.env.bak.*`). Шаблон — `deploy/env.production.example`.
 - `NEXT_PUBLIC_*` вшиваются при сборке → после их изменения нужен `docker compose build app`.
-- Миграции применяются при старте контейнера (`instrumentation.ts`).
+- Миграции применяет сервис `migrate` (`pnpm db:migrate`); `deploy/deploy.sh` делает это сам, при ручном деплое — см. команды выше.
 - Бэкап БД: `deploy/backup.sh` (cron на сервере).
 
 ### Переменные окружения (сервер)
