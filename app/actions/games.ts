@@ -75,7 +75,7 @@ async function settleRound<T>(
           description: `Выигрыш: ${game} #${created.id}, ${round.prizeDescription}`,
         })
       }
-      return { ...result, ticketId: created.id, balance: before - cost + round.prize }
+      return { ...result, ticketId: created.id, balance: Math.round((before - cost + round.prize) * 100) / 100 }
     })
     revalidatePath("/cabinet")
     revalidatePath("/play", "layout")

@@ -22,6 +22,7 @@ const AUTO_COUNTS = [10, 25, 50, 100] as const
 type Mode = "manual" | "auto"
 type Landed = { id: number; multiplier: number; payout: number; stake: number }
 
+const roundMoney = (value: number) => Math.round(value * 100) / 100
 const clampStake = (value: number) => Math.min(PLINKO_MAX_STAKE, Math.max(PLINKO_MIN_STAKE, Math.round(value)))
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -58,9 +59,9 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
         setError(res.error)
         return false
       }
-      setBalance((b) => b - stake)
+      setBalance((b) => roundMoney(b - stake))
       void boardRef.current?.drop(res.path).then(() => {
-        setBalance((b) => b + res.payout)
+        setBalance((b) => roundMoney(b + res.payout))
         setHistory((h) => [{ id: res.ticketId, multiplier: res.multiplier, payout: res.payout, stake }, ...h].slice(0, 20))
       })
       await sleep(rows * 140 + 160)
@@ -113,7 +114,7 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
                     last.payout > last.stake ? "text-primary" : "text-foreground",
                   )}
                 >
-                  {formatMultiplier(last.multiplier)} · {last.payout > 0 ? `+${last.payout}` : "0"} BYN
+                  {formatMultiplier(last.multiplier)} · {last.payout > 0 ? `+${last.payout.toLocaleString("ru-RU")}` : "0"} BYN
                 </p>
               </>
             ) : (

@@ -80,9 +80,9 @@ export function plinkoMultipliers(rows: number, risk: PlinkoRisk): readonly numb
   return TABLES[rows][risk]
 }
 
-/** Payouts are whole BYN: the fractional part of stake × multiplier is dropped. */
+/** Payouts are paid to the kopeck: stake × multiplier rounded down to 0.01 BYN. */
 export function plinkoPayout(stake: number, multiplier: number): number {
-  return Math.floor(stake * multiplier + 1e-9)
+  return Math.floor(Math.round(stake * multiplier * 1000) / 10) / 100
 }
 
 export type PlinkoOutcome = { path: number[]; slot: number; multiplier: number; payout: number }
