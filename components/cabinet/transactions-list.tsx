@@ -15,6 +15,8 @@ const TYPE_LABEL: Record<string, string> = {
   purchase: "Покупка",
   prize: "Выигрыш",
   spin: "Колесо",
+  withdrawal_hold: "Вывод",
+  withdrawal_refund: "Возврат",
 }
 
 export function TransactionsList({ transactions }: { transactions: Transaction[] }) {

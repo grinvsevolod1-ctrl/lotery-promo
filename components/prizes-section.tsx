@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { GAMES, topPrize } from '@/lib/lottery'
 import { cn } from '@/lib/utils'
@@ -37,7 +38,16 @@ export function PrizesSection() {
                   </span>
                   <span>{game.tagline}</span>
                 </div>
-                <h3 className="relative mt-auto text-center font-display text-2xl font-black uppercase tracking-tight">{game.name}</h3>
+                <div className="relative -mx-2 my-2 min-h-0 flex-1">
+                  <Image
+                    src={`/games/${game.id}.png`}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 260px, (min-width: 480px) 45vw, 90vw"
+                    className="object-contain [mask-image:radial-gradient(closest-side,black_72%,transparent)]"
+                  />
+                </div>
+                <h3 className="relative text-center font-display text-2xl font-black uppercase tracking-tight">{game.name}</h3>
                 <p className="relative mt-3 text-center text-xs font-semibold text-white/85">Джекпот</p>
                 <p className="relative text-center font-display text-2xl font-black tracking-tight">
                   {topPrize(game).toLocaleString('ru-RU')} BYN
@@ -56,14 +66,23 @@ export function PrizesSection() {
           )
         })}
         <li>
-          <article className="flex aspect-[4/5] flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-b from-[#3f6df0] to-[#1a3aa8] p-4 text-white shadow-lg shadow-black/10">
-            <div className="rounded-2xl border-2 border-dashed border-white/40 p-4 text-center">
+          <article className="flex aspect-[4/5] flex-col overflow-hidden rounded-3xl bg-gradient-to-b from-[#3f6df0] to-[#1a3aa8] p-4 text-white shadow-lg shadow-black/10">
+            <div className="text-center">
               <p className="font-display text-base font-extrabold leading-snug">Уже купили билет?</p>
-              <p className="mt-2 text-xs leading-relaxed text-white/80">Все билеты и выигрыши хранятся в личном кабинете</p>
+              <p className="mt-1 text-xs leading-relaxed text-white/80">Все билеты и выигрыши хранятся в личном кабинете</p>
+            </div>
+            <div className="relative -mx-2 my-2 min-h-0 flex-1">
+              <Image
+                src="/games/check.png"
+                alt=""
+                fill
+                sizes="(min-width: 1024px) 260px, (min-width: 480px) 45vw, 90vw"
+                className="object-contain [mask-image:radial-gradient(closest-side,black_72%,transparent)]"
+              />
             </div>
             <Link
               href="/results"
-              className="flex h-11 items-center justify-center rounded-full bg-white text-xs font-extrabold uppercase tracking-wide text-accent transition-transform hover:scale-[1.03]"
+              className="flex h-11 shrink-0 items-center justify-center rounded-full bg-white text-xs font-extrabold uppercase tracking-wide text-accent transition-transform hover:scale-[1.03]"
             >
               Проверить билет
             </Link>

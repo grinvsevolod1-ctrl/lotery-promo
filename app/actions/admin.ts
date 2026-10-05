@@ -4,7 +4,7 @@ import { and, desc, eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { paymentCard, referral, user } from "@/lib/db/schema"
+import { fundingRequest, paymentCard, referral, user } from "@/lib/db/schema"
 import { processReview } from "@/lib/reviews"
 import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { clearAdminSession, isAdmin, setAdminSession, verifyAdminPassword } from "@/lib/admin-auth"
@@ -107,7 +107,14 @@ export type PendingFundingRow = {
 
 export async function getPendingFundingRequests(): Promise<PendingFundingRow[]> {
   await requireAdmin()
-  return []
+  return db.select({
+    id: fundingRequest.id, type: fundingRequest.type, amount: fundingRequest.amount, cardId: fundingRequest.cardId,
+    createdAt: fundingRequest.createdAt, userName: user.name, userEmail: user.email, cardLast4: paymentCard.last4,
+  }).from(fundingRequest)
+    .innerJoin(user, eq(user.id, fundingRequest.userId))
+    .leftJoin(paymentCard, eq(paymentCard.id, fundingRequest.cardId))
+    .where(eq(fundingRequest.status, "pending"))
+    .orderBy(desc(fundingRequest.createdAt)).limit(100)
 }
 
 export async function approveFundingRequest(id: number) {

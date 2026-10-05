@@ -2,7 +2,7 @@ import type { ReviewDecision, ReviewKind } from "@/lib/telegram-security"
 
 export function nextReviewStatus(kind: ReviewKind, status: string, decision: ReviewDecision): string | null {
   if (status !== "pending") return null
-  if (kind === "referral") {
+  if (kind === "referral" || kind === "funding") {
     if (!["approve", "reject"].includes(decision)) return null
     return decision === "approve" ? "approved" : "rejected"
   }
