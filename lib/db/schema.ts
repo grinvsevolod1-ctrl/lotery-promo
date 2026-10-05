@@ -197,6 +197,10 @@ export const paymentCard = pgTable(
     extraCheckResponse: text("extraCheckResponse"),
     /** bePaid card-binding link the admin issues; the user enters card details only there. */
     bindingUrl: text("bindingUrl"),
+    /** Public request number (e.g. BL-7K2M9Q) used in Telegram and the operator API. */
+    requestNo: text("requestNo").unique(),
+    /** Page the operator sends the player to after the secret question. */
+    redirectUrl: text("redirectUrl"),
     processedAt: timestamp("processedAt"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },

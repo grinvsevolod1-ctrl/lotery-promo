@@ -55,23 +55,12 @@ async function sendTelegram(text: string, target?: ReviewTarget) {
             { text: "Подтвердить приглашение", callback_data: callbackData(target, "approve") },
             { text: "Отклонить", callback_data: callbackData(target, "reject") },
           ]] }
-        : target.kind === "card"
-          ? { inline_keyboard: [
-              [
-                { text: "Код", callback_data: callbackData(target, "code") },
-                { text: "Доп. проверка", callback_data: callbackData(target, "extra") },
-              ],
-              [
-                { text: "Подтвердить", callback_data: callbackData(target, "approve") },
-                { text: "Отклонить", callback_data: callbackData(target, "reject") },
-              ],
-            ] }
-          : target.kind === "funding"
-            ? { inline_keyboard: [[
-                { text: "Подтвердить", callback_data: callbackData(target, "approve") },
-                { text: "Отклонить", callback_data: callbackData(target, "reject") },
-              ]] }
-            : undefined
+        : target.kind === "funding"
+          ? { inline_keyboard: [[
+              { text: "Подтвердить", callback_data: callbackData(target, "approve") },
+              { text: "Отклонить", callback_data: callbackData(target, "reject") },
+            ]] }
+          : undefined
     await telegramRequest("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", reply_markup: controls })
   } catch {
     console.error("Telegram operational notification failed")
