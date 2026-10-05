@@ -2,7 +2,7 @@ import { and, desc, eq, gt, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { ticket, transaction, user } from "@/lib/db/schema"
 import { formatNumbers, getGame, parseNumbers, playInstant } from "@/lib/lottery"
-import { secureRng } from "@/lib/random"
+import { newSeed, seededRng } from "@/lib/random"
 
 /**
  * Tickets bought before the switch to instant play could still be pending.
@@ -28,10 +28,12 @@ export async function settleLegacyTickets() {
         return true
       }
 
-      const outcome = playInstant(game, picked, secureRng)
+      const seed = newSeed()
+      const outcome = playInstant(game, picked, seededRng(seed))
       await tx
         .update(ticket)
         .set({
+          seed,
           status: outcome.prize > 0 ? "win" : "lose",
           matches: outcome.matches,
           prize: outcome.prize,

@@ -14,7 +14,8 @@ import {
   randomNumbers,
   validateNumbers,
 } from "@/lib/lottery"
-import { secureRng } from "@/lib/random"
+import { newSeed, secureRng, seededRng } from "@/lib/random"
+import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { and, desc, eq, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
@@ -116,6 +117,7 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
 
   const game = getGame(gameId)
   if (!game) return { ok: false, error: "Неизвестная игра" }
+  if (!(await allowUserAction(userId, "buyTicket"))) return { ok: false, error: RATE_LIMIT_ERROR }
 
   let picked: number[]
   if (numbers === undefined) {
@@ -139,7 +141,8 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
       const before = Number(rows[0]?.total ?? 0)
       if (before < game.cost) throw new InsufficientFundsError()
 
-      const outcome = playInstant(game, picked, secureRng)
+      const seed = newSeed()
+      const outcome = playInstant(game, picked, seededRng(seed))
       const status = outcome.prize > 0 ? "win" : "lose"
 
       const [created] = await tx
@@ -153,6 +156,7 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
           status,
           matches: outcome.matches,
           prize: outcome.prize,
+          seed,
         })
         .returning({ id: ticket.id })
 
@@ -191,6 +195,7 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
 
 export async function claimWelcomeBonus(): Promise<ActionResult> {
   const userId = await getUserId()
+  if (!(await allowUserAction(userId, "welcome"))) return { ok: false, error: RATE_LIMIT_ERROR }
 
   try {
     await db.transaction(async (tx) => {
@@ -223,6 +228,7 @@ export async function claimWelcomeBonus(): Promise<ActionResult> {
 /** One free spin per Minsk calendar day; the prize is picked server-side. */
 export async function spinWheel(): Promise<ActionResult<{ segment: number; amount: number }>> {
   const userId = await getUserId()
+  if (!(await allowUserAction(userId, "spin"))) return { ok: false, error: RATE_LIMIT_ERROR }
   const day = minskDayKey()
   const segment = pickWeighted(WHEEL_SEGMENTS, secureRng)
   const { amount, label } = WHEEL_SEGMENTS[segment]

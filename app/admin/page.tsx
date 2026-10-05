@@ -3,6 +3,7 @@ import { isAdmin } from "@/lib/admin-auth"
 import { getPendingCards, getPendingFundingRequests, getPendingReferrals } from "@/app/actions/admin"
 import { ReferralReview } from "@/components/admin/referral-review"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
+import { AutoRefresh } from "@/components/auto-refresh"
 
 export default async function AdminPage() {
   if (!(await isAdmin())) redirect("/admin/login")
@@ -11,6 +12,7 @@ export default async function AdminPage() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-8">
+      <AutoRefresh intervalMs={10_000} />
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
         <p className="text-sm leading-relaxed text-muted-foreground">Платёжные операции и привязка карт выполняются вручную через Telegram-бота. Кнопки доступны только в личном чате администратора.</p>
         <AdminDashboard cards={cards} requests={requests} />

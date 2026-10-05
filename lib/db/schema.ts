@@ -9,6 +9,7 @@ import {
   date,
   index,
   uniqueIndex,
+  bigint,
 } from "drizzle-orm/pg-core"
 
 // ─── Better Auth tables ───────────────────────────────────────────────
@@ -64,7 +65,22 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
+/** better-auth rate limiter storage, shared by every server instance. */
+export const rateLimit = pgTable("rateLimit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("lastRequest", { mode: "number" }).notNull(),
+})
+
 // ─── App tables ───────────────────────────────────────────────────────
+
+/** Fixed-window counters for game, card and admin actions (see lib/rate-limit.ts). */
+export const appRateLimit = pgTable("app_rate_limit", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  windowStart: timestamp("windowStart").notNull(),
+})
 
 /** One daily draw (20:00 Minsk). All tickets of a draw share its winning numbers. */
 export const draw = pgTable(
@@ -103,11 +119,17 @@ export const ticket = pgTable(
     status: text("status").notNull().default("pending"),
     matches: integer("matches").notNull().default(0),
     prize: integer("prize").notNull().default(0),
+    /**
+     * Audit trail: hex seed the winning combination was derived from via
+     * seededRng(). Replaying it reproduces the draw exactly for disputes.
+     */
+    seed: text("seed"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [
-    index("ticket_user_idx").on(table.userId),
+    index("ticket_user_idx").on(table.userId, table.createdAt),
     index("ticket_draw_idx").on(table.drawId),
+    index("ticket_status_created_idx").on(table.status, table.createdAt),
   ],
 )
 
@@ -124,7 +146,7 @@ export const transaction = pgTable(
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [
-    index("transaction_user_idx").on(table.userId),
+    index("transaction_user_idx").on(table.userId, table.createdAt),
     // At most one welcome bonus per user, enforced at the database level.
     uniqueIndex("transaction_welcome_once")
       .on(table.userId)
