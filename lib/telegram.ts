@@ -1,7 +1,6 @@
 import { after } from "next/server"
-import { site } from "@/lib/site"
 import { isForeignDeployment } from "@/lib/deployment-guard"
-import { callbackData, webhookSecret, type ReviewTarget } from "@/lib/telegram-security"
+import { callbackData, type ReviewTarget } from "@/lib/telegram-security"
 
 export function escapeTelegram(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
