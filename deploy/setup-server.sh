@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time bootstrap of a fresh Ubuntu 22.04/24.04 (or Debian 12) VPS for bytoloto.com.
+# One-time bootstrap of a fresh Ubuntu 22.04+ (or Debian 12) VPS for bytoloto.com.
 # Run as root:  bash deploy/setup-server.sh
 # Safe to re-run: every step checks whether it has already been done.
 set -euo pipefail
@@ -21,8 +21,10 @@ dpkg-reconfigure -f noninteractive unattended-upgrades
 
 log "Docker"
 if ! command -v docker >/dev/null 2>&1; then
-  curl -fsSL https://get.docker.com | sh
+  # get.docker.com may lag behind brand-new Ubuntu releases; fall back to the distro packages.
+  curl -fsSL https://get.docker.com | sh || apt-get install -y docker.io docker-compose-v2 docker-buildx
 fi
+docker compose version >/dev/null 2>&1 || apt-get install -y docker-compose-v2
 systemctl enable --now docker
 
 log "Swap (helps the Next.js build on small servers)"
