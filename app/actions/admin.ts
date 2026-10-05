@@ -15,8 +15,13 @@ async function requireAdmin() {
 }
 
 export async function adminLogin(password: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  const valid = await verifyAdminPassword(password)
-  if (!valid) return { ok: false, error: "Неверный пароль." }
+  const valid = typeof password === "string" && password.length > 0 && password.length <= 256
+    && (await verifyAdminPassword(password))
+  if (!valid) {
+    // Slows down brute-force attempts against the single admin password.
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    return { ok: false, error: "Неверный пароль." }
+  }
   await setAdminSession()
   return { ok: true }
 }
@@ -52,7 +57,8 @@ async function review(target: ReviewTarget, decision: ReviewDecision) {
   const changed = await processReview(target, decision)
   revalidatePath("/admin")
   revalidatePath("/cabinet", "layout")
-  if (changed) void notifyTelegram(`<b>Приглашение #${target.id}</b>\n${decision === "approve" ? "Подтверждено" : "Отклонено"}.`)
+  const label = target.kind === "funding" ? "Заявка" : target.kind === "card" ? "Карта" : "Приглашение"
+  if (changed) void notifyTelegram(`<b>${label} #${target.id}</b>\n${decision === "approve" ? "Подтверждено" : "Отклонено"}.`)
   return changed
 }
 
