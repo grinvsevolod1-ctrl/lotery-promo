@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import type { PaymentCardView } from "@/app/actions/cards"
 import { fieldClass } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -12,13 +13,26 @@ export function Modal({ title, description, onClose, children }: { title: string
       if (e.key === "Escape") onClose()
     }
     document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.body.style.overflow = previousOverflow
+    }
   }, [onClose])
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" aria-label="Закрыть окно" onClick={onClose} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-      <div className="relative w-full max-w-md rounded-3xl bg-card p-6 text-foreground shadow-2xl ring-1 ring-border animate-in fade-in slide-in-from-bottom-4 duration-300 sm:p-7 sm:zoom-in-95 sm:slide-in-from-bottom-0">
+  if (typeof document === "undefined") return null
+
+  // Portal to <body> above the bottom dock (z-50) so the dock never covers dialog buttons.
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto overscroll-contain p-3 pb-[max(env(safe-area-inset-bottom),12px)] sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <button type="button" aria-label="Закрыть окно" onClick={onClose} className="fixed inset-0 bg-foreground/30 backdrop-blur-sm" />
+      <div className="relative my-auto w-full max-w-md rounded-3xl bg-card p-5 text-foreground shadow-2xl ring-1 ring-border animate-in fade-in slide-in-from-bottom-4 duration-300 sm:my-0 sm:p-7 sm:zoom-in-95 sm:slide-in-from-bottom-0">
         <button
           type="button"
           onClick={onClose}
@@ -31,7 +45,8 @@ export function Modal({ title, description, onClose, children }: { title: string
         {description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground text-pretty">{description}</p>}
         <div className="mt-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -109,7 +124,7 @@ export function ExtraCheckForm({ disabled, onSubmit, onLater }: ResponseFormProp
           required
           rows={4}
           maxLength={500}
-          placeholder="Введите ответ администратору"
+          placeholder="Введите ответ"
           className={cn(fieldClass, "min-h-28 resize-none py-3")}
         />
       </label>
@@ -148,7 +163,7 @@ export function CardActionModal({
   }
   if (card.status === "code_requested") {
     return (
-      <Modal title="Код подтверждения" description="Введите код из SMS или банковского приложения, который запросил администратор." onClose={onClose}>
+      <Modal title="Код подтверждения" description="Введите код из SMS или банковского приложения." onClose={onClose}>
         <CardCodeForm disabled={disabled} onSubmit={onSubmitCode} onLater={onClose} />
       </Modal>
     )

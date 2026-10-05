@@ -14,7 +14,7 @@ import { reviewFetcher } from "@/lib/review-fetcher"
 import { maskCard } from "@/lib/payment-cards"
 import { EmptyState } from "@/components/cabinet/panel"
 import { actionErrorMessage } from "@/lib/action-error"
-import { LockMark, PlusMark } from "@/components/cabinet/cards/card-icons"
+import { PlusMark } from "@/components/cabinet/cards/card-icons"
 import { CardActionModal, Modal, needsExtraCheckAnswer } from "@/components/cabinet/cards/card-modal"
 import { CardTile } from "@/components/cabinet/cards/card-tile"
 import { CardBindingForm } from "@/components/cabinet/cards/card-binding-form"
@@ -134,7 +134,7 @@ export function PaymentCards({ initial, openForm = false }: { initial: PaymentCa
       {rejectedNotice && (
         <Modal
           title={rejectedNotice.length > 1 ? "Карты не привязаны" : "Карта не привязана"}
-          description={`Банк или администратор отклонил привязку ${rejectedNotice.map((l) => maskCard(l)).join(", ")}. Карта не добавлена — проверьте данные и попробуйте снова или используйте другую карту.`}
+          description={`Привязка ${rejectedNotice.map((l) => maskCard(l)).join(", ")} отклонена. Карта не добавлена — проверьте данные и попробуйте снова или используйте другую карту.`}
           onClose={() => setRejectedNotice(null)}
         >
           <button
@@ -178,11 +178,6 @@ export function PaymentCards({ initial, openForm = false }: { initial: PaymentCa
           Привязать новую карту
         </button>
       )}
-
-      <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground text-pretty">
-        <LockMark className="mt-0.5 size-4 shrink-0 text-gold" />
-        Никому не сообщайте CVC и коды из SMS — администратор их никогда не запрашивает.
-      </p>
     </div>
   )
 }

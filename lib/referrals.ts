@@ -2,7 +2,6 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { referral, referralCode } from "@/lib/db/schema"
-import { notifyTelegram } from "@/lib/telegram"
 
 export const REFERRAL_COOKIE = "toloto-referral"
 export const REFERRAL_TTL = 30 * 24 * 60 * 60
@@ -42,6 +41,8 @@ export async function recordReferral(inviteeId: string, cookieValue: string) {
   if (!code) return
   const [owner] = await db.select({ userId: referralCode.userId }).from(referralCode).where(eq(referralCode.code, code))
   if (!owner || owner.userId === inviteeId) return
-  const [created] = await db.insert(referral).values({ userId: owner.userId, inviteeId }).onConflictDoNothing({ target: referral.inviteeId }).returning({ id: referral.id })
-  if (created) void notifyTelegram(`<b>Приглашение #${created.id}</b>\nНовая регистрация по реферальной ссылке. Вознаграждение не начисляется.`, { kind: "referral", id: created.id })
+  await db
+    .insert(referral)
+    .values({ userId: owner.userId, inviteeId, status: "approved", processedAt: new Date() })
+    .onConflictDoNothing({ target: referral.inviteeId })
 }
