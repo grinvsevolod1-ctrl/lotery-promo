@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Montserrat } from 'next/font/google'
 import { PwaRegister } from '@/components/pwa'
 import { Analytics } from '@/components/analytics'
+import { StaleDeploymentGuard } from '@/components/stale-deployment-guard'
 import { site } from '@/lib/site'
 import './globals.css'
 
@@ -60,6 +61,7 @@ export default function RootLayout({
       <body className="bg-background font-sans antialiased">
         {children}
         <PwaRegister />
+        <StaleDeploymentGuard />
         <Analytics />
       </body>
     </html>

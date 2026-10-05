@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { TicketMark, LogoutMark, UserMark, TrophyMark, HomeMark, WalletMark } from "@/components/icons"
 import { cn } from "@/lib/utils"
+import { BrandLogo } from "@/components/brand-logo"
 
 const NAV = [
   { href: "/cabinet", label: "Играть", icon: TicketMark },
@@ -19,14 +20,7 @@ export function CabinetHeader() {
 
   return (
     <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
-      <Link href="/" className="group flex items-center gap-2.5" aria-label="bytoloto.com — на главную">
-        <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/40 transition-transform group-hover:-rotate-6">
-          <TicketMark className="h-5 w-5 text-primary-foreground" />
-        </span>
-        <span className="font-display text-lg font-extrabold tracking-tight text-foreground">
-          lotery<span className="text-gold">.by</span>
-        </span>
-      </Link>
+      <BrandLogo className="text-[26px] sm:text-[30px]" />
 
       <nav aria-label="Разделы кабинета" className="order-last flex w-full gap-1 overflow-x-auto rounded-full bg-foreground/5 p-1 sm:order-none sm:w-auto">
         {NAV.map(({ href, label, icon: Icon }) => {

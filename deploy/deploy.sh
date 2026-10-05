@@ -24,6 +24,8 @@ git checkout "${BRANCH}"
 git pull --ff-only origin "${BRANCH}"
 
 echo "==> Building images"
+DEPLOYMENT_VERSION="$(git rev-parse --short HEAD)"
+export DEPLOYMENT_VERSION
 docker compose build
 
 echo "==> Starting stack (migrations run before the app starts)"

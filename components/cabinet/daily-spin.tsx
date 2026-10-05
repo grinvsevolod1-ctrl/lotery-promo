@@ -8,6 +8,7 @@ import { CoinMark } from "@/components/icons"
 import { Wheel, type WheelHandle } from "@/components/wheel"
 import { Notice, Panel, PanelTitle } from "@/components/cabinet/panel"
 import { spinWheel } from "@/app/actions/cabinet"
+import { actionErrorMessage } from "@/lib/action-error"
 import { WHEEL_SEGMENTS, nextMinskMidnight } from "@/lib/lottery"
 
 const LABELS = WHEEL_SEGMENTS.map((s) => s.label)
@@ -53,9 +54,9 @@ export function DailySpin({
     let res: Awaited<ReturnType<typeof spinWheel>>
     try {
       res = await spinWheel()
-    } catch {
+    } catch (e) {
       setSpinning(false)
-      setError("Не удалось связаться с сервером. Попробуйте ещё раз.")
+      setError(actionErrorMessage(e, "Нет соединения с сервером. Проверьте интернет и попробуйте ещё раз."))
       return
     }
     if (!res.ok) {

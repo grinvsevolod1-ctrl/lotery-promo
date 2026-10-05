@@ -66,7 +66,9 @@ const trustedProxies = splitList(process.env.TRUSTED_PROXIES ?? "127.0.0.1,::1")
 
 // E-mail confirmation is off for now: users are signed in right after sign-up.
 // Set REQUIRE_EMAIL_VERIFICATION=1 to require a confirmed address again.
-const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === "1"
+const requireEmailVerification = ["1", "true", "yes"].includes(
+  (process.env.REQUIRE_EMAIL_VERIFICATION ?? "").trim().toLowerCase(),
+)
 
 export const auth = betterAuth({
   database: pool,
