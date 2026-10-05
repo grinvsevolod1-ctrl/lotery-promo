@@ -122,7 +122,13 @@ docker compose logs app --since 2m
 | `account/bottom-dock.tsx` | Нижний док + панель быстрых действий |
 | `account/page-heading.tsx` | Заголовок страницы кабинета |
 | `account/support-form.tsx` | Форма поддержки |
-| `cabinet/payment-cards.tsx` | Карты: список, форма привязки, модалки кода/вопроса |
+| `cabinet/payment-cards.tsx` | Карты: оркестратор (SWR-опрос, удаление с подтверждением, алерт об отклонении + авто-удаление rejected, авто-открытие модалок) |
+| `cabinet/cards/card-tile.tsx` | Плитка карты, бейджи статусов, `BRAND_MATERIAL` |
+| `cabinet/cards/card-binding-form.tsx` | Форма привязки с 3D-превью; после «Сохранить» — экран «Ожидайте перенаправления…» и переход на `/cabinet/cards/[id]` |
+| `cabinet/cards/card-modal.tsx` | `Modal`, формы кода и доп. проверки, `CardActionModal` |
+| `cabinet/cards/card-confirmation.tsx` | Страница подтверждения: шаги, ввод кода/ответа, итог (подтверждена/отклонена) |
+| `cabinet/cards/card-icons.tsx` | SVG-иконки карт |
+| `app/cabinet/cards/[id]/page.tsx` | Маршрут подтверждения карты; `/cabinet/cards?new=1` сразу открывает форму |
 | `cabinet/card-brand-mark.tsx` | Логотипы Visa/Mastercard/Белкарт |
 | `cabinet/buy-ticket-panel.tsx`, `number-picker.tsx`, `ticket-card.tsx` | Покупка и отображение билетов |
 | `cabinet/daily-spin.tsx` | Ежедневное колесо в кабинете |
@@ -167,5 +173,7 @@ docker compose logs app --since 2m
 ## 6. Что дальше (бэклог)
 
 - Страница подтверждения карты, на которую ведёт превью после «Сохранить» (сейчас превью ждёт решения админа).
-- Разбить `components/cabinet/payment-cards.tsx` (крупнейший файл) на `card-list`, `binding-form`, `card-modals`.
+- ~~Разбить `payment-cards.tsx`~~ — сделано (`components/cabinet/cards/*`).
+- `e2e/cabinet.spec.ts` — мобильные сценарии кабинета; запуск требует `E2E_EMAIL`/`E2E_PASSWORD` существующего аккаунта.
+- Локальная песочница v0 без БД: `/cabinet*` отдаёт 500 — проверять на сервере.
 - E2E-сценарий кабинета (док, карта, поддержка) на мобильной ширине.
