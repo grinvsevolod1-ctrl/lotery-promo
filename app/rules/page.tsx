@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { LegalPage } from "@/components/legal-page"
-import { operatorRequisites, site } from "@/lib/site"
+import { site } from "@/lib/site"
 import { GAMES, WELCOME_BONUS, WHEEL_SEGMENTS, minWinningMatches } from "@/lib/lottery"
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default function RulesPage() {
     >
       <h2>1. Общие положения</h2>
       <p>
-        1.1. Организатор акции — <strong>{site.operator.name}</strong> ({operatorRequisites}),
+        1.1. Организатор акции — администрация сайта <strong>{site.name}</strong>,
         далее — «Организатор». Акция проводится на сайте {site.url} (далее — «Сайт»).
       </p>
       <p>
@@ -135,7 +135,7 @@ export default function RulesPage() {
       </p>
       <p>
         6.2. Организатор не несёт ответственности за невозможность участия по причинам, не зависящим от него: сбои
-        связи, недоступность электронной почты участника, действия третьих лиц.
+        связи, недоступность электронной почты уч��стника, действия третьих лиц.
       </p>
       <p>6.3. Участник обязуется указывать достоверные данные и обеспечивать сохранность пароля от аккаунта.</p>
 
