@@ -24,6 +24,13 @@ export function slotTone(multiplier: number) {
   return { ring: "border-[#e95ad8]", text: "text-foreground" }
 }
 
+/** Narrow slots (many rows on a phone) drop the "x" and shorten 1000 to 1K so labels never overlap. */
+function slotLabel(m: number, spacing: number) {
+  if (spacing >= 34) return formatMultiplier(m)
+  if (m >= 1000) return `${Math.round(m / 1000)}K`
+  return m >= 100 ? String(Math.round(m)) : String(m).replace(".", ",")
+}
+
 export function PlinkoBoard({
   rows,
   multipliers,
@@ -198,12 +205,13 @@ export function PlinkoBoard({
               />
               <span
                 className={cn(
-                  "mt-1 whitespace-nowrap font-display font-extrabold tabular-nums leading-none",
-                  rows > 12 ? "text-[clamp(7px,1.9vw,11px)]" : "text-[clamp(9px,2.6vw,14px)]",
+                  "mt-1 block w-full overflow-hidden text-center whitespace-nowrap font-display font-extrabold tabular-nums leading-none tracking-tighter",
                   tone.text,
                 )}
+                style={{ fontSize: spacing ? Math.min(14, Math.max(7, spacing * 0.4)) : undefined }}
+                aria-label={formatMultiplier(m)}
               >
-                {formatMultiplier(m)}
+                {slotLabel(m, spacing)}
               </span>
             </li>
           )

@@ -35,10 +35,12 @@ describe("plinko", () => {
   })
 
   it("pays whole BYN, rounding down", () => {
-    expect(plinkoPayout(1, 0.5)).toBe(0)
-    expect(plinkoPayout(3, 1.1)).toBe(3)
+    expect(plinkoPayout(1, 0.5)).toBe(0.5)
+    expect(plinkoPayout(1, 0.2)).toBe(0.2)
+    expect(plinkoPayout(3, 1.1)).toBe(3.3)
     expect(plinkoPayout(10, 1.1)).toBe(11)
-    expect(plinkoPayout(7, 5.6)).toBe(39)
+    expect(plinkoPayout(7, 5.6)).toBe(39.2)
+    expect(plinkoPayout(3, 0.3)).toBe(0.9)
   })
 })
 

@@ -11,7 +11,11 @@ import {
   uniqueIndex,
   bigint,
   jsonb,
+  numeric,
 } from "drizzle-orm/pg-core"
+
+/** Money in BYN with kopecks; numeric keeps sums exact, mode "number" keeps the JS side simple. */
+const money = (name: string) => numeric(name, { precision: 12, scale: 2, mode: "number" })
 
 // ─── Better Auth tables ───────────────────────────────────────────────
 
@@ -119,7 +123,7 @@ export const ticket = pgTable(
     cost: integer("cost").notNull().default(0),
     status: text("status").notNull().default("pending"),
     matches: integer("matches").notNull().default(0),
-    prize: integer("prize").notNull().default(0),
+    prize: money("prize").notNull().default(0),
     /**
      * Audit trail: hex seed the winning combination was derived from via
      * seededRng(). Replaying it reproduces the draw exactly for disputes.
@@ -144,7 +148,7 @@ export const transaction = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
-    amount: integer("amount").notNull(),
+    amount: money("amount").notNull(),
     description: text("description").notNull(),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
