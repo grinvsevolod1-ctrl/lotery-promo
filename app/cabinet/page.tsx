@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { headers } from "next/headers"
+import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { getBalance, getTickets, getTransactions } from "@/app/actions/cabinet"
 import { getFundingRequests } from "@/app/actions/funding"
@@ -15,6 +16,7 @@ import { AutoRefresh } from "@/components/auto-refresh"
 
 export default async function CabinetPage() {
   const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) redirect("/sign-in")
   await settleLegacyTickets()
 
   const [balance, tickets, transactions, fundingRequests, cards] = await Promise.all([
