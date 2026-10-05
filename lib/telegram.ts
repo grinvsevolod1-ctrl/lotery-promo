@@ -20,14 +20,22 @@ export async function telegramRequest(method: "sendMessage" | "setWebhook" | "an
   if (!result.ok) throw new Error("Telegram request rejected")
 }
 
-export async function configureWebhook() {
-  if (process.env.NODE_ENV !== "production" || (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production")) return
+// setWebhook is idempotent, but calling it on every notification wastes Telegram API quota.
+// Register once per process; a failed attempt clears the cache so the next call retries.
+let webhookRegistration: Promise<void> | null = null
+
+export function configureWebhook() {
+  if (process.env.NODE_ENV !== "production" || (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production")) return Promise.resolve()
   const origin = site.url
   const secret = webhookSecret()
-  if (!origin || !secret) return
+  if (!origin || !secret) return Promise.resolve()
   const url = new URL("/api/telegram/webhook", origin)
-  if (url.protocol !== "https:") return
-  await telegramRequest("setWebhook", { url: url.toString(), secret_token: secret, allowed_updates: ["callback_query"] })
+  if (url.protocol !== "https:") return Promise.resolve()
+  webhookRegistration ??= telegramRequest("setWebhook", { url: url.toString(), secret_token: secret, allowed_updates: ["callback_query"] }).catch((error) => {
+    webhookRegistration = null
+    throw error
+  })
+  return webhookRegistration
 }
 
 async function sendTelegram(text: string, target?: ReviewTarget) {

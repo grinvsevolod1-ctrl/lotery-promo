@@ -158,6 +158,9 @@ export const auth = betterAuth({
     }),
   },
   rateLimit: {
+    // In-memory counters are per instance and reset on every cold start.
+    storage: "database",
+    modelName: "rateLimit",
     window: 60,
     max: 60,
     customRules: {

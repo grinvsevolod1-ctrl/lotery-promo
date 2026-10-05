@@ -14,6 +14,7 @@ import { TicketCard } from "@/components/cabinet/ticket-card"
 import { TransactionsList } from "@/components/cabinet/transactions-list"
 import { FundingPanel } from "@/components/cabinet/funding-panel"
 import { ReferralPanel } from "@/components/cabinet/referral-panel"
+import { AutoRefresh } from "@/components/auto-refresh"
 
 export default async function CabinetPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -36,6 +37,7 @@ export default async function CabinetPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <AutoRefresh intervalMs={20_000} />
       <Panel accent className="p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-1">

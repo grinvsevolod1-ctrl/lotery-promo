@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import useSWR from 'swr'
 import { TrophyMark } from '@/components/icons'
 import { cn } from '@/lib/utils'
 
@@ -16,9 +17,22 @@ function ago(iso: string, now: number) {
   return hours < 24 ? `${hours} ч назад` : `${Math.round(hours / 24)} дн назад`
 }
 
+const fetchWins = async (url: string): Promise<FeedItem[]> => {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('wins unavailable')
+  return res.json()
+}
+
 export function LiveWinsFeed({ initial, unavailable = false }: { initial: FeedItem[]; unavailable?: boolean }) {
   const [now, setNow] = useState<number | null>(null)
-  const items = initial.slice(0, 6)
+  const { data, error } = useSWR('/api/wins', fetchWins, {
+    fallbackData: initial,
+    refreshInterval: 10_000,
+    revalidateOnMount: false,
+    keepPreviousData: true,
+  })
+  const items = (data ?? initial).slice(0, 6)
+  const loadFailed = Boolean(error) || (unavailable && data === initial)
 
   useEffect(() => {
     setNow(Date.now())
@@ -31,7 +45,7 @@ export function LiveWinsFeed({ initial, unavailable = false }: { initial: FeedIt
       <div className="mx-auto max-w-3xl px-5">
         <h2 id="live-wins-title" className="mb-5 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Последние выигрыши</h2>
         {items.length === 0 ? (
-          <p role="status" className="rounded-3xl border border-border bg-card p-6 text-sm leading-relaxed text-muted-foreground">{unavailable ? 'Не удалось загрузить выигрыши. Попробуйте позже.' : 'Выигрышей пока нет. Здесь появятся результаты сыгранных билетов.'}</p>
+          <p role="status" className="rounded-3xl border border-border bg-card p-6 text-sm leading-relaxed text-muted-foreground">{loadFailed ? 'Не удалось загрузить выигрыши. Попробуйте позже.' : 'Выигрышей пока нет. Здесь появятся результаты сыгранных билетов.'}</p>
         ) : (
           <ul className="flex flex-col gap-2 overflow-hidden rounded-3xl border border-border/60 bg-card/70 p-2 backdrop-blur-xl">
             {items.map((win, index) => (
