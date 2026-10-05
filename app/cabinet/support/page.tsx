@@ -4,10 +4,12 @@ import { PageHeading } from "@/components/account/page-heading"
 import { SupportForm } from "@/components/account/support-form"
 import { SUPPORT_TOPICS } from "@/lib/support-topics"
 import { formatDateTime } from "@/lib/format"
+import { requireSession } from "@/lib/require-session"
 
 export const metadata: Metadata = { title: "Поддержка — bytoloto.com" }
 
 export default async function SupportPage() {
+  await requireSession()
   const requests = await getSupportRequests()
 
   return (

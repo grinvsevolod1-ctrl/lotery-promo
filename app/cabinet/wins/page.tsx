@@ -5,10 +5,12 @@ import { EmptyState } from "@/components/cabinet/panel"
 import { TicketCard } from "@/components/cabinet/ticket-card"
 import { PageHeading } from "@/components/account/page-heading"
 import { TrophyMark } from "@/components/icons"
+import { requireSession } from "@/lib/require-session"
 
 export const metadata: Metadata = { title: "Мои выигрыши — bytoloto.com" }
 
 export default async function WinsPage() {
+  await requireSession()
   const tickets = await getTickets()
   const wins = tickets.filter((t) => t.status === "win")
   const total = wins.reduce((sum, t) => sum + t.prize, 0)
