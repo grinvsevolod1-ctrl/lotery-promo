@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { reviewReferral } from "@/app/actions/admin"
+import { actionErrorMessage } from "@/lib/action-error"
 
 export function ReferralReview({ referrals }: { referrals: { id: number; createdAt: Date }[] }) {
   const router = useRouter()
@@ -15,8 +16,8 @@ export function ReferralReview({ referrals }: { referrals: { id: number; created
         const changed = await reviewReferral(id, decision)
         if (!changed) setError("Приглашение уже рассмотрено.")
         router.refresh()
-      } catch {
-        setError("Не удалось рассмотреть приглашение.")
+      } catch (e) {
+        setError(actionErrorMessage(e, "Не удалось рассмотреть приглашение."))
       }
     })
   }

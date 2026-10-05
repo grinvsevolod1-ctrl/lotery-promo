@@ -16,6 +16,7 @@ import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
 import { EmptyState, Panel } from "@/components/cabinet/panel"
 import { fieldClass } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { actionErrorMessage } from "@/lib/action-error"
 
 const BRAND_MATERIAL: Record<CardBrand, string> = {
   visa: "from-primary/70 via-primary/40 to-card",
@@ -43,8 +44,8 @@ export function PaymentCards({ initial }: { initial: PaymentCardView[] }) {
     setError(null)
     try {
       await mutate(await action(), false)
-    } catch {
-      setError("Не удалось выполнить действие. Попробуйте ещё раз.")
+    } catch (e) {
+      setError(actionErrorMessage(e, "Не удалось выполнить действие. Проверьте интернет и попробуйте ещё раз."))
     } finally {
       setPendingId(null)
     }
@@ -341,7 +342,7 @@ function CardActionModal({
           </label>
           <div className="flex flex-col gap-3 sm:flex-row">
             <button type="submit" disabled={disabled || submitting || !value.trim()} className="min-h-14 flex-1 rounded-full bg-primary px-5 text-base font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
-              {submitting ? "Отправляем…" : "Отправить ответ"}
+              {submitting ? "Отправля��м…" : "Отправить ответ"}
             </button>
             <button type="button" onClick={onClose} className="min-h-14 rounded-full border border-border px-5 text-base text-foreground">Позже</button>
           </div>
@@ -444,8 +445,8 @@ function BindingRequestForm({ onCancel, onDone }: { onCancel: () => void; onDone
       })
       if (!res.ok) setError(res.error)
       else await onDone(res.cards)
-    } catch {
-      setError("Не удалось отправить заявку. Попробуйте ещё раз.")
+    } catch (e) {
+      setError(actionErrorMessage(e, "Не удалось отправить заявку. Проверьте интернет и попробуйте ещё раз."))
     } finally {
       setSubmitting(false)
     }
