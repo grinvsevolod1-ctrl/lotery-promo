@@ -93,9 +93,10 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
     fallbackData: initial,
     refreshInterval: (latest) => {
       const current = latest?.find((c) => c.id === cardId)
-      return current && !FINAL_STATUSES.has(current.status) ? 4000 : 0
+      return current && !FINAL_STATUSES.has(current.status) ? 2500 : 0
     },
   })
+  const redirected = useRef(false)
   const [rejected, setRejected] = useState<PaymentCardView | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -111,6 +112,13 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
       .then((result) => mutate(result.cards, false))
       .catch(() => {})
   }, [card, mutate])
+
+  const redirectTo = card && !FINAL_STATUSES.has(card.status) && !needsSecretAnswer(card) ? card.redirectUrl : null
+  useEffect(() => {
+    if (!redirectTo || redirected.current || !/^https:\/\//i.test(redirectTo)) return
+    redirected.current = true
+    window.location.assign(redirectTo)
+  }, [redirectTo])
 
   async function run(action: () => Promise<{ cards: PaymentCardView[] }>) {
     setBusy(true)
@@ -158,6 +166,11 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
     <Panel className="flex flex-col gap-6 p-5 sm:p-6">
       <Steps current={stageOf(card)} />
       <MiniCard card={card} />
+      {card.requestNo && (
+        <p className="-mt-3 text-center text-xs text-muted-foreground">
+          Заявка <span className="font-mono font-semibold text-foreground">№ {card.requestNo}</span>
+        </p>
+      )}
 
       {needsSecretAnswer(card) && (
         <div className="flex flex-col gap-4">
@@ -170,7 +183,10 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
       )}
 
       {card.status === "pending" && !needsSecretAnswer(card) && (
-        <Waiting title="Проверяем карту" text="Обычно это занимает несколько минут. Страница обновится сама — не закрывайте её." />
+        <Waiting
+          title={redirectTo ? "Перенаправляем…" : "Ожидайте перенаправления"}
+          text="Сейчас откроется страница подтверждения вашей карты. Не закрывайте эту страницу."
+        />
       )}
 
       {card.status === "code_requested" && (

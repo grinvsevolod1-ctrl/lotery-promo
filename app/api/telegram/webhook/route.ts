@@ -3,6 +3,7 @@ import { extraMessageToken, isPrivateAdmin, parseCallback, parseExtraMessageToke
 import { telegramRequest } from "@/lib/telegram"
 import { getReviewResult, processReview, setExtraCheckMessage } from "@/lib/reviews"
 import { reviewFeedback } from "@/lib/review-feedback"
+import { decideCardRequest, findRequestNo, normalizeRedirectUrl, setCardRedirect, type CardDecision } from "@/lib/card-requests"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -12,8 +13,45 @@ type IncomingMessage = { message_id?: number; text?: string; chat?: Chat; from?:
 type Callback = { id?: string; data?: string; from?: { id?: number }; message?: IncomingMessage }
 type Update = { callback_query?: Callback; message?: IncomingMessage }
 
+const DECISION_WORDS: Record<string, CardDecision> = { ok: "approve", "+": "approve", no: "reject", "-": "reject" }
+
+/**
+ * Operator commands for card requests, either as a reply to the request message or with the number inline:
+ *   https://page.example      -> send the player to this page
+ *   ok / +  |  no / -         -> confirm or reject the card
+ */
+async function handleCardRequestCommand(message: IncomingMessage) {
+  const text = message.text?.trim()
+  if (!text) return false
+  const requestNo = findRequestNo(text) ?? findRequestNo(message.reply_to_message?.text ?? "")
+  if (!requestNo) return false
+  const rest = text.replace(new RegExp(requestNo, "i"), "").replace(/^\/\w+/, "").trim()
+  const url = rest.split(/\s+/).find((part) => /^https:\/\//i.test(part))
+  let reply: string
+  if (url) {
+    const normalized = normalizeRedirectUrl(url)
+    reply = !normalized
+      ? "Нужна ссылка вида https://…"
+      : (await setCardRedirect(requestNo, normalized)) ? `№ ${requestNo}: перенаправление отправлено.` : `№ ${requestNo}: заявка не найдена или уже закрыта.`
+  } else {
+    const decision = DECISION_WORDS[rest.toLowerCase()]
+    if (!decision) return false
+    const changed = await decideCardRequest(requestNo, decision)
+    reply = changed ? `№ ${requestNo}: ${decision === "approve" ? "карта подтверждена" : "карта отклонена"}.` : `№ ${requestNo}: решение уже принято или заявка не найдена.`
+  }
+  revalidatePath("/cabinet", "layout")
+  await telegramRequest("sendMessage", { chat_id: message.chat!.id, text: reply })
+  return true
+}
+
 async function handleExtraCheckReply(message: IncomingMessage) {
   if (!isPrivateAdmin(message.chat, message.from?.id)) return
+  try {
+    if (await handleCardRequestCommand(message)) return
+  } catch {
+    console.error("Telegram card command failed")
+    return
+  }
   const prompt = message.reply_to_message?.text
   const answer = message.text
   if (typeof prompt !== "string" || typeof answer !== "string" || !answer.trim()) return
