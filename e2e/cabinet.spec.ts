@@ -27,8 +27,9 @@ test.describe("cabinet on mobile", () => {
 
   test("bottom dock opens quick actions and reaches the deposit page", async ({ page }) => {
     await expectNoHorizontalScroll(page)
-    await page.getByRole("button", { name: /быстрые действия/i }).click()
-    await page.getByRole("link", { name: /пополнить/i }).first().click()
+    const dock = page.getByRole("navigation", { name: "Навигация кабинета" })
+    await dock.getByRole("button", { name: /быстрые действия/i }).click()
+    await dock.getByRole("link", { name: "Пополнить" }).click()
     await expect(page).toHaveURL(/\/cabinet\/deposit/)
     await expectNoHorizontalScroll(page)
   })
