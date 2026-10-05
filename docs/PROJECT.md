@@ -82,7 +82,7 @@ docker compose logs app --since 2m
 | --- | --- |
 | `setup-server.sh` | Первичная настройка VPS (Docker, firewall, генерация секретов) |
 | `deploy.sh` | Обновление: pull → build → up |
-| `Caddyfile` | HTTPS-прокси для bytoloto.com и аналитики |
+| `Caddyfile` | HTTPS-прокси д��я bytoloto.com и аналитики |
 | `backup.sh` | Дамп Postgres |
 | `env.production.example` | Шаблон серверного `.env` |
 | `postgres-init/01-umami.sql` | Создание БД для Umami |
@@ -101,7 +101,10 @@ docker compose logs app --since 2m
 | `cabinet/profile` | Имя, пароль, почта, сессии, удаление аккаунта |
 | `cabinet/support` | Форма обращения в поддержку |
 | `cabinet/loading.tsx` | Скелетон кабинета |
-| `play/layout.tsx`, `play/page.tsx` | Игровой раздел: покупка билетов, ежедневное колесо |
+| `play/layout.tsx`, `play/page.tsx` | Проводник игр: карточки игр со статусом, без самих игр |
+| `play/lottery/page.tsx` | Отдельная страница моментальной лотереи (покупка билета) |
+| `play/wheel/page.tsx` | Отдельная страница ежедневного колеса удачи |
+| `play/tickets/page.tsx` | История билетов и результаты |
 | `pay/confirm/[token]` | Страница подтверждения карты/платежа |
 | `invite/[code]/route.ts` | Реферальная ссылка → cookie → регистрация |
 | `admin/*` | Админ-панель (вход по `ADMIN_SECRET`) |
@@ -121,6 +124,7 @@ docker compose logs app --since 2m
 | `account/account-shell.tsx` | Каркас кабинета (фон, отступ под док) |
 | `account/account-top-bar.tsx` | Шапка кабинета с логотипом и аватаром |
 | `account/bottom-dock.tsx` | Нижний док + панель быстрых действий |
+| `play/game-card.tsx`, `play/back-to-games.tsx`, `play/balance-badge.tsx` | Карточка игры в проводнике, кнопка «Все игры», плашка баланса |
 | `account/page-heading.tsx` | Заголовок страницы кабинета |
 | `account/support-form.tsx` | Форма поддержки |
 | `cabinet/payment-cards.tsx` | Карты: оркестратор (SWR-опрос, удаление с подтверждением, алерт об отклонении + авто-удаление rejected, авто-открытие модалок) |

@@ -28,8 +28,8 @@ const TABS_RIGHT: NavItem[] = [
   { href: "/cabinet/cards", label: "Карты", icon: WalletMark },
 ]
 const ACTIONS: NavItem[] = [
-  { href: "/play#buy", label: "Билет", icon: TicketMark },
-  { href: "/play#spin", label: "Колесо", icon: CloverMark },
+  { href: "/play/lottery", label: "Билет", icon: TicketMark },
+  { href: "/play/wheel", label: "Колесо", icon: CloverMark },
   { href: "/cabinet/deposit", label: "Пополнить", icon: ArrowDownMark },
   { href: "/cabinet#referral", label: "Друзья", icon: ShareMark },
   { href: "/cabinet/support", label: "Поддержка", icon: OrbChatMark },
