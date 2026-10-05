@@ -28,7 +28,9 @@ export function LiveWinsFeed({ initial, unavailable = false }: { initial: FeedIt
   const { data, error } = useSWR('/api/wins', fetchWins, {
     fallbackData: initial,
     refreshInterval: 10_000,
-    revalidateOnMount: false,
+    // The landing page is prerendered (possibly during a build without DB access),
+    // so an empty or failed snapshot must be refreshed right after hydration.
+    revalidateOnMount: unavailable || initial.length === 0,
     keepPreviousData: true,
   })
   const items = (data ?? initial).slice(0, 6)
