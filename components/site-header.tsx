@@ -1,27 +1,25 @@
 import Link from "next/link"
-import { TicketMark } from "@/components/icons"
+import { BrandLogo } from "@/components/brand-logo"
 import { HeaderAuthNav } from "@/components/header-auth-nav"
+
+const navLinks = [
+  { href: "/#games", label: "Лотереи" },
+  { href: "/#wheel", label: "Колесо удачи" },
+  { href: "/results", label: "Выигрыши" },
+  { href: "/rules", label: "Правила" },
+]
 
 export function SiteHeader() {
   return (
-    <header className="absolute inset-x-0 top-0 z-30">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-5 sm:py-6">
-        <Link href="/" className="group flex shrink-0 items-center gap-2 sm:gap-2.5" aria-label="bytoloto.com — на главную">
-          <span className="relative flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/40 transition-transform group-hover:-rotate-6 sm:size-11">
-            <TicketMark className="h-6 w-6 text-primary-foreground" />
-            <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-gold animate-twinkle" aria-hidden="true" />
-          </span>
-          <span className="font-display text-lg font-extrabold tracking-tight text-foreground sm:text-xl">
-            lotery<span className="text-gold">.by</span>
-          </span>
-        </Link>
-        <nav aria-label="Основное меню" className="hidden items-center gap-7 text-sm font-semibold text-foreground/80 md:flex">
-          <Link href="/results" className="transition-colors hover:text-gold">
-            Выигрыши
-          </Link>
-          <Link href="/rules" className="transition-colors hover:text-gold">
-            Правила
-          </Link>
+    <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-5">
+        <BrandLogo className="text-2xl" />
+        <nav aria-label="Основное меню" className="hidden items-center gap-7 text-sm font-semibold text-foreground md:flex">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="transition-colors hover:text-primary">
+              {link.label}
+            </Link>
+          ))}
         </nav>
         <HeaderAuthNav />
       </div>

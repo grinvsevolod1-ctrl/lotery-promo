@@ -1,12 +1,7 @@
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { CoinMark } from '@/components/icons'
-import { Reveal } from '@/components/reveal'
-import { GAMES, WELCOME_BONUS, WHEEL_SEGMENTS } from '@/lib/lottery'
+import { GAMES, WELCOME_BONUS } from '@/lib/lottery'
 
 const cheapestTicket = Math.min(...GAMES.map((g) => g.cost))
-const wheelMin = Math.min(...WHEEL_SEGMENTS.map((s) => s.amount))
-const wheelMax = Math.max(...WHEEL_SEGMENTS.map((s) => s.amount))
 
 const steps = [
   { n: '1', title: 'Зарегистрируйтесь', desc: `+${WELCOME_BONUS} BYN на баланс сразу` },
@@ -16,53 +11,31 @@ const steps = [
 
 export function HowToSection() {
   return (
-    <section id="how-to" className="relative py-16 md:py-24">
-      <div className="mx-auto max-w-6xl px-5">
-        <Reveal>
-          <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
-            Как играть
-          </h2>
-        </Reveal>
-
-        <div className="orbit-border mt-12 grid items-center gap-8 rounded-4xl bg-gradient-to-br from-[oklch(0.4_0.2_305)] to-[oklch(0.3_0.14_302)] p-6 shadow-2xl shadow-black/30 md:p-12">
-          <div className="mx-auto w-full max-w-2xl">
-            <p className="font-heading text-xl font-bold leading-snug text-balance">
-              Три шага до первого выигрыша. А колесо фортуны в кабинете даёт от {wheelMin} до {wheelMax} бонусных BYN
-              каждый день — бесплатно.
-            </p>
-            <ul className="mt-6 space-y-3">
-              {steps.map((step) => (
-                <li
-                  key={step.title}
-                  className="flex items-center gap-4 rounded-2xl bg-background/95 px-4 py-3 shadow-lg"
-                >
-                  <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent font-heading text-lg font-extrabold text-primary-foreground shadow">
-                    {step.n}
-                    <CoinMark className="absolute -right-2 -top-2 h-5 w-5 text-gold drop-shadow" />
-                  </span>
-                  <span>
-                    <span className="block font-heading text-base font-bold text-foreground">
-                      {step.title}
-                    </span>
-                    <span className="block text-sm font-medium text-gold">{step.desc}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <div className="mt-10 text-center">
-          <Button
-            size="lg"
-            nativeButton={false}
-            render={<Link href="/sign-up" />}
-            className="h-14 rounded-full px-10 text-base font-bold uppercase tracking-wide shadow-xl shadow-primary/40 transition-transform hover:scale-[1.03]"
-          >
-            Получить бонус
-          </Button>
-        </div>
+    <section id="how-to" aria-labelledby="how-to-title" className="mx-auto max-w-6xl px-4 pt-10 sm:px-5 md:pt-14">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 id="how-to-title" className="font-display text-xl font-extrabold tracking-tight sm:text-2xl">
+          Как играть
+        </h2>
+        <Link
+          href="/sign-up"
+          className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-xs font-extrabold uppercase tracking-wide text-primary-foreground transition-transform hover:scale-[1.03]"
+        >
+          Получить бонус
+        </Link>
       </div>
+      <ol className="mt-5 grid gap-4 md:grid-cols-3">
+        {steps.map((step) => (
+          <li key={step.n} className="flex items-start gap-4 rounded-3xl bg-card p-5 shadow-sm">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary font-display text-lg font-black text-primary-foreground">
+              {step.n}
+            </span>
+            <span>
+              <span className="block font-display text-base font-extrabold text-foreground">{step.title}</span>
+              <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{step.desc}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
     </section>
   )
 }

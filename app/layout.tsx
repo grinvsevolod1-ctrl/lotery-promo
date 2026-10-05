@@ -1,31 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Manrope, Unbounded } from 'next/font/google'
+import { Montserrat } from 'next/font/google'
 import { PwaRegister } from '@/components/pwa'
 import { Analytics } from '@/components/analytics'
 import { site } from '@/lib/site'
 import './globals.css'
 
-const inter = Inter({
+const montserrat = Montserrat({
   subsets: ['latin', 'cyrillic'],
-  variable: '--font-inter',
+  variable: '--font-montserrat',
   display: 'swap',
 })
 
-const manrope = Manrope({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-manrope',
-  display: 'swap',
-})
-
-const unbounded = Unbounded({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-display',
-  weight: ['600', '700', '800', '900'],
-  display: 'swap',
-})
-
-const title = 'ToLoto — игровой кабинет'
-const description = 'Игровой кабинет, билеты, результаты и реферальные приглашения ToLoto. Платёжные операции обрабатываются вручную через Telegram.'
+const title = site.title
+const description = site.description
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -59,8 +46,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  colorScheme: 'dark',
-  themeColor: '#2a0f4a',
+  colorScheme: 'light',
+  themeColor: '#ffffff',
 }
 
 export default function RootLayout({
@@ -69,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ru" className={`bg-background ${inter.variable} ${manrope.variable} ${unbounded.variable}`}>
+    <html lang="ru" className={`bg-background ${montserrat.variable}`}>
       <body className="bg-background font-sans antialiased">
         {children}
         <PwaRegister />

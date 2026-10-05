@@ -41,26 +41,24 @@ export function LiveWinsFeed({ initial, unavailable = false }: { initial: FeedIt
   }, [])
 
   return (
-    <section aria-labelledby="live-wins-title" className="relative py-12 md:py-16">
-      <div className="mx-auto max-w-3xl px-5">
-        <h2 id="live-wins-title" className="mb-5 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Последние выигрыши</h2>
-        {items.length === 0 ? (
-          <p role="status" className="rounded-3xl border border-border bg-card p-6 text-sm leading-relaxed text-muted-foreground">{loadFailed ? 'Не удалось загрузить выигрыши. Попробуйте позже.' : 'Выигрышей пока нет. Здесь появятся результаты сыгранных билетов.'}</p>
-        ) : (
-          <ul className="flex flex-col gap-2 overflow-hidden rounded-3xl border border-border/60 bg-card/70 p-2 backdrop-blur-xl">
-            {items.map((win, index) => (
-              <li key={win.id} className={cn('flex items-center gap-3 rounded-2xl px-3 py-3 sm:px-4', index === 0 ? 'bg-gold/10' : 'bg-foreground/5')}>
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/20 font-display text-sm font-extrabold text-foreground">{win.name[0]}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-foreground">{win.name}</p>
-                  <p className="truncate text-sm text-muted-foreground">{win.game}{now !== null && ` · ${ago(win.at, now)}`}</p>
-                </div>
-                <span className="flex shrink-0 items-center gap-1.5 font-display text-base font-extrabold text-gold sm:text-lg">{win.prize >= 100 && <TrophyMark className="size-4" />}+{win.prize.toLocaleString('ru-RU')} BYN</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    <section aria-labelledby="live-wins-title" className="mx-auto max-w-6xl px-4 pt-10 sm:px-5 md:pt-14">
+      <h2 id="live-wins-title" className="mb-5 font-display text-xl font-extrabold tracking-tight sm:text-2xl">Выигрыши прямо сейчас</h2>
+      {items.length === 0 ? (
+        <p role="status" className="rounded-3xl bg-card p-6 text-sm leading-relaxed text-muted-foreground shadow-sm">{loadFailed ? 'Не удалось загрузить выигрыши. Попробуйте позже.' : 'Выигрышей пока нет. Здесь появятся результаты сыгранных билетов.'}</p>
+      ) : (
+        <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:-mx-5 sm:px-5 [scrollbar-width:none]">
+          {items.map((win, index) => (
+            <li key={win.id} className={cn('flex w-64 shrink-0 snap-start items-center gap-3 rounded-3xl bg-card p-4 shadow-sm', index === 0 && 'ring-2 ring-primary/40')}>
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 font-display text-base font-extrabold text-primary">{win.name[0]}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs text-muted-foreground">{win.name} · {win.game}</p>
+                <p className="flex items-center gap-1.5 font-display text-lg font-extrabold text-foreground">{win.prize >= 100 && <TrophyMark className="size-4 text-primary" />}{win.prize.toLocaleString('ru-RU')} BYN</p>
+                {now !== null && <p className="text-xs text-muted-foreground">{ago(win.at, now)}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   )
 }
