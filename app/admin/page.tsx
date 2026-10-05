@@ -5,6 +5,8 @@ import { ReferralReview } from "@/components/admin/referral-review"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import { AutoRefresh } from "@/components/auto-refresh"
 
+export const metadata = { title: "Админка — bytoloto.com", robots: { index: false, follow: false } }
+
 export default async function AdminPage() {
   if (!(await isAdmin())) redirect("/admin/login")
 

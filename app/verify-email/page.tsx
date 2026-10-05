@@ -4,6 +4,8 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { AuthShell } from "@/components/auth-shell"
+
+export const metadata = { title: "Подтверждение e-mail — bytoloto.com", robots: { index: false, follow: false } }
 import { VerifyEmailResend } from "@/components/verify-email-resend"
 
 // Better Auth redirects here after following the link from the letter:

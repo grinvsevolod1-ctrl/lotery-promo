@@ -63,7 +63,7 @@ export function BottomDock() {
         tabIndex={-1}
         onClick={() => setOpen(false)}
         className={cn(
-          "fixed inset-0 z-40 bg-foreground/20 backdrop-blur-[6px] transition-opacity duration-300",
+          "fixed inset-0 z-40 bg-foreground/40 transition-opacity duration-300",
           open ? "opacity-100" : "pointer-events-none invisible opacity-0",
         )}
       />
@@ -77,7 +77,7 @@ export function BottomDock() {
             id="quick-actions"
             aria-hidden={!open}
             className={cn(
-              "absolute inset-x-0 bottom-full mb-4 origin-bottom rounded-[28px] bg-card/95 p-3 shadow-[0_24px_60px_-20px_rgb(22_26_34/0.45)] ring-1 ring-border backdrop-blur-xl transition-[transform,opacity] duration-500 [transform:translateZ(0)]",
+              "absolute inset-x-0 bottom-full mb-4 origin-bottom rounded-[28px] bg-card p-3 shadow-[0_24px_60px_-20px_rgb(22_26_34/0.45)] ring-1 ring-border transition-[transform,opacity] duration-500 [transform:translateZ(0)]",
               EASE,
               open ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none translate-y-4 scale-95 opacity-0",
             )}
@@ -106,7 +106,7 @@ export function BottomDock() {
             </ul>
           </div>
 
-          <div className="flex items-center rounded-[30px] bg-card/95 p-1.5 shadow-[0_10px_40px_-10px_rgb(22_26_34/0.35)] ring-1 ring-border backdrop-blur-lg [transform:translateZ(0)]">
+          <div className="flex items-center rounded-[30px] bg-card p-1.5 shadow-[0_10px_40px_-10px_rgb(22_26_34/0.35)] ring-1 ring-border [transform:translateZ(0)]">
             {TABS_LEFT.map((tab) => (
               <DockTab key={tab.href} {...tab} active={isActive(pathname, tab.href)} />
             ))}

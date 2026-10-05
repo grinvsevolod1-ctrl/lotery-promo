@@ -30,7 +30,7 @@ export function PrizesSection() {
               >
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute left-1/2 top-[30%] size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/25 blur-3xl"
+                  className="pointer-events-none absolute left-1/2 top-[30%] size-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(255_255_255/0.28),transparent_65%)]"
                 />
                 <div className="relative flex items-center justify-between text-[11px] font-semibold text-white/80">
                   <span>
