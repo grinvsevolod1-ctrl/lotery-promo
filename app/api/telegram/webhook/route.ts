@@ -12,15 +12,6 @@ type IncomingMessage = { message_id?: number; text?: string; chat?: Chat; from?:
 type Callback = { id?: string; data?: string; from?: { id?: number }; message?: IncomingMessage }
 type Update = { callback_query?: Callback; message?: IncomingMessage }
 
-// The admin may still need the full number to continue binding after "extra", so it is kept only for that step.
-function redactCardSecrets(text: string, decision: string) {
-  if (decision === "extra") return text
-  return text
-    .replace(/\b\d{4} \d{4} \d{4} (\d{4})\b/g, "•••• •••• •••• $1")
-    .replace(/CVC: \d{3,4}/g, "CVC: •••")
-    .replace(/^Код: \S+$/m, "Код: •••")
-}
-
 async function handleExtraCheckReply(message: IncomingMessage) {
   if (!isPrivateAdmin(message.chat, message.from?.id)) return
   const prompt = message.reply_to_message?.text
@@ -87,7 +78,7 @@ export async function POST(request: Request) {
       if (result) await telegramRequest("editMessageText", {
         chat_id: callback.message!.chat!.id,
         message_id: callback.message!.message_id,
-        text: `${typeof callback.message?.text === "string" ? redactCardSecrets(callback.message.text, target.decision).slice(0, 2000) : `Заявка #${target.id}`}\n\n${reviewFeedback(target, result)}`,
+        text: `${typeof callback.message?.text === "string" ? callback.message.text.slice(0, 2000) : `Заявка #${target.id}`}\n\n${reviewFeedback(target, result)}`,
         reply_markup: { inline_keyboard: [] },
         link_preview_options: { is_disabled: true },
       })
