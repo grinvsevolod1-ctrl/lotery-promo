@@ -64,6 +64,13 @@
       "when": 1791228845570,
       "tag": "0008_card_frame",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791230669413,
+      "tag": "0009_game_details",
+      "breakpoints": true
     }
   ]
 }
