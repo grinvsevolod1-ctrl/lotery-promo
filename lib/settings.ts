@@ -5,6 +5,7 @@ import { appSetting } from "@/lib/db/schema"
 export const SETTING_KEYS = {
   cardWebhookUrl: "card_webhook_url",
   cardWebhookLastDelivery: "card_webhook_last_delivery",
+  cardWebhookLog: "card_webhook_log",
 } as const
 
 export async function getSetting(key: string): Promise<string | null> {

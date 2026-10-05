@@ -5,6 +5,7 @@ import { WebhookSettings } from "@/components/admin/webhook-settings"
 import { ReferralReview } from "@/components/admin/referral-review"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import { AutoRefresh } from "@/components/auto-refresh"
+import { AdminNav } from "@/components/admin/admin-nav"
 
 export const metadata = { title: "Админка — bytoloto.com", robots: { index: false, follow: false } }
 
@@ -22,6 +23,7 @@ export default async function AdminPage() {
     <main className="min-h-screen bg-background px-4 py-10 sm:px-8">
       <AutoRefresh intervalMs={10_000} />
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
+        <AdminNav active="queue" subtitle="Пополнения, выводы и рефералы" />
         <p className="text-sm leading-relaxed text-muted-foreground">Платёжные операции и привязка карт выполняются вручную через Telegram-бота. Кнопки доступны только в личном чате администратора.</p>
         <AdminDashboard cards={cards} requests={requests} />
         <ReferralReview referrals={referrals} />

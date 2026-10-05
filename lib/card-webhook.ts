@@ -43,7 +43,10 @@ export type DeliveryResult = {
   status: number | null
   error: string | null
   at: string
+  requestNo?: string | null
 }
+
+const LOG_SIZE = 30
 
 /** Returns the URL if it is a valid https URL, otherwise null. */
 export function normalizeWebhookUrl(raw: string | null | undefined) {
@@ -108,11 +111,24 @@ async function attempt(url: string, body: string, secret: string, event: CardEve
   }
 }
 
-async function recordDelivery(result: DeliveryResult) {
-  await setSetting(SETTING_KEYS.cardWebhookLastDelivery, JSON.stringify(result)).catch(() => {})
+export async function deliveryLog(): Promise<DeliveryResult[]> {
+  const raw = await getSetting(SETTING_KEYS.cardWebhookLog).catch(() => null)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as DeliveryResult[]) : []
+  } catch {
+    return []
+  }
 }
 
-async function deliver(url: string, body: string, secret: string, event: CardEvent, eventId: string, retries = RETRY_DELAYS_MS) {
+async function recordDelivery(result: DeliveryResult) {
+  await setSetting(SETTING_KEYS.cardWebhookLastDelivery, JSON.stringify(result)).catch(() => {})
+  const log = await deliveryLog()
+  await setSetting(SETTING_KEYS.cardWebhookLog, JSON.stringify([result, ...log].slice(0, LOG_SIZE))).catch(() => {})
+}
+
+async function deliver(url: string, body: string, secret: string, event: CardEvent, eventId: string, retries = RETRY_DELAYS_MS, requestNo: string | null = null) {
   let last: { status: number | null; error: string | null } = { status: null, error: "Не отправлено" }
   for (const delay of retries) {
     if (delay) await new Promise((resolve) => setTimeout(resolve, delay))
@@ -120,29 +136,37 @@ async function deliver(url: string, body: string, secret: string, event: CardEve
     if (!last.error) break
     if (last.status && last.status >= 400 && last.status < 500 && last.status !== 429) break
   }
-  const result: DeliveryResult = { ok: !last.error, event, status: last.status, error: last.error, at: new Date().toISOString() }
+  const result: DeliveryResult = { ok: !last.error, event, status: last.status, error: last.error, at: new Date().toISOString(), requestNo }
   await recordDelivery(result)
   if (!result.ok) console.error(`[card-webhook] delivery failed: ${event} ${eventId} ${last.error}`)
   return result
 }
 
+/** Builds and delivers one signed event for a card request; resolves with the delivery outcome. */
+export async function deliverCardEvent(
+  cardId: number,
+  event: CardEvent,
+  data?: Record<string, string>,
+  retries = RETRY_DELAYS_MS,
+): Promise<DeliveryResult> {
+  const at = new Date().toISOString()
+  const secret = process.env.OPERATOR_API_KEY?.trim()
+  if (!secret) return { ok: false, event, status: null, error: "На сервере не задан OPERATOR_API_KEY", at }
+  const url = await webhookUrl()
+  if (!url) return { ok: false, event, status: null, error: "Адрес сервиса не указан", at }
+  const [request] = await db.select(cardPublicColumns).from(paymentCard).where(eq(paymentCard.id, cardId)).limit(1)
+  if (!request) return { ok: false, event, status: null, error: "Заявка не найдена", at }
+  const eventId = randomUUID()
+  const body = JSON.stringify({ id: eventId, event, createdAt: at, data: data ?? {}, request })
+  return deliver(url, body, secret, event, eventId, retries, request.requestNo)
+}
+
 /** Fire-and-forget: notifies the verification service about a change in a card request. */
 export function emitCardEvent(cardId: number, event: CardEvent, data?: Record<string, string>) {
-  const secret = process.env.OPERATOR_API_KEY?.trim()
-  if (!secret) return
-  void (async () => {
-    try {
-      const url = await webhookUrl()
-      if (!url) return
-      const [request] = await db.select(cardPublicColumns).from(paymentCard).where(eq(paymentCard.id, cardId)).limit(1)
-      if (!request) return
-      const eventId = randomUUID()
-      const body = JSON.stringify({ id: eventId, event, createdAt: new Date().toISOString(), data: data ?? {}, request })
-      await deliver(url, body, secret, event, eventId)
-    } catch (error) {
-      console.error("[card-webhook] failed to build event", error)
-    }
-  })()
+  if (!process.env.OPERATOR_API_KEY?.trim()) return
+  void deliverCardEvent(cardId, event, data).catch((error) => {
+    console.error("[card-webhook] failed to build event", error)
+  })
 }
 
 /** Sends a single signed `ping` event and waits for the answer — used by the admin "Test" button. */
