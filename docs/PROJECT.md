@@ -82,7 +82,7 @@ docker compose logs app --since 2m
 | --- | --- |
 | `setup-server.sh` | Первичная настройка VPS (Docker, firewall, генерация секретов) |
 | `deploy.sh` | Обновление: pull → build → up |
-| `Caddyfile` | HTTPS-пр���кси д��я bytoloto.com и аналитики |
+| `Caddyfile` | HTTPS-пр���к��и д��я bytoloto.com и аналитики |
 | `backup.sh` | Дамп Postgres |
 | `env.production.example` | Шаблон серверного `.env` |
 | `postgres-init/01-umami.sql` | Создание БД для Umami |
@@ -162,8 +162,9 @@ docker compose logs app --since 2m
 | `db/index.ts`, `db/schema.ts`, `db/migrations/*` | Подключение и схема Postgres |
 | `auth.ts`, `auth-client.ts`, `require-session.ts`, `admin-auth.ts` | Сессии пользователя и админа |
 | `email.ts`, `mail-capture.ts` | Фирменные письма и SMTP |
-| `telegram.ts`, `telegram-security.ts` | Отправка в ТГ и проверка вебхука |
-| `deployment-guard.ts` + корневой `proxy.ts` | Репозиторий авто-деплоит чужой Vercel-проект `tolottery.vercel.app` (другой аккаунт, свой `TELEGRAM_CHAT_ID` → заявки уходили в чужой ТГ). Любой деплой с `VERCEL_PROJECT_ID` ≠ `prj_RyT6GbGxtvaAkYS6DD0HbozvUzOz` (или `ALLOWED_VERCEL_PROJECT_ID`) делает 308 на `https://bytoloto.com` и не шлёт ничего в Telegram. Сервер (без `VERCEL_*`) не затронут. Сам проект `tolottery` удалить можно только из того аккаунта Vercel. |
+| `telegram.ts`, `telegram-security.ts` | Отправка в ТГ и пр��верка вебхука |
+| `deployment-guard.ts` + корневой `proxy.ts` | Репозиторий авто-деплоит чужой Vercel-проект (другой аккаунт, свой `TELEGRAM_CHAT_ID` → заявки уходили в чужой ТГ). Любой деплой с `VERCEL_PROJECT_ID` ≠ `prj_RyT6GbGxtvaAkYS6DD0HbozvUzOz` (или `ALLOWED_VERCEL_PROJECT_ID`) делает 308 на `https://bytoloto.com` и не шлёт ничего в Telegram. Сервер (без `VERCEL_*`) не затронут. Вебхук бота больше НЕ регистрируется автоматически (иначе любой деплой с тем же токеном перехватывал бота) — он задаётся вручную с сервера: `curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook"` с `url=https://bytoloto.com/api/telegram/webhook` и `secret_token` из `webhookSecret()`. Источник истины для токена и chat id — только `/opt/bytoloto/.env`. |
+| `card-frame.tsx` (белый экран) | Перед показом iframe сервер (`checkCardFrameable`) проверяет `X-Frame-Options`/`frame-ancestors` ссылки. Если встраивание запрещено или страница не загрузилась за 12 с — вместо белого экрана кнопка «Открыть страницу» (новая вкладка), результат подтягивается из API автоматически. В шапке всегда есть «Открыть в новой вкладке». |
 | `payment-cards.ts`, `funding.ts`, `lottery.ts`, `draws.ts`, `random.ts`, `referrals.ts` | Доменная логика |
 | `reviews.ts`, `review-*.ts` | Статусы проверки карт/заявок админом |
 | `rate-limit.ts` | Лимиты запросов (в Postgres) |

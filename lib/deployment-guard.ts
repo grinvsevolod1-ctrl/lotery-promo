@@ -1,5 +1,5 @@
 /**
- * The repository is also auto-deployed by Vercel projects outside our team (e.g. tolottery.vercel.app),
+ * The repository is also auto-deployed by Vercel projects outside our team,
  * each with its own Telegram chat. Only our server (no VERCEL_* vars) and our own Vercel project may
  * run the app; every other deployment redirects to the canonical domain and never talks to Telegram.
  */
