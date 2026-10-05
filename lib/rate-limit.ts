@@ -22,6 +22,10 @@ export async function consumeRateLimit(key: string, max: number, windowSec: numb
       end
     returning count
   `)
+  // Every key leaves a row behind; occasionally drop the ones whose window ended long ago.
+  if (Math.random() < 0.01) {
+    void db.execute(sql`delete from app_rate_limit where "windowStart" < now() - interval '1 day'`).catch(() => {})
+  }
   return Number(result.rows[0]?.count ?? 0) <= max
 }
 

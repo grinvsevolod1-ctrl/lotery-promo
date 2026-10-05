@@ -2,10 +2,9 @@
 
 import { createHmac } from "node:crypto"
 import { and, asc, count, desc, eq, isNull, notInArray, sql } from "drizzle-orm"
-import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getSessionUser, getUserId } from "@/lib/session"
 import { paymentCard } from "@/lib/db/schema"
 import { CARD_BRAND_LABEL, detectBank, detectBrand, formatCardNumber, formatExpiry, isExpiryValid, luhnValid, normalizeCardNumber, type CardBrand } from "@/lib/payment-cards"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
@@ -46,16 +45,6 @@ function cardFingerprint(cardNumber: string) {
   const secret = process.env.ADMIN_SECRET || process.env.BETTER_AUTH_SECRET
   if (!secret) return `request:${crypto.randomUUID()}`
   return `hmac:${createHmac("sha256", secret).update(`payment-card:${cardNumber}`).digest("hex")}`
-}
-
-async function getSessionUser() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error("Unauthorized")
-  return session.user
-}
-
-async function getUserId() {
-  return (await getSessionUser()).id
 }
 
 async function listCards(userId: string): Promise<PaymentCardView[]> {

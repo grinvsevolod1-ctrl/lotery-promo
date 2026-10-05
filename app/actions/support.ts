@@ -1,10 +1,9 @@
 "use server"
 
 import { desc, eq } from "drizzle-orm"
-import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getSessionUser } from "@/lib/session"
 import { supportRequest } from "@/lib/db/schema"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { sendSupportReceivedEmail } from "@/lib/email"
@@ -21,11 +20,7 @@ export type SupportRequestView = {
 
 export type SupportResult = { ok: true; id: number } | { ok: false; error: string }
 
-async function sessionUser() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error("Unauthorized")
-  return session.user
-}
+const sessionUser = getSessionUser
 
 export async function getSupportRequests(): Promise<SupportRequestView[]> {
   const user = await sessionUser()
