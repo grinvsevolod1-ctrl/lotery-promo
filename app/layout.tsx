@@ -20,8 +20,28 @@ export const metadata: Metadata = {
   title,
   description,
   applicationName: site.name,
-  keywords: ['лотерея', 'промо-лотерея', 'Беларусь', 'моментальная лотерея', 'розыгрыш', 'бонус за регистрацию'],
+  generator: undefined,
+  category: 'entertainment',
+  creator: site.name,
+  publisher: site.name,
+  keywords: [
+    'моментальная лотерея',
+    'лотерея онлайн',
+    'лотерея Беларусь',
+    'промо-лотерея',
+    'моментальные билеты',
+    'скретч-карта онлайн',
+    'plinko',
+    'колесо фортуны',
+    'бонус за регистрацию',
+    'розыгрыш призов',
+    site.name,
+  ],
   alternates: { canonical: '/' },
+  verification: {
+    yandex: '567c25a7aef880b6',
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+  },
   openGraph: {
     type: 'website',
     locale: 'ru_RU',
@@ -41,7 +61,11 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
   },
   formatDetection: { telephone: false },
-  robots: { index: false, follow: false },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
+  },
 }
 
 export const viewport: Viewport = {

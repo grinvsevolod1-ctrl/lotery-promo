@@ -31,7 +31,7 @@ export function Modal({ title, description, onClose, children }: { title: string
       aria-modal="true"
       aria-label={title}
     >
-      <button type="button" aria-label="Закрыть окно" onClick={onClose} className="fixed inset-0 bg-foreground/30 backdrop-blur-sm" />
+      <button type="button" aria-label="Закрыть окно" onClick={onClose} className="fixed inset-0 bg-foreground/50" />
       <div className="relative my-auto w-full max-w-md rounded-3xl bg-card p-5 text-foreground shadow-2xl ring-1 ring-border animate-in fade-in slide-in-from-bottom-4 duration-300 sm:my-0 sm:p-7 sm:zoom-in-95 sm:slide-in-from-bottom-0">
         <button
           type="button"

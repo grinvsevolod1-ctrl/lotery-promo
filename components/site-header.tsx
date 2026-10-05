@@ -11,7 +11,7 @@ const navLinks = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-card">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-5">
         <BrandLogo className="text-2xl" />
         <nav aria-label="Основное меню" className="hidden items-center gap-7 text-sm font-semibold text-foreground md:flex">

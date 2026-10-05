@@ -36,7 +36,7 @@ export function AccountTopBar({ name, email }: { name: string; email: string }) 
   }, [open])
 
   return (
-    <header className="sticky top-3 z-40 mb-6 flex items-center justify-between gap-3 rounded-full bg-card/90 py-2 pl-5 pr-2 shadow-sm ring-1 ring-border backdrop-blur-lg [transform:translateZ(0)]">
+    <header className="sticky top-3 z-40 mb-6 flex items-center justify-between gap-3 rounded-full bg-card py-2 pl-5 pr-2 shadow-sm ring-1 ring-border [transform:translateZ(0)]">
       <BrandLogo className="text-[24px] sm:text-[26px]" />
 
       <div ref={rootRef} className="relative">
@@ -61,7 +61,7 @@ export function AccountTopBar({ name, email }: { name: string; email: string }) 
           role="menu"
           aria-hidden={!open}
           className={cn(
-            "absolute right-0 top-full mt-3 w-72 origin-top-right rounded-3xl bg-card/95 p-2 shadow-2xl ring-1 ring-border backdrop-blur-2xl transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+            "absolute right-0 top-full mt-3 w-72 origin-top-right rounded-3xl bg-card p-2 shadow-2xl ring-1 ring-border transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
             open ? "scale-100 opacity-100" : "pointer-events-none scale-90 opacity-0",
           )}
         >

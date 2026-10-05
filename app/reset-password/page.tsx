@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { AuthShell } from "@/components/auth-shell"
 import { ResetPasswordForm } from "@/components/reset-password-form"
 
+export const metadata = { title: "Новый пароль — bytoloto.com", robots: { index: false, follow: false } }
+
 // Better Auth redirects here from the letter with `?token=` when the link is
 // valid, or with `?error=INVALID_TOKEN` when it has expired or was used.
 export default async function ResetPasswordPage({
