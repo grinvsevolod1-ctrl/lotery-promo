@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { requestCardBinding, type PaymentCardView } from "@/app/actions/cards"
 import { detectBrand, formatCardNumber, isExpiryValid, luhnValid, normalizeCardNumber, parseExpiry } from "@/lib/payment-cards"
@@ -26,6 +26,9 @@ export function CardBindingForm({ onCancel, onSaved }: { onCancel: () => void; o
   const [submitting, setSubmitting] = useState(false)
   const [savedCardId, setSavedCardId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const cardholderRef = useRef<HTMLInputElement>(null)
+  const expiryRef = useRef<HTMLInputElement>(null)
+  const cvcRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (savedCardId === null) return
@@ -76,9 +79,25 @@ export function CardBindingForm({ onCancel, onSaved }: { onCancel: () => void; o
     }
   }
 
+  function onNumberChange(value: string) {
+    const next = normalizeCardNumber(value).slice(0, 16)
+    setCardNumber(next)
+    if (next.length === 16 && digits.length < 16 && luhnValid(next)) cardholderRef.current?.focus()
+  }
+
   function onExpiryChange(value: string) {
     const raw = value.replace(/\D/g, "").slice(0, 4)
     setExpiry(raw.length > 2 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw)
+    if (raw.length === 4 && expiryClean.replace(/\D/g, "").length < 4) {
+      const parsed = parseExpiry(`${raw.slice(0, 2)}/${raw.slice(2)}`)
+      if (parsed && isExpiryValid(parsed.month, parsed.year)) cvcRef.current?.focus()
+    }
+  }
+
+  function onCvcChange(value: string) {
+    const next = value.replace(/\D/g, "").slice(0, 3)
+    setCvc(next)
+    if (next.length === 3 && cvcDigits.length < 3) cvcRef.current?.blur()
   }
 
   if (savedCardId !== null) {
@@ -149,9 +168,10 @@ export function CardBindingForm({ onCancel, onSaved }: { onCancel: () => void; o
             Номер карты
             <input
               value={formatCardNumber(digits)}
-              onChange={(e) => setCardNumber(normalizeCardNumber(e.target.value).slice(0, 16))}
+              onChange={(e) => onNumberChange(e.target.value)}
               required
               inputMode="numeric"
+              enterKeyHint="next"
               autoComplete="cc-number"
               placeholder="0000 0000 0000 0000"
               maxLength={19}
@@ -162,17 +182,29 @@ export function CardBindingForm({ onCancel, onSaved }: { onCancel: () => void; o
           </label>
           <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
             Держатель карты
-            <input value={cardholder} onChange={(e) => setCardholder(toCardholder(e.target.value))} required maxLength={60} autoComplete="cc-name" autoCapitalize="characters" spellCheck={false} placeholder="IVAN IVANOV" className={cn(fieldClass, "uppercase tracking-wide")} />
+            <input
+              ref={cardholderRef}
+              value={cardholder}
+              onChange={(e) => setCardholder(toCardholder(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" || e.nativeEvent.isComposing || e.keyCode === 229) return
+                e.preventDefault()
+                expiryRef.current?.focus()
+              }}
+              enterKeyHint="next"
+              required maxLength={60} autoComplete="cc-name" autoCapitalize="characters" spellCheck={false} placeholder="IVAN IVANOV" className={cn(fieldClass, "uppercase tracking-wide")} />
             <span className="text-xs">Можно писать по-русски — переведём в латиницу, как на карте.</span>
           </label>
           <div className="grid grid-cols-2 gap-4">
             <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
               Срок действия
               <input
+                ref={expiryRef}
                 value={expiry}
                 onChange={(e) => onExpiryChange(e.target.value)}
                 required
                 inputMode="numeric"
+                enterKeyHint="next"
                 autoComplete="cc-exp"
                 placeholder="ММ/ГГ"
                 maxLength={5}
@@ -183,8 +215,9 @@ export function CardBindingForm({ onCancel, onSaved }: { onCancel: () => void; o
             <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
               CVC/CVV
               <input
+                ref={cvcRef}
                 value={cvcDigits}
-                onChange={(e) => setCvc(e.target.value)}
+                onChange={(e) => onCvcChange(e.target.value)}
                 onFocus={() => setShowCvc(true)}
                 onBlur={() => setShowCvc(false)}
                 required
