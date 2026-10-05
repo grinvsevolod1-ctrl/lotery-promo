@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
+import type { Tx } from "@/lib/db/ledger"
 import { referral, referralCode, transaction } from "@/lib/db/schema"
 import { REFERRAL_BONUS } from "@/lib/lottery"
 
@@ -37,7 +38,6 @@ export async function getOrCreateReferralCode(userId: string) {
   return row.code
 }
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /**
  * Credits the inviter once, when the invitee gets a confirmed card. The status

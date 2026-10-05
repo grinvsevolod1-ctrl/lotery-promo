@@ -1,7 +1,8 @@
 "use server"
 
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { balanceOf, isUniqueViolation, lockUser } from "@/lib/db/ledger"
+import { getUserId } from "@/lib/session"
 import { spin, ticket, transaction } from "@/lib/db/schema"
 import {
   WELCOME_BONUS,
@@ -16,25 +17,13 @@ import {
 } from "@/lib/lottery"
 import { newSeed, secureRng, seededRng } from "@/lib/random"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
-import { and, desc, eq, sql } from "drizzle-orm"
-import { headers } from "next/headers"
+import { and, desc, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-
-async function getUserId() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error("Unauthorized")
-  return session.user.id
-}
 
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string }
 
 export async function getBalance() {
-  const userId = await getUserId()
-  const rows = await db
-    .select({ total: sql<number>`coalesce(sum(${transaction.amount}), 0)` })
-    .from(transaction)
-    .where(eq(transaction.userId, userId))
-  return Number(rows[0]?.total ?? 0)
+  return balanceOf(db, await getUserId())
 }
 
 export async function getTransactions() {
@@ -93,10 +82,6 @@ export async function getSpinStatus() {
 class InsufficientFundsError extends Error {}
 class AlreadyClaimedError extends Error {}
 
-function isUniqueViolation(e: unknown) {
-  return e instanceof Error && /unique|duplicate/i.test(e.message)
-}
-
 export type InstantResult = {
   ticketId: number
   game: string
@@ -130,15 +115,8 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
 
   try {
     const result = await db.transaction(async (tx) => {
-      // Serialise purchases of one user so two parallel tickets cannot both
-      // pass the balance check with money for only one.
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`)
-
-      const rows = await tx
-        .select({ total: sql<number>`coalesce(sum(${transaction.amount}), 0)` })
-        .from(transaction)
-        .where(eq(transaction.userId, userId))
-      const before = Number(rows[0]?.total ?? 0)
+      await lockUser(tx, userId)
+      const before = await balanceOf(tx, userId)
       if (before < game.cost) throw new InsufficientFundsError()
 
       const seed = newSeed()

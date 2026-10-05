@@ -1,11 +1,11 @@
 "use server"
 
-import { and, desc, eq, sql } from "drizzle-orm"
-import { headers } from "next/headers"
+import { and, desc, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { balanceOf, lockUser } from "@/lib/db/ledger"
 import { fundingRequest, paymentCard, transaction } from "@/lib/db/schema"
+import { getSessionUser } from "@/lib/session"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { DEPOSIT_MAX, DEPOSIT_MIN, WITHDRAWAL_MAX, WITHDRAWAL_MIN } from "@/lib/funding"
@@ -40,7 +40,7 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
   if (!(await allowUserAction(user.id, "deposit"))) return { ok: false, error: RATE_LIMIT_ERROR }
 
   const created = await db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`)
+    await lockUser(tx, user.id)
     const [card] = await tx.select({ last4: paymentCard.last4 }).from(paymentCard)
       .where(and(eq(paymentCard.id, cardId), eq(paymentCard.userId, user.id), eq(paymentCard.status, "confirmed")))
     if (!card) return { error: "Пополнение возможно только с подтверждённой карты" }
@@ -65,12 +65,6 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
   revalidatePath("/cabinet")
   revalidatePath("/admin")
   return { ok: true, id: created.id }
-}
-
-async function getSessionUser() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error("Unauthorized")
-  return session.user
 }
 
 export async function getFundingRequests(): Promise<FundingRequestRow[]> {
@@ -107,9 +101,7 @@ export async function requestWithdrawal(input: { amount: number; cardId: number 
   let created: { id: number; last4: string }
   try {
     created = await db.transaction(async (tx) => {
-      // Same per-user lock as ticket purchases: a purchase and a withdrawal
-      // can never both pass the balance check with money for only one.
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`)
+      await lockUser(tx, user.id)
 
       const [card] = await tx.select({ last4: paymentCard.last4 }).from(paymentCard)
         .where(and(eq(paymentCard.id, cardId), eq(paymentCard.userId, user.id), eq(paymentCard.status, "confirmed")))
@@ -120,11 +112,7 @@ export async function requestWithdrawal(input: { amount: number; cardId: number 
         .limit(1)
       if (pending) throw new WithdrawalError("У вас уже есть заявка на вывод в обработке")
 
-      const [balanceRow] = await tx
-        .select({ total: sql<number>`coalesce(sum(${transaction.amount}), 0)` })
-        .from(transaction)
-        .where(eq(transaction.userId, user.id))
-      if (Number(balanceRow?.total ?? 0) < amount) throw new WithdrawalError("Недостаточно средств на балансе")
+      if ((await balanceOf(tx, user.id)) < amount) throw new WithdrawalError("Недостаточно средств на балансе")
 
       const [request] = await tx.insert(fundingRequest)
         .values({ userId: user.id, type: "withdrawal", amount, cardId, status: "pending" })
@@ -148,7 +136,8 @@ export async function requestWithdrawal(input: { amount: number; cardId: number 
     `<b>Заявка на вывод #${created.id}</b>\n` +
     `${amount.toLocaleString("ru-RU")} BYN на карту •••• ${created.last4}\n` +
     `Игрок: ${escapeTelegram(user.name)} (${escapeTelegram(user.email)})\n` +
-    `Сумма уже зарезервирована. Одобрить или отклонить: /admin`,
+    `Сумма уже зарезервирована. Переведите деньги и подтвердите — или отклоните, сумма вернётся на баланс.`,
+    { kind: "funding", id: created.id },
   )
 
   revalidatePath("/cabinet")
