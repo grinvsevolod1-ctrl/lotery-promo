@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { fundingRequest, paymentCard, referral, transaction } from "@/lib/db/schema"
 import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { nextReviewStatus } from "@/lib/review-transitions"
+import { rewardReferrer } from "@/lib/referrals"
 
 export async function getReviewResult(target: ReviewTarget) {
   if (target.kind === "referral") {
@@ -51,6 +52,7 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
         const [existingDefault] = await tx.select({ id: paymentCard.id }).from(paymentCard)
           .where(and(eq(paymentCard.userId, row.userId), eq(paymentCard.isDefault, true))).limit(1)
         if (!existingDefault) await tx.update(paymentCard).set({ isDefault: true }).where(eq(paymentCard.id, row.id))
+        await rewardReferrer(tx, row.userId)
       }
       return true
     })

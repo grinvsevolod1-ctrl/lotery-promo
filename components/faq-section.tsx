@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Reveal } from '@/components/reveal'
 import { PlusMark, QueryMark } from '@/components/icons'
-import { WELCOME_BONUS } from '@/lib/lottery'
+import { REFERRAL_BONUS, WELCOME_BONUS } from '@/lib/lottery'
 import { site } from '@/lib/site'
 
 const FAQ = [
@@ -18,6 +18,10 @@ const FAQ = [
   {
     q: `Как получить бонус ${WELCOME_BONUS} BYN?`,
     a: `Зарегистрируйтесь и нажмите «Получить ${WELCOME_BONUS} BYN» в личном кабинете. Бонус начисляется один раз и сразу доступен для покупки билетов.`,
+  },
+  {
+    q: 'Что дают приглашённые друзья?',
+    a: `Скопируйте ссылку в разделе «Друзья» личного кабинета. Друг засчитывается автоматически после регистрации по ней, а вам начисляется +${REFERRAL_BONUS} BYN, как только он привяжет карту. Бонус за каждого друга — один раз.`,
   },
   {
     q: 'Что такое бонусные BYN и можно ли их вывести?',

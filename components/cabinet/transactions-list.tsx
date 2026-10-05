@@ -15,6 +15,8 @@ const TYPE_LABEL: Record<string, string> = {
   purchase: "Покупка",
   prize: "Выигрыш",
   spin: "Колесо",
+  referral: "Друг",
+  deposit: "Пополнение",
   withdrawal_hold: "Вывод",
   withdrawal_refund: "Возврат",
 }

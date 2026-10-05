@@ -1,7 +1,8 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { referral, referralCode } from "@/lib/db/schema"
+import { referral, referralCode, transaction } from "@/lib/db/schema"
+import { REFERRAL_BONUS } from "@/lib/lottery"
 
 export const REFERRAL_COOKIE = "toloto-referral"
 export const REFERRAL_TTL = 30 * 24 * 60 * 60
@@ -34,6 +35,25 @@ export async function getOrCreateReferralCode(userId: string) {
   await db.insert(referralCode).values({ userId, code: randomBytes(12).toString("hex") }).onConflictDoNothing({ target: referralCode.userId })
   const [row] = await db.select({ code: referralCode.code }).from(referralCode).where(eq(referralCode.userId, userId))
   return row.code
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Credits the inviter once, when the invitee gets a confirmed card. The status
+ * flip from "approved" to "rewarded" is the idempotency guard.
+ */
+export async function rewardReferrer(tx: Tx, inviteeId: string) {
+  const [row] = await tx.update(referral).set({ status: "rewarded", processedAt: new Date() })
+    .where(and(eq(referral.inviteeId, inviteeId), eq(referral.status, "approved")))
+    .returning({ userId: referral.userId })
+  if (!row) return
+  await tx.insert(transaction).values({
+    userId: row.userId,
+    type: "referral",
+    amount: REFERRAL_BONUS,
+    description: "Бонус за приглашённого друга",
+  })
 }
 
 export async function recordReferral(inviteeId: string, cookieValue: string) {

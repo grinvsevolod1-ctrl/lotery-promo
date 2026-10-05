@@ -6,7 +6,10 @@
  * winning combination for that ticket right away and pays the prize at once.
  */
 
-export const WELCOME_BONUS = 20
+export const WELCOME_BONUS = 100
+
+/** Paid to the inviter once the invited friend's first card is confirmed. */
+export const REFERRAL_BONUS = 10
 
 /** Europe/Minsk has used UTC+3 without daylight saving since 2011. */
 export const MINSK_UTC_OFFSET_MS = 3 * 60 * 60 * 1000
