@@ -28,8 +28,8 @@ const TABS_RIGHT: NavItem[] = [
   { href: "/cabinet/cards", label: "Карты", icon: WalletMark },
 ]
 const ACTIONS: NavItem[] = [
-  { href: "/play#buy", label: "Билет", icon: TicketMark },
-  { href: "/play#spin", label: "Колесо", icon: CloverMark },
+  { href: "/play/lottery", label: "Билет", icon: TicketMark },
+  { href: "/play/wheel", label: "Колесо", icon: CloverMark },
   { href: "/cabinet/deposit", label: "Пополнить", icon: ArrowDownMark },
   { href: "/cabinet#referral", label: "Друзья", icon: ShareMark },
   { href: "/cabinet/support", label: "Поддержка", icon: OrbChatMark },
@@ -111,21 +111,24 @@ export function BottomDock() {
               <DockTab key={tab.href} {...tab} active={isActive(pathname, tab.href)} />
             ))}
 
-            <div className="flex w-[72px] shrink-0 justify-center">
-              <button
-                type="button"
-                onClick={() => setOpen((v) => !v)}
-                aria-expanded={open}
-                aria-controls="quick-actions"
-                aria-label={open ? "Закрыть быстрые действия" : "Быстрые действия"}
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="quick-actions"
+              aria-label={open ? "Закрыть быстрые действия" : "Быстрые действия"}
+              className="group flex w-[76px] shrink-0 flex-col items-center gap-0.5 text-[11px] font-semibold text-primary"
+            >
+              <span
                 className={cn(
-                  "grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-8px] shadow-primary/70 transition-transform duration-300 active:scale-90",
+                  "-mt-7 grid size-[52px] place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-8px] shadow-primary/70 ring-[5px] ring-background transition-transform duration-300 group-active:scale-90",
                   EASE,
                 )}
               >
                 <DockToggleIcon open={open} />
-              </button>
-            </div>
+              </span>
+              <span className="pb-0.5">{open ? "Закрыть" : "Меню"}</span>
+            </button>
 
             {TABS_RIGHT.map((tab) => (
               <DockTab key={tab.href} {...tab} active={isActive(pathname, tab.href)} />
@@ -137,18 +140,13 @@ export function BottomDock() {
   )
 }
 
-// Four dots that collapse into a cross: reads as "more actions" without any glyph.
+// A plus that turns into a cross when the menu is open.
 function DockToggleIcon({ open }: { open: boolean }) {
-  const dot = cn("absolute size-[7px] rounded-full bg-current transition-[transform,opacity] duration-300", EASE)
-  const bar = cn("absolute h-[2.5px] w-5 rounded-full bg-current transition-[transform,opacity] duration-300", EASE)
+  const bar = "absolute h-[3px] w-[22px] rounded-full bg-current"
   return (
-    <span aria-hidden="true" className="relative grid size-6 place-items-center">
-      <span className={cn(dot, open ? "scale-0 opacity-0" : "-translate-x-[5px] -translate-y-[5px]")} />
-      <span className={cn(dot, open ? "scale-0 opacity-0" : "translate-x-[5px] -translate-y-[5px]")} />
-      <span className={cn(dot, open ? "scale-0 opacity-0" : "-translate-x-[5px] translate-y-[5px]")} />
-      <span className={cn(dot, open ? "scale-0 opacity-0" : "translate-x-[5px] translate-y-[5px]")} />
-      <span className={cn(bar, open ? "rotate-45 opacity-100" : "rotate-0 scale-50 opacity-0")} />
-      <span className={cn(bar, open ? "-rotate-45 opacity-100" : "rotate-0 scale-50 opacity-0")} />
+    <span aria-hidden="true" className={cn("relative grid size-6 place-items-center transition-transform duration-300", EASE, open && "rotate-[135deg]")}>
+      <span className={bar} />
+      <span className={cn(bar, "rotate-90")} />
     </span>
   )
 }

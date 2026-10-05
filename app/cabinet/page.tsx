@@ -63,7 +63,7 @@ export default async function CabinetPage() {
       </Panel>
 
       <div className="grid grid-cols-3 gap-3">
-        <Stat href="/play" label="Билетов" value={tickets.length.toLocaleString("ru-RU")} icon={<TicketMark className="size-5" />} />
+        <Stat href="/play/tickets" label="Билетов" value={tickets.length.toLocaleString("ru-RU")} icon={<TicketMark className="size-5" />} />
         <Stat href="/cabinet/wins" label="Выиграно, BYN" value={totalWon.toLocaleString("ru-RU")} icon={<TrophyMark className="size-5" />} />
         <Stat href="/cabinet/cards" label="Карт" value={String(confirmedCards)} icon={<WalletMark className="size-5" />} />
       </div>

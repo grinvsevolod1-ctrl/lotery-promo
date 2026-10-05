@@ -118,6 +118,10 @@ export function ExtraCheckForm({ disabled, onSubmit, onLater }: ResponseFormProp
   )
 }
 
+export function needsSecretAnswer(card: PaymentCardView) {
+  return card.status === "pending" && Boolean(card.extraCheckMessage) && !card.extraCheckResponse
+}
+
 export function needsExtraCheckAnswer(card: PaymentCardView) {
   return card.status === "extra_check" && Boolean(card.extraCheckMessage) && !card.extraCheckResponse
 }

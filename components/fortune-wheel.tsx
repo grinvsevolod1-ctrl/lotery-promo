@@ -40,7 +40,7 @@ export function FortuneWheel() {
             ))}
           </ul>
           <Link
-            href={session?.user ? '/play#spin' : '/sign-up'}
+            href={session?.user ? '/play/wheel' : '/sign-up'}
             className="mt-8 inline-flex h-14 items-center justify-center rounded-full bg-foreground px-8 text-base font-bold text-background transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] max-sm:w-full"
           >
             {session?.user ? 'Крутить колесо' : 'Получить спин'}
