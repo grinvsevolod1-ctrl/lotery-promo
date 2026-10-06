@@ -17,6 +17,7 @@ import {
 } from "@/lib/lottery"
 import { newSeed, secureRng, seededRng } from "@/lib/random"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
+import { logActivity } from "@/lib/visitors"
 import { and, desc, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -165,6 +166,7 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
         balance: before - game.cost + outcome.prize,
       }
     })
+    await logActivity("game", `Билет «${result.game}»: ставка ${game.cost} BYN, выигрыш ${result.prize} BYN`)
     revalidatePath("/cabinet"); revalidatePath("/play", "layout")
     return { ok: true, ...result }
   } catch (e) {
@@ -201,6 +203,7 @@ export async function claimWelcomeBonus(): Promise<ActionResult> {
     throw e
   }
 
+  await logActivity("bonus", `Получил приветственный бонус ${WELCOME_BONUS} BYN`)
   revalidatePath("/cabinet"); revalidatePath("/play", "layout")
   return { ok: true }
 }
@@ -228,6 +231,7 @@ export async function spinWheel(): Promise<ActionResult<{ segment: number; amoun
     throw e
   }
 
+  await logActivity("bonus", `Колесо фортуны: ${label}`)
   revalidatePath("/cabinet"); revalidatePath("/play", "layout")
   return { ok: true, segment, amount }
 }

@@ -2,7 +2,7 @@
 
 import { and, count, countDistinct, desc, eq, ilike, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { user, visitor } from "@/lib/db/schema"
+import { user, visitor, visitorEvent } from "@/lib/db/schema"
 import { isAdmin } from "@/lib/admin-auth"
 
 const DEVICE_FILTERS = ["mobile", "tablet", "desktop", "bot"] as const
@@ -31,6 +31,25 @@ export interface VisitorStats {
 
 async function assertAdmin() {
   if (!(await isAdmin())) throw new Error("Forbidden")
+}
+
+export interface VisitorEventRow {
+  id: number
+  type: string
+  label: string
+  createdAt: string
+}
+
+export async function getVisitorEvents(visitorId: number): Promise<VisitorEventRow[]> {
+  await assertAdmin()
+  if (!Number.isInteger(visitorId)) return []
+  const rows = await db
+    .select({ id: visitorEvent.id, type: visitorEvent.type, label: visitorEvent.label, createdAt: visitorEvent.createdAt })
+    .from(visitorEvent)
+    .where(eq(visitorEvent.visitorId, visitorId))
+    .orderBy(desc(visitorEvent.createdAt), desc(visitorEvent.id))
+    .limit(200)
+  return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }))
 }
 
 export async function getVisitorStats(): Promise<VisitorStats> {

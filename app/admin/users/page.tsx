@@ -4,6 +4,7 @@ import { isAdmin } from "@/lib/admin-auth"
 import { getVisitorStats, listVisitors } from "@/app/actions/admin-users"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { AutoRefresh } from "@/components/auto-refresh"
+import { VisitorHistory } from "@/components/admin/visitor-history"
 import { formatDateTime } from "@/lib/format"
 
 export const metadata = { title: "Пользователи — админка bytoloto.com", robots: { index: false, follow: false } }
@@ -137,6 +138,7 @@ export default async function AdminUsersPage({
                     <summary className="w-fit cursor-pointer hover:text-foreground">Полная строка устройства</summary>
                     <p className="mt-1 break-all font-mono">{visitor.userAgent}</p>
                   </details>
+                  <VisitorHistory visitorId={visitor.id} />
                 </li>
               ))}
             </ul>

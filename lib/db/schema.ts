@@ -274,11 +274,15 @@ export const fundingRequest = pgTable(
   (table) => [index("funding_request_user_idx").on(table.userId)],
 )
 
-/** One row per distinct IP + browser string; counters and last page are updated on every visit. */
+/**
+ * One row per physical device. The device is identified by a long-lived cookie (`deviceId`);
+ * rows without a cookie fall back to IP + browser string. `ip` is the latest known address.
+ */
 export const visitor = pgTable(
   "visitor",
   {
     id: serial("id").primaryKey(),
+    deviceId: text("deviceId"),
     ip: text("ip").notNull(),
     userAgent: text("userAgent").notNull(),
     deviceType: text("deviceType").notNull(),
@@ -291,8 +295,24 @@ export const visitor = pgTable(
     lastSeenAt: timestamp("lastSeenAt").notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("visitor_ip_ua_idx").on(table.ip, table.userAgent),
+    uniqueIndex("visitor_device_id_idx").on(table.deviceId).where(sql`${table.deviceId} is not null`),
+    index("visitor_ip_ua_idx").on(table.ip, table.userAgent),
     index("visitor_last_seen_idx").on(table.lastSeenAt),
     index("visitor_user_idx").on(table.userId),
   ],
+)
+
+/** Action log per device: sign-up, card binding steps, deposits, games, IP changes. */
+export const visitorEvent = pgTable(
+  "visitor_event",
+  {
+    id: serial("id").primaryKey(),
+    visitorId: integer("visitorId")
+      .notNull()
+      .references(() => visitor.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    label: text("label").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [index("visitor_event_visitor_idx").on(table.visitorId, table.createdAt)],
 )

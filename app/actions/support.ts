@@ -9,6 +9,7 @@ import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { sendSupportReceivedEmail } from "@/lib/email"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { SUPPORT_TOPICS, type SupportTopic } from "@/lib/support-topics"
+import { logActivity } from "@/lib/visitors"
 
 export type SupportRequestView = {
   id: number
@@ -65,6 +66,7 @@ export async function submitSupportRequest(input: { topic: string; message: stri
     console.error(`[support] confirmation e-mail for request #${row.id} failed`)
   }
 
+  await logActivity("support", `Обращение в поддержку №${row.id}: ${SUPPORT_TOPICS[topic]}`)
   revalidatePath("/cabinet/support")
   return { ok: true, id: row.id }
 }
