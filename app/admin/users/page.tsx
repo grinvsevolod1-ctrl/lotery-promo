@@ -51,7 +51,7 @@ export default async function AdminUsersPage({
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-8">
-      <AutoRefresh intervalMs={15_000} />
+      <AutoRefresh intervalMs={60_000} liveScope="admin" liveTopics={["admin:users"]} />
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <AdminNav active="users" subtitle="Все IP и устройства, которые заходили на сайт" />
 

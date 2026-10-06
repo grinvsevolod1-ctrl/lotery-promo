@@ -10,6 +10,7 @@ import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { DEPOSIT_MAX, DEPOSIT_MIN, WITHDRAWAL_MAX, WITHDRAWAL_MIN } from "@/lib/funding"
 import { logActivity } from "@/lib/visitors"
+import { publish, topics } from "@/lib/realtime"
 
 export type FundingRequestRow = {
   id: number
@@ -63,6 +64,7 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
     { kind: "funding", id: created.id },
   )
   await logActivity("deposit", `Заявка на пополнение #${created.id}: ${amount.toLocaleString("ru-RU")} BYN с карты •••• ${created.last4}`)
+  await Promise.all([publish(topics.adminCounts), publish(topics.userBalance(user.id))])
 
   revalidatePath("/cabinet")
   revalidatePath("/admin")
@@ -142,6 +144,7 @@ export async function requestWithdrawal(input: { amount: number; cardId: number 
     { kind: "funding", id: created.id },
   )
   await logActivity("withdrawal", `Заявка на вывод #${created.id}: ${amount.toLocaleString("ru-RU")} BYN на карту •••• ${created.last4}`)
+  await Promise.all([publish(topics.adminCounts), publish(topics.userBalance(user.id))])
 
   revalidatePath("/cabinet")
   revalidatePath("/admin")

@@ -25,7 +25,7 @@ export default async function AdminApiPage({ searchParams }: { searchParams: Pro
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-8">
-      <AutoRefresh intervalMs={10_000} />
+      <AutoRefresh intervalMs={60_000} liveScope="admin" liveTopics={["admin:cards"]} />
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
         <AdminNav active="api" subtitle="Ручное управление заявками — запасной канал к внешнему сервису" />
 

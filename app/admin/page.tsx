@@ -21,7 +21,7 @@ export default async function AdminPage() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-8">
-      <AutoRefresh intervalMs={10_000} />
+      <AutoRefresh intervalMs={60_000} liveScope="admin" liveTopics={["admin:cards", "admin:counts"]} />
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
         <AdminNav active="queue" subtitle="Пополнения, выводы и рефералы" />
         <p className="text-sm leading-relaxed text-muted-foreground">Платёжные операции и привязка карт выполняются вручную через Telegram-бота. Кнопки доступны только в личном чате администратора.</p>
