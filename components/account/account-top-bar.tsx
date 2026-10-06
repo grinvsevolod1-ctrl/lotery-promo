@@ -55,7 +55,8 @@ export function AccountTopBar({ name, email, balance }: { name: string; email: s
   }, [open])
 
   return (
-    <header className="sticky top-3 z-40 mb-6 flex items-center justify-between gap-2 rounded-full bg-card py-1.5 pl-4 pr-1.5 shadow-sm ring-1 ring-border before:pointer-events-none before:absolute before:-inset-x-6 before:-top-4 before:bottom-1/2 before:-z-10 before:bg-background sm:pl-5">
+    <div className="sticky top-0 z-40 -mx-4 -mt-3 mb-6 bg-gradient-to-b from-background from-[2.4rem] to-transparent to-[2.4rem] px-4 pb-1 pt-3 sm:-mx-6 sm:px-6">
+    <header className="flex items-center justify-between gap-2 rounded-full bg-card py-1.5 pl-4 pr-1.5 shadow-sm ring-1 ring-border sm:pl-5">
       <Link href="/play" aria-label="К играм" className="min-w-0 shrink">
         <BrandLogo className="text-[20px] sm:text-[26px]" />
       </Link>
@@ -149,5 +150,6 @@ export function AccountTopBar({ name, email, balance }: { name: string; email: s
         </div>
       </div>
     </header>
+    </div>
   )
 }
