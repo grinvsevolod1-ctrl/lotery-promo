@@ -6,15 +6,22 @@ import { CategoryBanner } from "@/components/play/category-banner"
 import { GameLobby } from "@/components/play/game-lobby"
 import type { LobbyGame } from "@/components/play/game-tile"
 import { ShowcaseBanner, ShowcaseGrid, ShowcaseRow } from "@/components/play/showcase-sections"
-import { BANNER_LIVE, BANNER_SLOTS, GRID_LIVE, ROW_SLOTS, ROW_TOP } from "@/lib/games/showcase"
+import { DepositGateProvider } from "@/components/play/deposit-gate"
+import { hasAnyDeposit } from "@/lib/crypto/deposits"
+import { BANNER_LIVE, BANNER_SLOTS, GRID_LIVE, LIVE_COUNT, ROW_SLOTS, ROW_TOP, SLOTS_COUNT } from "@/lib/games/showcase"
 import { formatMultiplier, plinkoMultipliers, PLINKO_MAX_ROWS } from "@/lib/games/plinko"
 import { SCRATCH_GAME_NAME, SCRATCH_TIERS } from "@/lib/games/scratch"
 import { requireSession } from "@/lib/require-session"
 
 export default async function PlayPage() {
-  await requireSession()
+  const session = await requireSession()
   await settleLegacyTickets()
-  const [balance, tickets, spinStatus] = await Promise.all([getBalance(), getTickets(), getSpinStatus()])
+  const [balance, tickets, spinStatus, hasDeposit] = await Promise.all([
+    getBalance(),
+    getTickets(),
+    getSpinStatus(),
+    hasAnyDeposit(session.user.id),
+  ])
 
   const plinkoTop = Math.max(...plinkoMultipliers(PLINKO_MAX_ROWS, "high"))
   const scratchTop = Math.max(...SCRATCH_TIERS.map((tier) => tier.multiplier))
@@ -59,6 +66,7 @@ export default async function PlayPage() {
   ]
 
   return (
+    <DepositGateProvider hasDeposit={hasDeposit}>
     <div className="flex flex-col gap-4">
       <PageHeading
         eyebrow="Игровой зал"
@@ -69,7 +77,7 @@ export default async function PlayPage() {
 
       <ShowcaseBanner
         title="Слоты"
-        subtitle="Скоро в зале"
+        subtitle={`${SLOTS_COUNT} популярных слотов`}
         href="#slots"
         background="/games/showcase/gates-olympus.png"
         games={BANNER_SLOTS}
@@ -77,14 +85,14 @@ export default async function PlayPage() {
 
       <ShowcaseBanner
         title="Live Dealers"
-        subtitle="Скоро в зале"
+        subtitle={`${LIVE_COUNT} столов с живыми дилерами`}
         href="#live"
         background="/games/showcase/crazy-time.png"
         games={BANNER_LIVE}
       />
 
       <ShowcaseBanner
-        title="Dragon Games"
+        title="Мгновенные игры"
         subtitle="Лотерея, Plinko, Скретч…"
         href="#catalog"
         background="/games/covers/plinko.png"
@@ -123,5 +131,6 @@ export default async function PlayPage() {
         <ShowcaseGrid id="live" title="Live" games={GRID_LIVE} />
       </div>
     </div>
+    </DepositGateProvider>
   )
 }

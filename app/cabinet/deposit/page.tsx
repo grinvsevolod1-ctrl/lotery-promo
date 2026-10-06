@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { getBalance } from "@/app/actions/cabinet"
 import { getPaymentCards } from "@/app/actions/cards"
 import { getFundingRequests } from "@/app/actions/funding"
@@ -26,6 +27,16 @@ export default async function DepositPage() {
         title="Пополнение"
         description="Выберите сумму и карту. После подтверждения оплаты деньги сразу появятся на игровом балансе."
       />
+      <Link
+        href="/cabinet/deposit/crypto"
+        className="flex items-center justify-between gap-4 rounded-3xl bg-foreground px-5 py-4 text-background transition-opacity hover:opacity-90"
+      >
+        <span className="min-w-0">
+          <span className="block font-display text-lg font-extrabold">Пополнить криптовалютой</span>
+          <span className="block text-sm opacity-70">USDT, BTC, ETH, TON, TRX, LTC, USDC · зачисление автоматически</span>
+        </span>
+        <span className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Открыть</span>
+      </Link>
       <Panel className="p-5 sm:p-6">
         <DepositForm cards={confirmed} hasPending={deposits.some((d) => d.status === "pending")} />
       </Panel>

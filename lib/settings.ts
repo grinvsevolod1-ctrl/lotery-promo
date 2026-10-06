@@ -7,6 +7,7 @@ export const SETTING_KEYS = {
   cardWebhookLastDelivery: "card_webhook_last_delivery",
   cardWebhookLog: "card_webhook_log",
   luckLevel: "luck_level",
+  cryptoWallets: "crypto_wallets",
 } as const
 
 export async function getSetting(key: string): Promise<string | null> {

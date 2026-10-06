@@ -1,7 +1,22 @@
 import type { Instrumentation } from "next"
 
 export async function register() {
-  // Nothing to start: tickets are instant and the Telegram webhook is set manually on the server.
+  // The VPS runs one long-lived Node server, so a timer can sweep crypto invoices
+  // even when the user closed the payment screen. Serverless hosts skip it.
+  if (process.env.NEXT_RUNTIME !== "nodejs" || process.env.VERCEL) return
+  if (!process.env.DATABASE_URL) return
+
+  const { checkPendingInvoices } = await import("@/lib/crypto/deposits")
+  let running = false
+  setInterval(() => {
+    if (running) return
+    running = true
+    checkPendingInvoices()
+      .catch((error) => console.error(JSON.stringify({ level: "error", event: "crypto_scan_failed", message: String(error) })))
+      .finally(() => {
+        running = false
+      })
+  }, 45_000).unref()
 }
 
 // Structured server error log: picked up by Vercel/PM2/docker log drains, so
