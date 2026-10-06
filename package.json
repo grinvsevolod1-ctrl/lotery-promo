@@ -25,6 +25,7 @@
     "next": "16.3.3",
     "nodemailer": "^10.0.13",
     "pg": "^8.23.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19",
     "react-dom": "^19",
     "shadcn": "^4.11.0",

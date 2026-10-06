@@ -43,6 +43,7 @@ export const LIMITS = {
   cardManage: { max: 30, windowSec: 60 },
   withdrawal: { max: 5, windowSec: 600 },
   deposit: { max: 5, windowSec: 600 },
+  crypto_invoice: { max: 6, windowSec: 600 },
   support: { max: 3, windowSec: 600 },
 } as const
 

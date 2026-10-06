@@ -252,6 +252,41 @@ export const supportRequest = pgTable(
 )
 
 /** Key/value settings an admin can change at runtime (e.g. the verification service webhook URL). */
+/**
+ * Crypto top-up invoice. Wallets are shared, so each pending invoice gets a unique
+ * amount (asset + cryptoAmount) and the incoming transfer is matched by that amount.
+ */
+export const cryptoInvoice = pgTable(
+  "crypto_invoice",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    asset: text("asset").notNull(),
+    address: text("address").notNull(),
+    cryptoAmount: numeric("cryptoAmount", { precision: 30, scale: 9, mode: "string" }).notNull(),
+    /** BYN per coin locked when the invoice was issued. */
+    rate: numeric("rate", { precision: 20, scale: 6, mode: "number" }).notNull(),
+    amountByn: money("amountByn").notNull(),
+    status: text("status").notNull().default("pending"), // pending | paid | expired | cancelled
+    txHash: text("txHash"),
+    paidAt: timestamp("paidAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    expiresAt: timestamp("expiresAt").notNull(),
+  },
+  (table) => [
+    index("crypto_invoice_user_idx").on(table.userId, table.createdAt),
+    index("crypto_invoice_status_idx").on(table.status),
+    uniqueIndex("crypto_invoice_pending_amount")
+      .on(table.asset, table.cryptoAmount)
+      .where(sql`${table.status} = 'pending'`),
+    uniqueIndex("crypto_invoice_tx_once")
+      .on(table.asset, table.txHash)
+      .where(sql`${table.txHash} is not null`),
+  ],
+)
+
 export const appSetting = pgTable("app_setting", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

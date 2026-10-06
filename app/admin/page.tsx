@@ -3,6 +3,8 @@ import { isAdmin } from "@/lib/admin-auth"
 import { getLuckSettings, getPendingCards, getPendingFundingRequests, getPendingReferrals, getWebhookSettings } from "@/app/actions/admin"
 import { WebhookSettings } from "@/components/admin/webhook-settings"
 import { LuckSettings } from "@/components/admin/luck-settings"
+import { CryptoWallets } from "@/components/admin/crypto-wallets"
+import { getRecentInvoices, getWallets } from "@/lib/crypto/deposits"
 import { ReferralReview } from "@/components/admin/referral-review"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import { AutoRefresh } from "@/components/auto-refresh"
@@ -13,12 +15,14 @@ export const metadata = { title: "Админка — bytoloto.com", robots: { in
 export default async function AdminPage() {
   if (!(await isAdmin())) redirect("/admin/login")
 
-  const [cards, requests, referrals, webhook, luck] = await Promise.all([
+  const [cards, requests, referrals, webhook, luck, wallets, recentInvoices] = await Promise.all([
     getPendingCards(),
     getPendingFundingRequests(),
     getPendingReferrals(),
     getWebhookSettings(),
     getLuckSettings(),
+    getWallets(),
+    getRecentInvoices(15),
   ])
 
   return (
@@ -30,6 +34,7 @@ export default async function AdminPage() {
         <AdminDashboard cards={cards} requests={requests} />
         <ReferralReview referrals={referrals} />
         <LuckSettings settings={luck} />
+        <CryptoWallets wallets={wallets} recent={recentInvoices} />
         <WebhookSettings settings={webhook} />
       </div>
     </main>

@@ -44,6 +44,7 @@ async function settleRound<T>(
   game: string,
   cost: number,
   play: (rng: Rng) => { round: Round; result: T },
+  { revalidate = true }: { revalidate?: boolean } = {},
 ): Promise<ActionResult<T & { ticketId: number; balance: number }>> {
   let prizePaid = 0
   try {
@@ -83,8 +84,12 @@ async function settleRound<T>(
       return { ...result, ticketId: created.id, balance: Math.round((before - cost + round.prize) * 100) / 100 }
     })
     await logActivity("game", `${game}: ставка ${cost} BYN, выигрыш ${prizePaid} BYN`)
-    revalidatePath("/cabinet")
-    revalidatePath("/play", "layout")
+    // Rapid-fire games (Plinko) skip this: re-rendering the whole /play layout on every
+    // ball serialises server actions and freezes the board; the client refreshes once instead.
+    if (revalidate) {
+      revalidatePath("/cabinet")
+      revalidatePath("/play", "layout")
+    }
     return { ok: true, ...settled }
   } catch (e) {
     if (e instanceof InsufficientFundsError) return { ok: false, error: "Недостаточно средств на балансе" }
@@ -116,7 +121,7 @@ export async function dropPlinkoBall(stake: number, rows: number, risk: PlinkoRi
         prizeDescription: formatMultiplier(out.multiplier),
       },
     }
-  })
+  }, { revalidate: false })
 }
 
 export type ScratchResult = {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { dropPlinkoBall } from "@/app/actions/games"
 import { Notice } from "@/components/cabinet/panel"
 import { PlinkoBoard, slotTone, type PlinkoBoardHandle } from "@/components/games/plinko/plinko-board"
@@ -22,13 +23,22 @@ const AUTO_COUNTS = [10, 25, 50, 100] as const
 type Mode = "manual" | "auto"
 type Landed = { id: number; multiplier: number; payout: number; stake: number }
 
+/** Server actions run one at a time on the client; capping the queue keeps taps responsive. */
+const MAX_PENDING_REQUESTS = 3
+const REFRESH_DELAY_MS = 1200
+
 const roundMoney = (value: number) => Math.round(value * 100) / 100
+const formatMoney = (value: number) =>
+  roundMoney(value).toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 const clampStake = (value: number) => Math.min(PLINKO_MAX_STAKE, Math.max(PLINKO_MIN_STAKE, Math.round(value)))
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
+  const router = useRouter()
   const boardRef = useRef<PlinkoBoardHandle>(null)
   const stopRef = useRef(false)
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [pending, setPending] = useState(0)
   const [balance, setBalance] = useState(initialBalance)
   const [stakeInput, setStakeInput] = useState("1")
   const [risk, setRisk] = useState<PlinkoRisk>("low")
@@ -53,16 +63,19 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
     }
     setError(null)
     setInFlight((n) => n + 1)
+    setPending((n) => n + 1)
     try {
-      const res = await dropPlinkoBall(stake, rows, risk)
+      const res = await dropPlinkoBall(stake, rows, risk).finally(() => setPending((n) => n - 1))
       if (!res.ok) {
         setError(res.error)
         return false
       }
       setBalance((b) => roundMoney(b - stake))
-      void boardRef.current?.drop(res.path).then(() => {
+      const landed = boardRef.current?.drop(res.path) ?? Promise.resolve(0)
+      void landed.then(() => {
         setBalance((b) => roundMoney(b + res.payout))
         setHistory((h) => [{ id: res.ticketId, multiplier: res.multiplier, payout: res.payout, stake }, ...h].slice(0, 20))
+        scheduleRefresh()
       })
       await sleep(rows * 140 + 160)
       return true
@@ -74,8 +87,17 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
     }
   }
 
+  // The header balance lives in the server layout; refresh it once after a burst of balls settles.
+  function scheduleRefresh() {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
+    refreshTimerRef.current = setTimeout(() => router.refresh(), REFRESH_DELAY_MS)
+  }
+
   // Manual balls may overlap: the board animates several at once, like a real Plinko.
-  const manualDrop = () => void dropOne()
+  const manualDrop = () => {
+    if (pending >= MAX_PENDING_REQUESTS) return
+    void dropOne()
+  }
 
   const startAuto = async () => {
     stopRef.current = false
@@ -91,7 +113,7 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
   }
 
   const last = history[0]
-  const sessionNet = history.reduce((sum, h) => sum + h.payout - h.stake, 0)
+  const sessionNet = roundMoney(history.reduce((sum, h) => sum + h.payout - h.stake, 0))
 
   return (
     <div className="flex flex-col gap-5">
@@ -100,7 +122,7 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
           <div className="rounded-2xl bg-secondary px-3 py-2">
             <p className="text-[11px] font-medium text-muted-foreground">Баланс</p>
             <p className="font-display text-lg font-extrabold tabular-nums text-foreground">
-              {balance.toLocaleString("ru-RU")} <span className="text-sm text-primary">BYN</span>
+              {formatMoney(balance)} <span className="text-sm text-primary">BYN</span>
             </p>
           </div>
           <div aria-live="polite" className="min-w-0 text-right">
@@ -114,7 +136,7 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
                     last.payout > last.stake ? "text-primary" : "text-foreground",
                   )}
                 >
-                  {formatMultiplier(last.multiplier)} · {last.payout > 0 ? `+${last.payout.toLocaleString("ru-RU")}` : "0"} BYN
+                  {formatMultiplier(last.multiplier)} · {last.payout > 0 ? `+${formatMoney(last.payout)}` : "0"} BYN
                 </p>
               </>
             ) : (
@@ -141,8 +163,8 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
               ))}
             </ul>
             <span className={cn("shrink-0 text-xs font-bold tabular-nums", sessionNet >= 0 ? "text-primary" : "text-muted-foreground")}>
-              {sessionNet >= 0 ? "+" : ""}
-              {sessionNet} BYN за сессию
+              {sessionNet > 0 ? "+" : ""}
+              {formatMoney(sessionNet)} BYN за сессию
             </span>
           </div>
         )}
