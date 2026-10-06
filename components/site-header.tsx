@@ -14,7 +14,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-card">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 min-[380px]:px-4 sm:gap-3 sm:px-5">
-        <BrandLogo className="text-xl min-[380px]:text-2xl" />
+        <BrandLogo id="hdr" className="text-xl min-[380px]:text-2xl" />
         <nav aria-label="Основное меню" className="hidden items-center gap-6 whitespace-nowrap text-sm font-semibold text-foreground lg:flex xl:gap-7">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} className="transition-colors hover:text-primary">

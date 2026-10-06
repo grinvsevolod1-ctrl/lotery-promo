@@ -56,9 +56,7 @@ export function AccountTopBar({ name, email, balance }: { name: string; email: s
 
   return (
     <header className="sticky top-3 z-40 mb-6 flex items-center justify-between gap-2 rounded-full bg-card py-1.5 pl-4 pr-1.5 shadow-sm ring-1 ring-border before:pointer-events-none before:absolute before:-inset-x-6 before:-top-4 before:bottom-1/2 before:-z-10 before:bg-background sm:pl-5">
-      <Link href="/play" aria-label="К играм" className="min-w-0 shrink">
-        <BrandLogo className="text-[20px] sm:text-[26px]" />
-      </Link>
+      <BrandLogo href="/play" label="К играм" id="cab" className="min-w-0 shrink text-[20px] sm:text-[26px]" />
 
       <div className="flex shrink-0 items-center gap-1.5">
         {balance !== null && (

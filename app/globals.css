@@ -528,3 +528,52 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .tile-rise, .dock-pulse { animation: none; }
 }
+
+/* Brand coin: the "o" letters of the wordmark. Sized in em so it scales with the logo. */
+.brand-coin {
+  --coin-depth: 0.07em;
+  display: inline-block;
+  width: 0.74em;
+  height: 0.74em;
+  margin-inline: 0.035em;
+  transform: translateY(0.02em);
+  perspective: 6em;
+  vertical-align: baseline;
+}
+.brand-coin-spinner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: brand-coin-spin 5.4s cubic-bezier(0.6, 0.04, 0.3, 1) infinite;
+  animation-delay: var(--coin-delay, 0s);
+}
+.brand-coin-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(calc(var(--coin-depth) / 2));
+}
+.brand-coin-back {
+  transform: rotateY(180deg) translateZ(calc(var(--coin-depth) / 2));
+}
+.brand-coin-edge {
+  position: absolute;
+  top: 1%;
+  bottom: 1%;
+  left: calc(50% - var(--coin-depth) / 2);
+  width: var(--coin-depth);
+  background: linear-gradient(to bottom, #a4660a, #e3ad2b 32%, #f4cd55 50%, #e3ad2b 68%, #a4660a);
+  transform: rotateY(90deg);
+}
+@keyframes brand-coin-spin {
+  0% { transform: rotateY(0deg); }
+  24% { transform: rotateY(360deg); }
+  100% { transform: rotateY(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-coin-spinner { animation: none; }
+}

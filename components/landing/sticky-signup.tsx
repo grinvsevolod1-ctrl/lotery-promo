@@ -7,16 +7,28 @@ import { WELCOME_BONUS } from "@/lib/lottery"
 
 export function StickySignup() {
   const { data: session, isPending } = useSession()
-  const [visible, setVisible] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [footerInView, setFooterInView] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 520)
+    const onScroll = () => setScrolled(window.scrollY > 520)
     onScroll()
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
+  // Step aside once the footer scrolls in so its links and legal text stay readable.
+  useEffect(() => {
+    const footer = document.querySelector("footer")
+    if (!footer) return
+    const observer = new IntersectionObserver(([entry]) => setFooterInView(entry.isIntersecting))
+    observer.observe(footer)
+    return () => observer.disconnect()
+  }, [])
+
   if (isPending || session?.user) return null
+
+  const visible = scrolled && !footerInView
 
   return (
     <div
