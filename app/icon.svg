@@ -1,50 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2d6ef5"/>
-      <stop offset="1" stop-color="#143fae"/>
+      <stop offset="0" stop-color="#4a1a7a"/>
+      <stop offset="1" stop-color="#22103f"/>
     </linearGradient>
-    <linearGradient id="rim" x1="14" y1="10" x2="86" y2="92" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff4c2"/>
-      <stop offset="0.3" stop-color="#f7c948"/>
-      <stop offset="0.62" stop-color="#dd9c1c"/>
-      <stop offset="1" stop-color="#a4660a"/>
+    <linearGradient id="ticket" x1="96" y1="160" x2="416" y2="352" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff3fa8"/>
+      <stop offset="1" stop-color="#d8268f"/>
     </linearGradient>
-    <radialGradient id="field" cx="0.36" cy="0.3" r="0.78">
-      <stop offset="0" stop-color="#ffe9a6"/>
-      <stop offset="0.5" stop-color="#f4c13a"/>
-      <stop offset="1" stop-color="#c47e0f"/>
+    <radialGradient id="ball" cx="0.32" cy="0.28" r="0.8">
+      <stop offset="0" stop-color="#fff2b8"/>
+      <stop offset="1" stop-color="#e0b64a"/>
     </radialGradient>
-    <linearGradient id="relief" x1="32" y1="26" x2="68" y2="76" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff8d6"/>
-      <stop offset="0.45" stop-color="#fbd65c"/>
-      <stop offset="1" stop-color="#d1961a"/>
-    </linearGradient>
-    <radialGradient id="gloss" cx="0.3" cy="0.2" r="0.55">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/>
-      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.12"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="16"/>
-    </filter>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <circle cx="256" cy="278" r="176" fill="#071d5c" opacity="0.45" filter="url(#shadow)"/>
-  <!-- Gold coin, 100x100 design scaled to 360px -->
-  <g transform="translate(76 76) scale(3.6)">
-    <circle cx="50" cy="50" r="49" fill="#8a580a"/>
-    <circle cx="50" cy="50" r="47.6" fill="url(#rim)"/>
-    <circle cx="50" cy="50" r="45.2" fill="none" stroke="#8f5e0a" stroke-width="2.4" stroke-dasharray="1.25 2.487" opacity="0.7"/>
-    <circle cx="50" cy="50" r="41.6" fill="none" stroke="#fff3c6" stroke-width="1.5" opacity="0.95"/>
-    <circle cx="50" cy="50" r="40.1" fill="none" stroke="#a46a0d" stroke-width="1.1" opacity="0.9"/>
-    <circle cx="50" cy="50" r="39.5" fill="url(#field)"/>
-    <circle cx="50" cy="50" r="35" fill="none" stroke="#9e660b" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="0 3.436" transform="translate(0.45 0.6)" opacity="0.45"/>
-    <circle cx="50" cy="50" r="35" fill="none" stroke="#fff2c0" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="0 3.436" opacity="0.95"/>
-    <g transform="translate(0 1.5)">
-      <path d="M50 28 55.58 42.31 70.92 43.2 59.03 52.94 62.93 67.8 50 59.5 37.07 67.8 40.97 52.94 29.08 43.2 44.42 42.31Z" transform="translate(1.1 1.4)" fill="#8f5e0a" opacity="0.6"/>
-      <path d="M50 28 55.58 42.31 70.92 43.2 59.03 52.94 62.93 67.8 50 59.5 37.07 67.8 40.97 52.94 29.08 43.2 44.42 42.31Z" fill="url(#relief)" stroke="#a46a0d" stroke-width="0.7" stroke-linejoin="round"/>
-    </g>
-    <circle cx="50" cy="50" r="47.6" fill="url(#gloss)"/>
-  </g>
+  <!-- ticket with perforated notches -->
+  <path d="M104 176a24 24 0 0 1 24-24h256a24 24 0 0 1 24 24v40a40 40 0 0 0 0 80v40a24 24 0 0 1-24 24H128a24 24 0 0 1-24-24v-40a40 40 0 0 0 0-80v-40Z" fill="url(#ticket)"/>
+  <path d="M208 160v192" stroke="#22103f" stroke-width="10" stroke-dasharray="14 16" stroke-linecap="round" opacity="0.7"/>
+  <!-- golden lucky ball -->
+  <circle cx="312" cy="256" r="58" fill="url(#ball)"/>
+  <!-- bold "7" drawn as a path so it renders identically everywhere (no font dependency) -->
+  <path d="M284 224h58v12l-32 60h-20l30-56h-36z" fill="#2a0f4a"/>
 </svg>

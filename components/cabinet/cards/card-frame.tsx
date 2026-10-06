@@ -75,6 +75,7 @@ export function CardFrame({
           <p className="font-display text-base font-bold">Подтверждение карты</p>
           {requestNo && <p className="font-mono text-xs text-muted-foreground">№ {requestNo}</p>}
         </div>
+        {loaded && <OpenInBrowser url={url} className="ml-auto h-9 px-3 text-xs text-muted-foreground underline underline-offset-4" />}
       </header>
       <div className="relative min-h-0 flex-1">
         {showIframe && (
@@ -82,19 +83,30 @@ export function CardFrame({
             src={url}
             title="Страница подтверждения карты"
             onLoad={handleLoad}
-            referrerPolicy="no-referrer"
-            sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-            allow="payment"
+            allow="payment *; fullscreen *; clipboard-write *; web-share *"
             className="absolute inset-0 size-full border-0 bg-white"
           />
         )}
-        {!loaded && <Loading stalled={stalled || blocked} />}
+        {!loaded && <Loading stalled={stalled || blocked} url={url} />}
       </div>
     </div>
   )
 }
 
-function Loading({ stalled }: { stalled: boolean }) {
+function OpenInBrowser({ url, className }: { url: string; className?: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener"
+      className={`inline-flex items-center justify-center rounded-full font-semibold ${className ?? ""}`}
+    >
+      Открыть в браузере
+    </a>
+  )
+}
+
+function Loading({ stalled, url }: { stalled: boolean; url: string }) {
   return (
     <div role="status" className="absolute inset-0 z-10 flex items-center justify-center bg-background p-6">
       <div className="flex max-w-xs flex-col items-center gap-4 text-center">
@@ -105,6 +117,7 @@ function Loading({ stalled }: { stalled: boolean }) {
             ? "Готовим страницу — это может занять немного больше времени. Не закрывайте окно."
             : "Пожалуйста, подождите несколько секунд."}
         </p>
+        {stalled && <OpenInBrowser url={url} className="h-11 bg-primary px-6 text-sm text-primary-foreground" />}
       </div>
     </div>
   )
