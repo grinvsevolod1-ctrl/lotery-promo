@@ -41,7 +41,7 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-5">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           <div className="flex flex-col gap-4">
-            <BrandLogo id="ftr" className="text-2xl" />
+            <BrandLogo className="text-2xl" />
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground text-pretty">
               Моментальные лотереи онлайн: выберите числа, купите билет и сразу узнайте результат. Выигрыш
               зачисляется на баланс мгновенно.
