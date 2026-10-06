@@ -5,6 +5,8 @@ import { BalanceBadge } from "@/components/play/balance-badge"
 import { CategoryBanner } from "@/components/play/category-banner"
 import { GameLobby } from "@/components/play/game-lobby"
 import type { LobbyGame } from "@/components/play/game-tile"
+import { ShowcaseBanner, ShowcaseGrid, ShowcaseRow } from "@/components/play/showcase-sections"
+import { BANNER_LIVE, BANNER_SLOTS, GRID_LIVE, ROW_SLOTS, ROW_TOP } from "@/lib/games/showcase"
 import { formatMultiplier, plinkoMultipliers, PLINKO_MAX_ROWS } from "@/lib/games/plinko"
 import { SCRATCH_GAME_NAME, SCRATCH_TIERS } from "@/lib/games/scratch"
 import { requireSession } from "@/lib/require-session"
@@ -65,6 +67,29 @@ export default async function PlayPage() {
         aside={<BalanceBadge balance={balance} />}
       />
 
+      <ShowcaseBanner
+        title="Слоты"
+        subtitle="Скоро в зале"
+        href="#slots"
+        background="/games/showcase/gates-olympus.png"
+        games={BANNER_SLOTS}
+      />
+
+      <ShowcaseBanner
+        title="Live Dealers"
+        subtitle="Скоро в зале"
+        href="#live"
+        background="/games/showcase/crazy-time.png"
+        games={BANNER_LIVE}
+      />
+
+      <ShowcaseBanner
+        title="Dragon Games"
+        subtitle="Лотерея, Plinko, Скретч…"
+        href="#catalog"
+        background="/games/covers/plinko.png"
+      />
+
       <CategoryBanner
         title="Все игры"
         subtitle={`${games.length} игры · результат сразу`}
@@ -90,6 +115,12 @@ export default async function PlayPage() {
 
       <div className="mt-4">
         <GameLobby games={games} />
+      </div>
+
+      <div className="mt-6 flex flex-col gap-8">
+        <ShowcaseRow id="slots" title="Slots" icon="gem" games={ROW_SLOTS} />
+        <ShowcaseRow id="top" title="Top" icon="top" games={ROW_TOP} />
+        <ShowcaseGrid id="live" title="Live" games={GRID_LIVE} />
       </div>
     </div>
   )
