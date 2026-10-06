@@ -38,9 +38,9 @@ function FooterLinks({ links }: { links: ReadonlyArray<{ href: string; label: st
 export function SiteFooter() {
   return (
     <footer className="mt-14 border-t border-border bg-card">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-12 sm:px-5">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
-          <div className="flex flex-col gap-4">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-8 pt-10 sm:gap-10 sm:px-5 sm:py-12">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:gap-10 lg:grid-cols-4 lg:gap-8">
+          <div className="col-span-2 flex flex-col gap-4 lg:col-span-1">
             <BrandLogo className="text-2xl" />
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground text-pretty">
               Моментальные лотереи онлайн: выберите числа, купите билет и сразу узнайте результат. Выигрыш
@@ -71,7 +71,7 @@ export function SiteFooter() {
             <FooterLinks links={legalLinks} />
           </nav>
 
-          <div className="flex flex-col gap-4">
+          <div className="col-span-2 flex flex-col gap-4 rounded-3xl bg-secondary/60 p-5 lg:col-span-1 lg:rounded-none lg:bg-transparent lg:p-0">
             <FooterHeading>Поддержка</FooterHeading>
             <div className="flex flex-col gap-2.5 text-sm">
               <p className="text-muted-foreground">Отвечаем {site.operator.hours}</p>
@@ -86,7 +86,7 @@ export function SiteFooter() {
             <div className="flex items-center gap-2">
               <Link
                 href="/cabinet/support"
-                className="flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-semibold text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 lg:flex-none lg:justify-start lg:bg-secondary lg:text-foreground lg:transition-colors lg:hover:bg-primary lg:hover:text-primary-foreground lg:hover:opacity-100"
               >
                 <OrbChatMark className="size-5" />
                 Написать в чат
@@ -96,7 +96,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground sm:flex-row sm:items-center sm:justify-between [&>p]:text-pretty">
           <div className="flex items-center gap-3">
             <span
               className="grid size-10 shrink-0 place-items-center rounded-full border-2 border-destructive font-display text-xs font-extrabold text-destructive"

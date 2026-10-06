@@ -251,6 +251,29 @@ export const supportRequest = pgTable(
   (table) => [index("support_request_user_idx").on(table.userId)],
 )
 
+/** Operator answers to a support request; each one is also e-mailed to the player. */
+export const supportReply = pgTable(
+  "support_reply",
+  {
+    id: serial("id").primaryKey(),
+    requestId: integer("requestId")
+      .notNull()
+      .references(() => supportRequest.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    emailed: boolean("emailed").notNull().default(false),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [index("support_reply_request_idx").on(table.requestId, table.createdAt)],
+)
+
+/** Canned answers the admin picks from when replying to a request. */
+export const supportTemplate = pgTable("support_template", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 /** Key/value settings an admin can change at runtime (e.g. the verification service webhook URL). */
 /**
  * Crypto top-up invoice. Wallets are shared, so each pending invoice gets a unique

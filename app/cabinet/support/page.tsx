@@ -33,6 +33,13 @@ export default async function SupportPage() {
                 </div>
                 <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{r.message}</p>
                 <p className="mt-2 text-[11px] text-muted-foreground">{formatDateTime(r.createdAt)}</p>
+                {r.replies.map((reply) => (
+                  <div key={reply.id} className="mt-3 rounded-2xl bg-primary/8 p-3.5 ring-1 ring-primary/20">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-primary">Ответ поддержки</p>
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{reply.body}</p>
+                    <p className="mt-2 text-[11px] text-muted-foreground">{formatDateTime(reply.createdAt)}</p>
+                  </div>
+                ))}
               </li>
             ))}
           </ul>

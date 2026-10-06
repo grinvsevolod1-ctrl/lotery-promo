@@ -10,6 +10,7 @@ const TABS = [
   { href: "/admin/api", label: "API", key: "api" },
   { href: "/admin/users", label: "Пользователи", key: "users" },
   { href: "/admin/funnel", label: "Воронка", key: "funnel" },
+  { href: "/admin/support", label: "Поддержка", key: "support" },
 ] as const
 
 export type AdminTabKey = (typeof TABS)[number]["key"]
@@ -28,10 +29,10 @@ export function AdminNavTabs({ active, initial }: { active: AdminTabKey; initial
   })
   useLiveEvents("admin", ["admin:counts"], () => void mutate(), () => void mutate())
 
-  const badge = (key: AdminTabKey) => (key === "queue" ? counts.queue : key === "api" ? counts.api : 0)
+  const badge = (key: AdminTabKey) => (key === "queue" ? counts.queue : key === "api" ? counts.api : key === "support" ? counts.support : 0)
 
   return (
-    <nav aria-label="Разделы админки" className="flex w-full gap-1 rounded-full border border-border/60 bg-card p-1 sm:w-fit">
+    <nav aria-label="Разделы админки" className="flex w-full gap-1 overflow-x-auto rounded-full border border-border/60 bg-card p-1 sm:w-fit">
       {TABS.map((tab) => {
         const isActive = tab.key === active
         const pending = badge(tab.key)
@@ -40,7 +41,7 @@ export function AdminNavTabs({ active, initial }: { active: AdminTabKey; initial
             key={tab.key}
             href={tab.href}
             aria-current={isActive ? "page" : undefined}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-2.5 py-2 sm:px-5 text-center text-sm font-semibold transition-colors sm:flex-none ${
+            className={`flex flex-1 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 sm:px-5 text-center text-sm font-semibold transition-colors sm:flex-none ${
               isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >

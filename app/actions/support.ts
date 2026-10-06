@@ -1,10 +1,11 @@
 "use server"
 
-import { desc, eq } from "drizzle-orm"
+import { asc, desc, eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { getSessionUser } from "@/lib/session"
-import { supportRequest } from "@/lib/db/schema"
+import { supportReply, supportRequest } from "@/lib/db/schema"
+import { publish, topics } from "@/lib/realtime"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { sendSupportReceivedEmail } from "@/lib/email"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
@@ -17,6 +18,7 @@ export type SupportRequestView = {
   message: string
   status: string
   createdAt: Date
+  replies: { id: number; body: string; createdAt: Date }[]
 }
 
 export type SupportResult = { ok: true; id: number } | { ok: false; error: string }
@@ -31,7 +33,18 @@ export async function getSupportRequests(): Promise<SupportRequestView[]> {
     .where(eq(supportRequest.userId, user.id))
     .orderBy(desc(supportRequest.createdAt))
     .limit(20)
-  return rows.map((r) => ({ ...r, topic: r.topic as SupportTopic }))
+  const replies = rows.length
+    ? await db
+        .select({ id: supportReply.id, requestId: supportReply.requestId, body: supportReply.body, createdAt: supportReply.createdAt })
+        .from(supportReply)
+        .where(inArray(supportReply.requestId, rows.map((r) => r.id)))
+        .orderBy(asc(supportReply.createdAt))
+    : []
+  return rows.map((r) => ({
+    ...r,
+    topic: r.topic as SupportTopic,
+    replies: replies.filter((reply) => reply.requestId === r.id),
+  }))
 }
 
 export async function submitSupportRequest(input: { topic: string; message: string }): Promise<SupportResult> {
@@ -67,6 +80,8 @@ export async function submitSupportRequest(input: { topic: string; message: stri
   }
 
   await logActivity("support", `Обращение в поддержку №${row.id}: ${SUPPORT_TOPICS[topic]}`)
+  await publish(topics.adminCounts)
   revalidatePath("/cabinet/support")
+  revalidatePath("/admin/support")
   return { ok: true, id: row.id }
 }
