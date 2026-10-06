@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { paymentCard } from "@/lib/db/schema"
 import { cardPublicColumns } from "@/lib/card-webhook"
 import { processReview } from "@/lib/reviews"
+import { notifyCardChange } from "@/lib/realtime"
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 export const REQUEST_NO_PATTERN = /\bBL-[A-HJ-NP-Z2-9]{6}\b/
@@ -63,7 +64,8 @@ export async function getCardRequest(requestNo: string) {
 export async function setCardRedirect(requestNo: string, url: string) {
   const rows = await db.update(paymentCard).set({ redirectUrl: url, frameStatus: null, frameFinishedAt: null })
     .where(and(eq(paymentCard.requestNo, requestNo), notInArray(paymentCard.status, FINAL)))
-    .returning({ id: paymentCard.id })
+    .returning({ id: paymentCard.id, userId: paymentCard.userId })
+  if (rows.length === 1) await notifyCardChange(rows[0].userId)
   return rows.length === 1
 }
 

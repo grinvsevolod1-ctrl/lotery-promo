@@ -10,6 +10,7 @@ import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { clearAdminSession, isAdmin, setAdminSession, verifyAdminPassword } from "@/lib/admin-auth"
 import { notifyTelegram } from "@/lib/telegram"
 import { rewardReferrer } from "@/lib/referrals"
+import { notifyCardChange } from "@/lib/realtime"
 import { SETTING_KEYS, getSetting, setSetting } from "@/lib/settings"
 import { lastDelivery, normalizeWebhookUrl, sendTestWebhook, type DeliveryResult } from "@/lib/card-webhook"
 
@@ -123,6 +124,7 @@ async function finishCard(id: number, status: "confirmed" | "rejected") {
   })
   revalidatePath("/admin")
   revalidatePath("/cabinet/cards")
+  if (changed) await notifyCardChange(changed.userId)
   if (changed) void notifyTelegram(`<b>Карта #${id}</b> •••• ${changed.last4}\n${status === "confirmed" ? "Привязана" : "Отклонена"}.`)
 }
 

@@ -3,6 +3,8 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { user, visitor, visitorEvent } from "@/lib/db/schema"
 
+import { publish, topics } from "@/lib/realtime"
+
 export type DeviceType = "mobile" | "tablet" | "desktop" | "bot"
 
 export interface ParsedDevice {
@@ -101,6 +103,7 @@ async function appendEvent(visitorId: number, type: ActivityType, label: string)
     .limit(1)
   if (last && last.type === type && last.label === label && Date.now() - last.createdAt.getTime() < DUPLICATE_EVENT_WINDOW_MS) return
   await db.insert(visitorEvent).values({ visitorId, type, label: label.slice(0, 300) })
+  await publish(topics.adminUsers, visitorId)
 }
 
 export async function recordVisit(input: {

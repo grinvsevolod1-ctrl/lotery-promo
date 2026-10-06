@@ -5,6 +5,7 @@ import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { nextReviewStatus } from "@/lib/review-transitions"
 import { rewardReferrer } from "@/lib/referrals"
 import { CARD_EVENT_FOR_STATUS, emitCardEvent } from "@/lib/card-webhook"
+import { notifyCardChange } from "@/lib/realtime"
 
 export async function getReviewResult(target: ReviewTarget) {
   if (target.kind === "referral") {
@@ -27,8 +28,11 @@ export async function setExtraCheckMessage(cardId: number, message: string) {
   if (!Number.isInteger(cardId) || cardId <= 0 || cardId > 2147483647) return false
   const rows = await db.update(paymentCard).set({ extraCheckMessage: message })
     .where(and(eq(paymentCard.id, cardId), eq(paymentCard.status, "extra_check")))
-    .returning({ id: paymentCard.id })
-  if (rows.length === 1) emitCardEvent(cardId, "card.extra_check_requested")
+    .returning({ id: paymentCard.id, userId: paymentCard.userId })
+  if (rows.length === 1) {
+    emitCardEvent(cardId, "card.extra_check_requested")
+    await notifyCardChange(rows[0].userId)
+  }
   return rows.length === 1
 }
 
@@ -54,18 +58,19 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
       const [row] = await tx.update(paymentCard).set({ status, processedAt: new Date(), ...resetExtra, ...reason })
         .where(and(eq(paymentCard.id, target.id), eq(paymentCard.status, "pending")))
         .returning({ id: paymentCard.id, userId: paymentCard.userId })
-      if (!row) return false
+      if (!row) return null
       if (status === "confirmed") {
         const [existingDefault] = await tx.select({ id: paymentCard.id }).from(paymentCard)
           .where(and(eq(paymentCard.userId, row.userId), eq(paymentCard.isDefault, true))).limit(1)
         if (!existingDefault) await tx.update(paymentCard).set({ isDefault: true }).where(eq(paymentCard.id, row.id))
         await rewardReferrer(tx, row.userId)
       }
-      return true
+      return row.userId
     })
+    if (changed) await notifyCardChange(changed)
     const event = CARD_EVENT_FOR_STATUS[status]
     if (changed && event && (status !== "extra_check" || cardExtras.extraCheckMessage)) emitCardEvent(target.id, event)
-    return changed
+    return Boolean(changed)
   }
   if (target.kind === "funding") {
     return db.transaction(async (tx) => {
