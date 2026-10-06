@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   ChevronDown,
   CreditCard,
-  House,
   LayoutGrid,
   LifeBuoy,
   LogOut,
@@ -27,7 +26,6 @@ const MENU = [
   { href: "/cabinet#referral", label: "Пригласить друзей", icon: Users },
   { href: "/cabinet/profile", label: "Профиль и безопасность", icon: ShieldCheck },
   { href: "/cabinet/support", label: "Поддержка", icon: LifeBuoy },
-  { href: "/", label: "На главную", icon: House },
 ]
 
 const money = new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -64,7 +62,7 @@ export function AccountTopBar({ name, email, balance }: { name: string; email: s
 
       <div className="flex shrink-0 items-center gap-1.5">
         {balance !== null && (
-          <div className="flex items-center gap-1 rounded-full bg-foreground py-1 pl-3.5 pr-1 text-background">
+          <div className="flex items-center gap-1 rounded-full bg-card py-1 pl-3.5 pr-1 text-foreground ring-1 ring-border">
             <Link href="/cabinet/deposit" className="flex items-baseline gap-1 tabular-nums" aria-label={`Баланс ${money.format(balance)} BYN`}>
               <span className="text-sm font-extrabold">{money.format(balance)}</span>
               <span className="text-[10px] font-bold text-primary">BYN</span>

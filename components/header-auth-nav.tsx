@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient, useSession } from "@/lib/auth-client"
-import { UserMark, LogoutMark } from "@/components/icons"
+import { User as UserMark, LogOut as LogoutMark } from "lucide-react"
 
 export function HeaderAuthNav() {
   const router = useRouter()

@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { WarnMark } from "@/components/icons"
+import { TriangleAlert as WarnMark } from "lucide-react"
 
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {

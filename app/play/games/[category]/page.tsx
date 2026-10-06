@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeftMark } from "@/components/icons"
+import { ArrowLeft as ArrowLeftMark } from "lucide-react"
 import { DepositGateProvider } from "@/components/play/deposit-gate"
 import { ShowcaseTile } from "@/components/play/showcase-tile"
 import { isShowcaseCategory, SHOWCASE_CATEGORIES } from "@/lib/games/showcase"

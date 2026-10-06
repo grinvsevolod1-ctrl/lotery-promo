@@ -7,7 +7,7 @@ import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DevicesMark, KeyMark, MailMark, TrashMark, UserMark, CheckMark } from "@/components/icons"
+import { MonitorSmartphone as DevicesMark, KeyRound as KeyMark, Mail as MailMark, Trash2 as TrashMark, User as UserMark, Check as CheckMark } from "lucide-react"
 import { Notice, Panel, PanelTitle } from "@/components/cabinet/panel"
 import { formatDate, formatDateTime } from "@/lib/format"
 

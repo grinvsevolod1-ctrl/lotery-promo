@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { buyScratchCard, type ScratchResult } from "@/app/actions/games"
 import { Notice } from "@/components/cabinet/panel"
 import { ScratchField } from "@/components/games/scratch/scratch-field"
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils"
 type Card = ScratchResult & { ticketId: number; price: number }
 
 export function ScratchGame({ initialBalance }: { initialBalance: number }) {
+  const router = useRouter()
   const [balance, setBalance] = useState(initialBalance)
   const [price, setPrice] = useState<ScratchPrice>(1)
   const [card, setCard] = useState<Card | null>(null)
@@ -45,6 +47,7 @@ export function ScratchGame({ initialBalance }: { initialBalance: number }) {
         const res = await buyScratchCard(price)
         if (!res.ok) return setError(res.error)
         setBalance(res.balance)
+        router.refresh()
         setCard({ ...res, price })
         setRevealed(Array(SCRATCH_FIELDS).fill(false))
       } catch {
@@ -60,12 +63,6 @@ export function ScratchGame({ initialBalance }: { initialBalance: number }) {
             <div className="min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Билет {card ? `№ ${String(card.ticketId).padStart(6, "0")}` : `за ${price} BYN`}</p>
               <h2 className="font-display text-xl font-extrabold text-foreground text-balance">{SCRATCH_GAME_NAME}</h2>
-            </div>
-            <div className="shrink-0 rounded-2xl bg-secondary px-3 py-2 text-right">
-              <p className="text-[11px] font-medium text-muted-foreground">Баланс</p>
-              <p className="font-display text-base font-extrabold tabular-nums text-foreground">
-                {balance.toLocaleString("ru-RU")} <span className="text-xs text-primary">BYN</span>
-              </p>
             </div>
           </header>
 

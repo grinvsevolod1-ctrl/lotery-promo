@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeftMark as ArrowLeft } from "@/components/icons"
+import { ArrowLeft as ArrowLeft } from "lucide-react"
 
 export function BackToGames() {
   return (
