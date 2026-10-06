@@ -73,21 +73,43 @@ export async function sendMail(input: MailInput) {
 
   await transport.sendMail({
     from: process.env.MAIL_FROM ?? process.env.SMTP_USER,
+    replyTo: site.operator.email,
     ...input,
   })
+}
+
+const RESEND_SANDBOX_FROM = `${SITE_NAME} <onboarding@resend.dev>`
+
+/** What the admin needs to judge deliverability: which transport is used and from which sender. */
+export function getMailStatus() {
+  const transport = process.env.SMTP_HOST ? "smtp" : process.env.RESEND_API_KEY ? "resend" : "none"
+  const from = process.env.MAIL_FROM ?? (transport === "smtp" ? (process.env.SMTP_USER ?? "") : RESEND_SANDBOX_FROM)
+  const sandbox = transport === "resend" && /@resend\.dev\b/i.test(from)
+  const senderDomain = from.match(/@([^>\s]+)/)?.[1] ?? null
+  return { transport, from, sandbox, senderDomain, replyTo: site.operator.email }
 }
 
 async function sendViaResend(input: MailInput) {
   // Without a verified domain Resend only accepts its sandbox sender, and
   // delivers solely to the e-mail of the Resend account owner.
-  const from = process.env.MAIL_FROM ?? `${SITE_NAME} <onboarding@resend.dev>`
+  const from = process.env.MAIL_FROM ?? RESEND_SANDBOX_FROM
+  if (!process.env.MAIL_FROM) {
+    console.warn("[mail] MAIL_FROM не задан: письма уходят с тестового адреса resend.dev и попадают в спам")
+  }
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from, to: [input.to], subject: input.subject, text: input.text, html: input.html }),
+    body: JSON.stringify({
+      from,
+      to: [input.to],
+      reply_to: site.operator.email,
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+    }),
   })
 
   if (!response.ok) {
@@ -323,6 +345,37 @@ export async function sendSupportReceivedEmail({
       content: paragraph(escapeHtml(greeting)) + paragraph(escapeHtml(body)) + quote,
       cta: { label: "Мои обращения", url: `${SITE_URL}/cabinet/support` },
       note: "Обычно отвечаем в течение нескольких часов. Не пересылайте в обращении коды из SMS и CVC карты.",
+    }),
+  })
+}
+
+export async function sendSupportReplyEmail({
+  to,
+  name,
+  id,
+  topic,
+  reply,
+}: {
+  to: string
+  name: string
+  id: number
+  topic: string
+  reply: string
+}) {
+  const greeting = greet(name)
+  const intro = `Ответ на ваше обращение №${id} (${topic}).`
+  const answer = `<div style="margin:4px 0 18px;padding:16px 18px;border-radius:14px;background:${COLORS.page};font-size:15px;line-height:1.6;color:${COLORS.ink};">${escapeHtml(reply).replace(/\n/g, "<br>")}</div>`
+
+  await sendMail({
+    to,
+    subject: `Ответ на обращение №${id} — ${SITE_NAME}`,
+    text: `${greeting}\n\n${intro}\n\n${reply}\n\n${SITE_URL}/cabinet/support`,
+    html: renderLayout({
+      title: `Ответ на обращение №${id}`,
+      preheader: reply.slice(0, 110),
+      content: paragraph(escapeHtml(greeting)) + paragraph(escapeHtml(intro)) + answer,
+      cta: { label: "Открыть обращения", url: `${SITE_URL}/cabinet/support` },
+      note: "Если остались вопросы, напишите новое обращение в личном кабинете или ответьте на это письмо.",
     }),
   })
 }
