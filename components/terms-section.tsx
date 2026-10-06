@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { InstallAppButton } from '@/components/pwa'
 
@@ -29,13 +30,12 @@ export function TermsSection() {
             </p>
           </div>
           <div>
-            <img
+            <Image
               src="/promo-phone.webp"
               alt="Смартфоны с приложением лотереи и Гранд Джекпотом"
               width={1024}
               height={1024}
-              loading="lazy"
-              decoding="async"
+              sizes="(min-width: 768px) 448px, 90vw"
               className="mx-auto w-full max-w-md drop-shadow-2xl"
             />
           </div>

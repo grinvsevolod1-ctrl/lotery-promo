@@ -58,7 +58,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
             aria-label={`${i + 1} из ${slides.length}`}
             className="relative w-full shrink-0 snap-center"
           >
-            <Link href={slide.href} className="group relative flex aspect-[16/9] w-full flex-col justify-end overflow-hidden bg-[#141a2a] p-5 text-background sm:aspect-[16/7] sm:p-7">
+            <Link href={slide.href} className="group relative flex aspect-[4/3] w-full flex-col justify-end overflow-hidden bg-[#141a2a] p-4 text-background min-[420px]:aspect-[16/9] min-[420px]:p-5 sm:aspect-[16/7] sm:p-7">
               <Image
                 src={slide.image}
                 alt=""
@@ -68,12 +68,12 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                 className="object-cover transition duration-700 group-hover:scale-[1.03]"
               />
               <span className="absolute inset-0 bg-gradient-to-r from-[#0d1220]/90 via-[#0d1220]/45 to-transparent" aria-hidden="true" />
-              <span className="relative flex max-w-[70%] flex-col items-start gap-1.5">
+              <span className="relative flex max-w-[80%] flex-col items-start gap-1.5 min-[420px]:max-w-[70%]">
                 <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-primary-foreground">
                   {slide.eyebrow}
                 </span>
-                <span className="font-display text-2xl font-black leading-tight text-balance sm:text-4xl">{slide.title}</span>
-                <span className="text-sm leading-relaxed text-background/85 text-pretty">{slide.text}</span>
+                <span className="font-display text-xl font-black leading-tight text-balance min-[380px]:text-2xl sm:text-4xl">{slide.title}</span>
+                <span className="hidden text-sm leading-relaxed text-background/85 text-pretty min-[380px]:block">{slide.text}</span>
                 <span className="mt-2 inline-flex items-center rounded-xl bg-background px-4 py-2 text-sm font-extrabold text-foreground transition group-hover:bg-primary group-hover:text-primary-foreground">
                   {slide.cta}
                 </span>

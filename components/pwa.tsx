@@ -168,7 +168,13 @@ function InstallSheet({
   }, [open, onClose])
 
   return createPortal(
-    <div className={cn('fixed inset-0 z-[100]', !open && 'pointer-events-none')} aria-hidden={!open}>
+    <div
+      className={cn(
+        'fixed inset-0 z-[100] transition-[visibility]',
+        open ? 'visible' : 'pointer-events-none invisible delay-500',
+      )}
+      aria-hidden={!open}
+    >
       <button
         type="button"
         tabIndex={-1}
