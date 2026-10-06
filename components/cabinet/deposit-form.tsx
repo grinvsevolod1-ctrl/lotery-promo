@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState, useTransition, type FormEvent } from "react"
 import { requestDeposit } from "@/app/actions/funding"
+import { track } from "@/lib/analytics"
 import { DEPOSIT_MAX, DEPOSIT_MIN, DEPOSIT_PRESETS } from "@/lib/funding"
 import { fieldClass } from "@/components/ui/input"
 import { actionErrorMessage } from "@/lib/action-error"
@@ -42,6 +43,7 @@ export function DepositForm({ cards, hasPending }: { cards: CardOption[]; hasPen
     startTransition(async () => {
       try {
         const result = await requestDeposit({ amount: numeric, cardId: Number(cardId) })
+        if (result.ok) track("deposit_request", { method: "card", amount: numeric })
         setMessage(result.ok
           ? { ok: true, text: `Заявка №${result.id} принята. Баланс пополнится сразу после подтверждения оплаты.` }
           : { ok: false, text: result.error })

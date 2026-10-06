@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
+import { track } from "@/lib/analytics"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,6 +33,12 @@ export function AuthForm({
   const [password, setPassword] = useState("")
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (mode !== "sign-up") return
+    const from = new URLSearchParams(window.location.search).get("from") ?? "direct"
+    track("signup_view", { from })
+  }, [mode])
   const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [resent, setResent] = useState(false)
@@ -61,6 +68,7 @@ export function AuthForm({
         setError(SIGN_UP_ERRORS[error.code ?? ""] ?? "Не удалось создать аккаунт. Проверьте данные и попробуйте снова.")
         return
       }
+      track("signup_success")
       if (data?.token) {
         router.push("/cabinet")
         router.refresh()
@@ -87,6 +95,7 @@ export function AuthForm({
       return
     }
 
+    track("signin_success")
     router.push("/cabinet")
     router.refresh()
   }

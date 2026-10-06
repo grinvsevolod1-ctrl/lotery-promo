@@ -2,7 +2,9 @@
 
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react"
+import { track } from "@/lib/analytics"
 import type { ShowcaseGame } from "@/lib/games/showcase"
 
 type Gate = { open: (game: ShowcaseGame) => void }
@@ -15,11 +17,23 @@ export function useDepositGate() {
   return ctx
 }
 
-export function DepositGateProvider({ children }: { children: React.ReactNode }) {
+export function DepositGateProvider({ children, guest = false }: { children: React.ReactNode; guest?: boolean }) {
   const [game, setGame] = useState<ShowcaseGame | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const router = useRouter()
 
-  const open = useCallback((next: ShowcaseGame) => setGame(next), [])
+  const open = useCallback(
+    (next: ShowcaseGame) => {
+      if (guest) {
+        track("guest_game_click", { game: next.id })
+        router.push(`/sign-up?from=${encodeURIComponent(next.id)}`)
+        return
+      }
+      track("game_open", { game: next.id })
+      setGame(next)
+    },
+    [guest, router],
+  )
 
   useEffect(() => {
     const dialog = dialogRef.current

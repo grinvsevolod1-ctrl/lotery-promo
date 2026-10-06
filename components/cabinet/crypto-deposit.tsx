@@ -8,6 +8,7 @@ import { cancelCryptoInvoice, createCryptoInvoice, pollCryptoInvoice } from "@/a
 import { ASSETS, MAX_DEPOSIT_BYN, MIN_DEPOSIT_BYN, type AssetId } from "@/lib/crypto/assets"
 import type { InvoiceView } from "@/lib/crypto/deposits"
 import { cn } from "@/lib/utils"
+import { track } from "@/lib/analytics"
 import { CryptoIcon } from "@/components/crypto-icon"
 
 const PRESETS = [20, 50, 100, 300, 500]
@@ -62,7 +63,10 @@ function InvoiceForm({
     setError(null)
     startTransition(async () => {
       const result = await createCryptoInvoice(asset, value)
-      if (result.ok) onCreated(result.invoice)
+      if (result.ok) {
+        track("crypto_invoice", { asset })
+        onCreated(result.invoice)
+      }
       else setError(result.error)
     })
   }

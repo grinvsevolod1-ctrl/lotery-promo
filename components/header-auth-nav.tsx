@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient, useSession } from "@/lib/auth-client"
+import { track } from "@/lib/analytics"
 import { User as UserMark, LogOut as LogoutMark } from "lucide-react"
 
 export function HeaderAuthNav() {
@@ -23,7 +24,8 @@ export function HeaderAuthNav() {
           Войти
         </Link>
         <Link
-          href="/sign-up"
+          href="/sign-up?from=header"
+          onClick={() => track("header_signup_click")}
           className="whitespace-nowrap rounded-full bg-primary px-3 py-2 text-sm font-bold text-primary-foreground shadow-md shadow-primary/30 transition-transform hover:scale-105 sm:px-5"
         >
           Регистрация
