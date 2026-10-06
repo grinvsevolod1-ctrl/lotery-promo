@@ -19,8 +19,6 @@ import { newSeed, secureRng, seededRng } from "@/lib/random"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { logActivity } from "@/lib/visitors"
 import { formatByn, notify } from "@/lib/notifications"
-import { bestOf } from "@/lib/luck"
-import { getLuckAttempts } from "@/lib/luck-server"
 import { and, desc, eq, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -128,8 +126,6 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
     picked = valid
   }
 
-  const luck = await getLuckAttempts()
-
   try {
     const result = await db.transaction(async (tx) => {
       await lockUser(tx, userId)
@@ -137,7 +133,7 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
       if (before < game.cost) throw new InsufficientFundsError()
 
       const seed = newSeed()
-      const outcome = bestOf(luck, seededRng(seed), (r) => playInstant(game, picked, r), (o) => o.prize)
+      const outcome = playInstant(game, picked, seededRng(seed))
       const status = outcome.prize > 0 ? "win" : "lose"
 
       const [created] = await tx
@@ -152,7 +148,6 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
           matches: outcome.matches,
           prize: outcome.prize,
           seed,
-          details: { luck },
         })
         .returning({ id: ticket.id })
 
@@ -234,8 +229,7 @@ export async function spinWheel(): Promise<ActionResult<{ segment: number; amoun
   const userId = await getUserId()
   if (!(await allowUserAction(userId, "spin"))) return { ok: false, error: RATE_LIMIT_ERROR }
   const day = minskDayKey()
-  const luck = await getLuckAttempts()
-  const segment = bestOf(luck, secureRng, (r) => pickWeighted(WHEEL_SEGMENTS, r), (i) => WHEEL_SEGMENTS[i].amount)
+  const segment = pickWeighted(WHEEL_SEGMENTS, secureRng)
   const { amount, label } = WHEEL_SEGMENTS[segment]
 
   try {

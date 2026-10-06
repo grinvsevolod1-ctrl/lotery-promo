@@ -6,7 +6,6 @@ export const SETTING_KEYS = {
   cardWebhookUrl: "card_webhook_url",
   cardWebhookLastDelivery: "card_webhook_last_delivery",
   cardWebhookLog: "card_webhook_log",
-  luckLevel: "luck_level",
   cryptoWallets: "crypto_wallets",
 } as const
 
