@@ -42,7 +42,7 @@ function isActive(pathname: string, href: string) {
   return href === "/cabinet" ? pathname === "/cabinet" : pathname.startsWith(href)
 }
 
-export function BottomDock() {
+export function BottomDock({ lowBalance = false }: { lowBalance?: boolean }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -106,7 +106,7 @@ export function BottomDock() {
             </ul>
           </div>
 
-          <div className="flex items-center rounded-[30px] bg-card p-1.5 shadow-[0_10px_40px_-10px_rgb(22_26_34/0.35)] ring-1 ring-border [transform:translateZ(0)]">
+          <div className="flex items-center rounded-[30px] bg-card/75 p-1.5 shadow-[0_10px_40px_-10px_rgb(22_26_34/0.35)] ring-1 ring-border/70 backdrop-blur-xl backdrop-saturate-150 [transform:translateZ(0)]">
             {TABS_LEFT.map((tab) => (
               <DockTab key={tab.href} {...tab} active={isActive(pathname, tab.href)} />
             ))}
@@ -123,6 +123,7 @@ export function BottomDock() {
                 className={cn(
                   "-mt-7 grid size-[52px] place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-8px] shadow-primary/70 ring-[5px] ring-background transition-transform duration-300 group-active:scale-90",
                   EASE,
+                  lowBalance && !open && "dock-pulse",
                 )}
               >
                 <DockToggleIcon open={open} />

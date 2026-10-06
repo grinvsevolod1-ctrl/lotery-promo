@@ -3,10 +3,15 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { AccountTopBar } from "@/components/account/account-top-bar"
 import { BottomDock } from "@/components/account/bottom-dock"
+import { db } from "@/lib/db"
+import { balanceOf } from "@/lib/db/ledger"
+
+const LOW_BALANCE = 1
 
 export async function AccountShell({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) redirect("/sign-in")
+  const balance = await balanceOf(db, session.user.id).catch(() => Number.POSITIVE_INFINITY)
 
   return (
     <div className="relative min-h-svh overflow-x-clip bg-background">
@@ -15,7 +20,7 @@ export async function AccountShell({ children }: { children: React.ReactNode }) 
         <AccountTopBar name={session.user.name} email={session.user.email} />
         <main>{children}</main>
       </div>
-      <BottomDock />
+      <BottomDock lowBalance={balance < LOW_BALANCE} />
     </div>
   )
 }

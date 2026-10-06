@@ -3,18 +3,23 @@
 import Image from "next/image"
 import { useDepositGate } from "@/components/play/deposit-gate"
 import type { ShowcaseGame } from "@/lib/games/showcase"
+import { tap } from "@/lib/feedback"
 
-export function ShowcaseTile({ game, size = "md" }: { game: ShowcaseGame; size?: "sm" | "md" }) {
+export function ShowcaseTile({ game, size = "md", index = 0 }: { game: ShowcaseGame; size?: "sm" | "md"; index?: number }) {
   const { open } = useDepositGate()
   const small = size === "sm"
   return (
     <button
       type="button"
-      onClick={() => open(game)}
+      onClick={() => {
+        tap()
+        open(game)
+      }}
       aria-label={`${[game.kicker, game.title, game.subtitle].filter(Boolean).join(" ")} — ${game.provider}`}
-      className="group relative flex aspect-[3/4] w-full flex-col justify-end overflow-hidden rounded-2xl text-background transition active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      style={{ backgroundColor: game.tint }}
+      className="tile-rise group relative flex aspect-[3/4] w-full flex-col justify-end overflow-hidden rounded-2xl text-background transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_30px_-10px] hover:shadow-primary/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      style={{ backgroundColor: game.tint, animationDelay: `${Math.min(index, 11) * 45}ms` }}
     >
+      <span className="pointer-events-none absolute inset-0 z-10 rounded-2xl ring-2 ring-inset ring-primary/0 transition duration-300 group-hover:ring-primary/80" aria-hidden="true" />
       <Image
         src={game.cover}
         alt=""

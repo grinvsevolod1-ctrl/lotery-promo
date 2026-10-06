@@ -12,6 +12,39 @@ import { BANNER_LIVE, BANNER_SLOTS, GRID_LIVE, LIVE_COUNT, ROW_SLOTS, ROW_TOP, S
 import { formatMultiplier, plinkoMultipliers, PLINKO_MAX_ROWS } from "@/lib/games/plinko"
 import { SCRATCH_GAME_NAME, SCRATCH_TIERS } from "@/lib/games/scratch"
 import { requireSession } from "@/lib/require-session"
+import { HeroSlider, type HeroSlide } from "@/components/play/hero-slider"
+import { SoundToggle } from "@/components/play/sound-toggle"
+import { WinsTicker } from "@/components/play/wins-ticker"
+
+const HERO_SLIDES: HeroSlide[] = [
+  {
+    id: "slots",
+    href: "/play/games/slots",
+    eyebrow: "Слоты",
+    title: "Самые популярные слоты",
+    text: "Sweet Bonanza, Gates of Olympus, Sugar Rush и другие хиты.",
+    image: "/games/hero/slots.webp",
+    cta: "Смотреть слоты",
+  },
+  {
+    id: "live",
+    href: "/play/games/live",
+    eyebrow: "Live",
+    title: "Живые дилеры 24/7",
+    text: "Crazy Time, рулетка, блэкджек и баккара в реальном времени.",
+    image: "/games/hero/live.webp",
+    cta: "К столам",
+  },
+  {
+    id: "plinko",
+    href: "/play/plinko",
+    eyebrow: "Мгновенно",
+    title: "Plinko — результат за секунду",
+    text: "Запускайте шарики и ловите высокие множители.",
+    image: "/games/hero/plinko.webp",
+    cta: "Играть",
+  },
+]
 
 export default async function PlayPage() {
   const session = await requireSession()
@@ -67,8 +100,17 @@ export default async function PlayPage() {
         eyebrow="Игровой зал"
         title="Игры"
         description="Выберите игру — каждая открывается на отдельной странице."
-        aside={<BalanceBadge balance={balance} />}
+        aside={
+          <div className="flex items-center gap-2">
+            <SoundToggle />
+            <BalanceBadge balance={balance} />
+          </div>
+        }
       />
+
+      <HeroSlider slides={HERO_SLIDES} />
+
+      <WinsTicker />
 
       <ShowcaseBanner
         title="Слоты"

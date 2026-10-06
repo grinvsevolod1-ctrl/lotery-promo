@@ -37,9 +37,9 @@ export function ShowcaseBanner({
       </div>
       {games && (
         <ul className="mt-5 grid grid-cols-4 gap-2 sm:gap-3">
-          {games.map((game) => (
+          {games.map((game, index) => (
             <li key={game.id}>
-              <ShowcaseTile game={game} size="sm" />
+              <ShowcaseTile game={game} size="sm" index={index} />
             </li>
           ))}
         </ul>
@@ -114,9 +114,9 @@ export function ShowcaseRow({
     <section aria-labelledby={id} className="flex flex-col gap-3">
       <SectionHeading id={id} title={title} count={count} icon={icon === "gem" ? GemIcon : TopIcon} href={href} />
       <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-        {games.map((game) => (
+        {games.map((game, index) => (
           <li key={game.id} className="w-[42%] shrink-0 snap-start sm:w-52">
-            <ShowcaseTile game={game} />
+            <ShowcaseTile game={game} index={index} />
           </li>
         ))}
       </ul>
@@ -141,9 +141,9 @@ export function ShowcaseGrid({
     <section aria-labelledby={id} className="flex flex-col gap-3">
       <SectionHeading id={id} title={title} count={count} icon={LiveIcon} href={href} />
       <ul className="grid grid-cols-3 gap-2 sm:gap-3">
-        {games.map((game) => (
+        {games.map((game, index) => (
           <li key={game.id}>
-            <ShowcaseTile game={game} />
+            <ShowcaseTile game={game} index={index} />
           </li>
         ))}
       </ul>
