@@ -43,9 +43,9 @@ export default async function ShowcaseCategoryPage({ params }: { params: Promise
         </header>
 
         <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
-          {games.map((game) => (
+          {games.map((game, index) => (
             <li key={game.id}>
-              <ShowcaseTile game={game} />
+              <ShowcaseTile game={game} index={index} />
             </li>
           ))}
         </ul>

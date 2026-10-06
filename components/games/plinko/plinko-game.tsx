@@ -1,5 +1,6 @@
 "use client"
 
+import { win as playWin } from "@/lib/feedback"
 import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { dropPlinkoBall } from "@/app/actions/games"
@@ -73,6 +74,7 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
       setBalance((b) => roundMoney(b - stake))
       const landed = boardRef.current?.drop(res.path) ?? Promise.resolve(0)
       void landed.then(() => {
+        playWin(res.multiplier)
         setBalance((b) => roundMoney(b + res.payout))
         setHistory((h) => [{ id: res.ticketId, multiplier: res.multiplier, payout: res.payout, stake }, ...h].slice(0, 20))
         scheduleRefresh()

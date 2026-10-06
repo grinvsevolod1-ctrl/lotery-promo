@@ -502,3 +502,25 @@ html {
     animation: none !important;
   }
 }
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes tile-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.tile-rise {
+  animation: tile-rise 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes dock-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 55%, transparent); }
+  50% { box-shadow: 0 0 0 10px color-mix(in oklab, var(--primary) 0%, transparent); }
+}
+.dock-pulse {
+  animation: dock-pulse 1.8s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile-rise, .dock-pulse { animation: none; }
+}
