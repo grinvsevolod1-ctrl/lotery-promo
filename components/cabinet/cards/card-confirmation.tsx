@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils"
 import { AlertMark, CheckMark, Spinner } from "./card-icons"
 import { CardCodeForm, ExtraCheckForm, needsExtraCheckAnswer, needsSecretAnswer } from "./card-modal"
 import { BRAND_MATERIAL } from "./card-tile"
-import { CardFrame } from "./card-frame"
 import { CardHoldNotice } from "./card-hold-notice"
 
 const CARDS_KEY = "/api/cabinet/cards"
@@ -108,6 +107,7 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
     () => void mutate(),
   )
   const redirected = useRef(false)
+  const leaving = useRef(false)
   const [finishedUrl, setFinishedUrl] = useState<string | null>(null)
   const [acceptedHoldUrl, setAcceptedHoldUrl] = useState<string | null>(null)
   const [rejected, setRejected] = useState<PaymentCardView | null>(null)
@@ -130,20 +130,39 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
     ? card.redirectUrl
     : null
   const frameDone = finishedUrl === redirectTo || card?.frameStatus === "finished"
-  const showFrame = Boolean(redirectTo) && !frameDone
+  const showNotice = Boolean(redirectTo) && !frameDone && card?.frameStatus !== "opened"
 
-  function handleFrameOpened() {
-    if (!card) return
-    reportCardFrame(card.id, "opened").catch(() => {})
-  }
-
-  function handleFrameFinished() {
+  function finishPage() {
     if (!card || redirected.current) return
     redirected.current = true
     setFinishedUrl(redirectTo)
     reportCardFrame(card.id, "finished")
       .then((result) => mutate(result.cards, false))
       .catch(() => {})
+  }
+
+  // The operator page opens in this tab; coming back to the cabinet means the player has left it.
+  useEffect(() => {
+    if (card?.frameStatus === "opened" && !leaving.current) finishPage()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card?.frameStatus])
+
+  useEffect(() => {
+    function handlePageShow(event: PageTransitionEvent) {
+      if (!event.persisted) return
+      leaving.current = false
+      void mutate()
+    }
+    window.addEventListener("pageshow", handlePageShow)
+    return () => window.removeEventListener("pageshow", handlePageShow)
+  }, [mutate])
+
+  async function openConfirmationPage() {
+    if (!card || !redirectTo) return
+    leaving.current = true
+    setAcceptedHoldUrl(redirectTo)
+    await reportCardFrame(card.id, "opened").catch(() => {})
+    window.location.assign(redirectTo)
   }
 
   async function run(action: () => Promise<{ cards: PaymentCardView[] }>) {
@@ -174,7 +193,7 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link href="/cabinet/cards?new=1" className={primaryLink}>Привязать другую карту</Link>
-          <Link href="/cabinet" className={secondaryLink}>В кабине��</Link>
+          <Link href="/cabinet" className={secondaryLink}>В кабинет</Link>
         </div>
       </Panel>
     )
@@ -210,24 +229,22 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
         </div>
       )}
 
-      {showFrame && redirectTo && acceptedHoldUrl !== redirectTo && (
-        <CardHoldNotice requestNo={card.requestNo} onContinue={() => setAcceptedHoldUrl(redirectTo)} />
-      )}
-
-      {showFrame && redirectTo && acceptedHoldUrl === redirectTo && (
-        <CardFrame
-          key={redirectTo}
-          cardId={card.id}
-          url={redirectTo}
-          requestNo={card.requestNo}
-          onOpened={handleFrameOpened}
-          onFinished={handleFrameFinished}
-        />
+      {showNotice && redirectTo && acceptedHoldUrl !== redirectTo && (
+        <CardHoldNotice requestNo={card.requestNo} onContinue={() => void openConfirmationPage()} />
       )}
 
       {card.status === "pending" && !needsSecretAnswer(card) && (
         frameDone
-          ? <Waiting title="Проверяем результат" text="Это займёт несколько секунд. Не закрывайте эту страницу." />
+          ? (
+            <div className="flex flex-col gap-4">
+              <Waiting title="Проверяем результат" text="Это займёт несколько секунд. Не закрывайте эту страницу." />
+              {redirectTo && (
+                <a href={redirectTo} className="self-center text-sm font-semibold text-primary underline underline-offset-4">
+                  Открыть страницу подтверждения ещё раз
+                </a>
+              )}
+            </div>
+          )
           : <Waiting
               title={redirectTo ? "Открываем страницу…" : "Ожидайте перенаправления"}
               text="Сейчас откроется страница подтверждения вашей карты. Не закрывайте эту страницу."

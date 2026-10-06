@@ -232,7 +232,7 @@ export async function sendVerificationEmail({ to, name, url }: { to: string; nam
 export async function sendPasswordResetEmail({ to, name, url }: { to: string; name: string; url: string }) {
   const greeting = greet(name)
   const body = "Мы получили запрос на смену пароля. Перейдите по ссылке, чтобы задать новый пароль."
-  const note = "Ссылка действует 1 час. Если вы не запрашивали смену пароля, ничего делать не нужн�� — пароль останется прежним."
+  const note = "Ссылка действует 1 час. Если вы не запрашивали смену пароля, ничего делать не нужно — пароль останется прежним."
 
   await sendMail({
     to,
