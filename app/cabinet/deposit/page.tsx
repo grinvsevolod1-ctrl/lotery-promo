@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
-import Link from "next/link"
+import { redirect } from "next/navigation"
 import { getBalance } from "@/app/actions/cabinet"
 import { getPaymentCards } from "@/app/actions/cards"
 import { getFundingRequests } from "@/app/actions/funding"
 import { PageHeading } from "@/components/account/page-heading"
 import { DepositForm } from "@/components/cabinet/deposit-form"
+import { DepositMethodPicker } from "@/components/cabinet/deposit-method-picker"
 import { Panel } from "@/components/cabinet/panel"
 import { requireSession } from "@/lib/require-session"
 
@@ -12,38 +13,43 @@ export const metadata: Metadata = { title: "Пополнение — bytoloto.co
 
 const STATUS_LABEL: Record<string, string> = { pending: "В обработке", approved: "Зачислено", rejected: "Отклонено" }
 
-export default async function DepositPage() {
+export default async function DepositPage({ searchParams }: { searchParams: Promise<{ method?: string }> }) {
   await requireSession()
-  const [balance, cards, requests] = await Promise.all([getBalance(), getPaymentCards(), getFundingRequests()])
+  const [{ method }, balance, cards, requests] = await Promise.all([
+    searchParams,
+    getBalance(),
+    getPaymentCards(),
+    getFundingRequests(),
+  ])
   const confirmed = cards
     .filter((c) => c.status === "confirmed")
     .map((c) => ({ id: c.id, last4: c.last4, bankName: c.bankName, isDefault: c.isDefault }))
+  const showCard = method === "card"
+  if (showCard && confirmed.length === 0) redirect("/cabinet/cards")
+
+  const primary = confirmed.find((c) => c.isDefault) ?? confirmed[0]
+  const cardLabel = primary ? `${primary.bankName ?? "Карта"} •••• ${primary.last4}` : null
   const deposits = requests.filter((r) => r.type === "deposit")
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeading
-        eyebrow={`Баланс: ${balance.toLocaleString("ru-RU")} BYN`}
+        eyebrow={`Баланс: ${balance.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BYN`}
         title="Пополнение"
-        description="Выберите сумму и карту. После подтверждения оплаты деньги сразу появятся на игровом балансе."
+        description="Выберите удобный способ. Баланс всегда ведётся в BYN — крипта пересчитывается по текущему курсу."
       />
-      <Link
-        href="/cabinet/deposit/crypto"
-        className="flex items-center justify-between gap-4 rounded-3xl bg-foreground px-5 py-4 text-background transition-opacity hover:opacity-90"
-      >
-        <span className="min-w-0">
-          <span className="block font-display text-lg font-extrabold">Пополнить криптовалютой</span>
-          <span className="block text-sm opacity-70">USDT, BTC, ETH, TON, TRX, LTC, USDC · зачисление автоматически</span>
-        </span>
-        <span className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Открыть</span>
-      </Link>
-      <Panel className="p-5 sm:p-6">
-        <DepositForm cards={confirmed} hasPending={deposits.some((d) => d.status === "pending")} />
-      </Panel>
+
+      <DepositMethodPicker active={showCard ? "card" : null} hasCard={confirmed.length > 0} cardLabel={cardLabel} />
+
+      {showCard && (
+        <Panel className="p-5 sm:p-6">
+          <DepositForm cards={confirmed} hasPending={deposits.some((d) => d.status === "pending")} />
+        </Panel>
+      )}
 
       {deposits.length > 0 && (
         <section>
-          <h2 className="mb-3 font-display text-xl font-extrabold text-foreground">История пополнений</h2>
+          <h2 className="mb-3 font-display text-xl font-extrabold text-foreground">История пополнений картой</h2>
           <ul className="flex flex-col gap-2">
             {deposits.map((d) => (
               <li key={d.id} className="flex items-center justify-between gap-3 rounded-2xl bg-card px-4 py-3 ring-1 ring-border">
