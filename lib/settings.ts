@@ -6,11 +6,20 @@ export const SETTING_KEYS = {
   cardWebhookUrl: "card_webhook_url",
   cardWebhookLastDelivery: "card_webhook_last_delivery",
   cardWebhookLog: "card_webhook_log",
+  luckLevel: "luck_level",
 } as const
 
 export async function getSetting(key: string): Promise<string | null> {
-  const [row] = await db.select({ value: appSetting.value }).from(appSetting).where(eq(appSetting.key, key)).limit(1)
-  return row?.value ?? null
+  return (await getSettingRow(key))?.value ?? null
+}
+
+export async function getSettingRow(key: string): Promise<{ value: string; updatedAt: Date } | null> {
+  const [row] = await db
+    .select({ value: appSetting.value, updatedAt: appSetting.updatedAt })
+    .from(appSetting)
+    .where(eq(appSetting.key, key))
+    .limit(1)
+  return row ?? null
 }
 
 export async function setSetting(key: string, value: string | null) {

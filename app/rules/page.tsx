@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { LegalPage } from "@/components/legal-page"
 import { site } from "@/lib/site"
+import { getLuckAttempts } from "@/lib/luck-server"
 import { GAMES, REFERRAL_BONUS, WELCOME_BONUS, WHEEL_SEGMENTS, minWinningMatches } from "@/lib/lottery"
 
 export const metadata: Metadata = {
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
 const wheelMin = Math.min(...WHEEL_SEGMENTS.map((s) => s.amount))
 const wheelMax = Math.max(...WHEEL_SEGMENTS.map((s) => s.amount))
 
-export default function RulesPage() {
+export default async function RulesPage() {
+  const luck = await getLuckAttempts()
   return (
     <LegalPage
       current="/rules"
@@ -100,6 +102,16 @@ export default function RulesPage() {
       </p>
       <p>
         4.3. Последние выигрыши участников публикуются на странице <Link href="/results">«Выигрыши»</Link>.
+      </p>
+      <p>
+        4.4. Организатор может проводить акцию «Буст удачи». Во время акции на уровне xN сервер для каждого билета, раунда
+        и спина колеса делает N независимых попыток розыгрыша и засчитывает участнику лучшую из них. Таблицы выигрышей при
+        этом не меняются. Условия одинаковы для всех участников.{" "}
+        {luck > 1 ? (
+          <strong>{`Сейчас действует буст x${luck}.`}</strong>
+        ) : (
+          "Сейчас буст не действует."
+        )}
       </p>
 
       <h2>5. Таблица выигрышей</h2>
