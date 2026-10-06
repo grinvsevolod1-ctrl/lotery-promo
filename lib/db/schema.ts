@@ -402,6 +402,35 @@ export const notification = pgTable(
 )
 
 /**
+ * Identity check (KYC): one row per player. The player fills in passport data,
+ * an admin reviews it; a rejected application can be corrected and resubmitted.
+ */
+export const userVerification = pgTable(
+  "user_verification",
+  {
+    userId: text("userId")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected"
+    lastName: text("lastName").notNull(),
+    firstName: text("firstName").notNull(),
+    middleName: text("middleName"),
+    birthDate: date("birthDate", { mode: "string" }).notNull(),
+    citizenship: text("citizenship").notNull(),
+    documentType: text("documentType").notNull(), // "passport" | "id_card" | "residence"
+    documentNumber: text("documentNumber").notNull(),
+    personalNumber: text("personalNumber").notNull(),
+    phone: text("phone").notNull(),
+    address: text("address").notNull(),
+    /** Admin's reason when the application is rejected. */
+    note: text("note"),
+    submittedAt: timestamp("submittedAt").notNull().defaultNow(),
+    reviewedAt: timestamp("reviewedAt"),
+  },
+  (table) => [index("user_verification_status_idx").on(table.status, table.submittedAt)],
+)
+
+/**
  * Claimed promo bonuses. `code` encodes the period for repeatable offers
  * (e.g. "reload:2026-W41"), so the unique index alone blocks double claims.
  */

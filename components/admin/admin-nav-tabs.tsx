@@ -9,6 +9,7 @@ const TABS = [
   { href: "/admin", label: "Заявки", key: "queue" },
   { href: "/admin/api", label: "API", key: "api" },
   { href: "/admin/users", label: "Пользователи", key: "users" },
+  { href: "/admin/verification", label: "Верификация", key: "verification" },
   { href: "/admin/funnel", label: "Воронка", key: "funnel" },
   { href: "/admin/support", label: "Поддержка", key: "support" },
 ] as const
@@ -29,7 +30,7 @@ export function AdminNavTabs({ active, initial }: { active: AdminTabKey; initial
   })
   useLiveEvents("admin", ["admin:counts"], () => void mutate(), () => void mutate())
 
-  const badge = (key: AdminTabKey) => (key === "queue" ? counts.queue : key === "api" ? counts.api : key === "support" ? counts.support : 0)
+  const badge = (key: AdminTabKey) => (key === "queue" ? counts.queue : key === "api" ? counts.api : key === "support" ? counts.support : key === "verification" ? (counts.verification ?? 0) : 0)
 
   return (
     <nav aria-label="Разделы админки" className="flex w-full gap-1 overflow-x-auto rounded-full border border-border/60 bg-card p-1 sm:w-fit">

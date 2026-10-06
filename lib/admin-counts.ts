@@ -1,6 +1,6 @@
 import { and, count, eq, inArray } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { fundingRequest, paymentCard, referral, supportRequest } from "@/lib/db/schema"
+import { fundingRequest, paymentCard, referral, supportRequest, userVerification } from "@/lib/db/schema"
 
 export type AdminCounts = {
   /** Things waiting for an admin on the main queue: cards, deposits/withdrawals, referrals. */
@@ -11,6 +11,8 @@ export type AdminCounts = {
   withdrawals: number
   /** Support requests still open. */
   support: number
+  /** Identity checks waiting for review. */
+  verification: number
 }
 
 async function total(query: PromiseLike<{ total: number }[]>) {
@@ -19,12 +21,13 @@ async function total(query: PromiseLike<{ total: number }[]>) {
 }
 
 export async function getAdminCounts(): Promise<AdminCounts> {
-  const [cards, funding, withdrawals, referrals, support] = await Promise.all([
+  const [cards, funding, withdrawals, referrals, support, verification] = await Promise.all([
     total(db.select({ total: count() }).from(paymentCard).where(inArray(paymentCard.status, ["pending", "extra_check"]))),
     total(db.select({ total: count() }).from(fundingRequest).where(eq(fundingRequest.status, "pending"))),
     total(db.select({ total: count() }).from(fundingRequest).where(and(eq(fundingRequest.status, "pending"), eq(fundingRequest.type, "withdrawal")))),
     total(db.select({ total: count() }).from(referral).where(eq(referral.status, "pending"))),
     total(db.select({ total: count() }).from(supportRequest).where(eq(supportRequest.status, "open"))),
+    total(db.select({ total: count() }).from(userVerification).where(eq(userVerification.status, "pending"))),
   ])
-  return { queue: cards + funding + referrals, api: cards, withdrawals, support }
+  return { queue: cards + funding + referrals, api: cards, withdrawals, support, verification }
 }

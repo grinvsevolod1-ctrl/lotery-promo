@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { ProfileView, type SessionInfo } from "@/components/cabinet/profile-view"
+import { ProfileTabs } from "@/components/cabinet/profile-tabs"
+import { getMyVerification } from "@/app/actions/verification"
 
 export const metadata: Metadata = {
   title: "Профиль — bytoloto.com",
@@ -32,6 +34,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     .sort((a, b) => Number(b.current) - Number(a.current) || b.updatedAt.getTime() - a.updatedAt.getTime())
 
   const { notice } = await searchParams
+  const verification = await getMyVerification(session.user.id)
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,6 +42,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">Профиль</h1>
         <p className="text-sm text-muted-foreground">Данные аккаунта, безопасность и устройства</p>
       </div>
+      <ProfileTabs active="profile" status={verification?.status ?? "none"} />
       <ProfileView
         user={{
           name: session.user.name,

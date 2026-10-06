@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   ChevronDown,
   CreditCard,
+  IdCard,
   LayoutGrid,
   LifeBuoy,
   LogOut,
@@ -25,6 +26,7 @@ const MENU = [
   { href: "/cabinet/cards", label: "Банковские карты", icon: CreditCard },
   { href: "/cabinet#referral", label: "Пригласить друзей", icon: Users },
   { href: "/cabinet/profile", label: "Профиль и безопасность", icon: ShieldCheck },
+  { href: "/cabinet/verification", label: "Верификация", icon: IdCard },
   { href: "/cabinet/support", label: "Поддержка", icon: LifeBuoy },
 ]
 
