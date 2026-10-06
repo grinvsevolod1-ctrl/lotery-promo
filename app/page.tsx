@@ -8,6 +8,7 @@ import { FaqSection } from '@/components/faq-section'
 import { TermsSection } from '@/components/terms-section'
 import { SiteFooter } from '@/components/site-footer'
 import { JsonLd, faqLd, organizationLd, websiteLd } from '@/components/json-ld'
+import { WelcomePromo } from '@/components/welcome-promo'
 import { FAQ } from '@/lib/faq'
 
 // The marquee shows real draw results, so the prerendered landing page is
@@ -35,6 +36,7 @@ export default function HomePage() {
         </div>
       </main>
       <SiteFooter />
+      <WelcomePromo />
     </div>
   )
 }
