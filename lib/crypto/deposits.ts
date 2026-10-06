@@ -24,6 +24,7 @@ import {
 } from "@/lib/crypto/assets"
 import { fetchIncoming, type IncomingTransfer } from "@/lib/crypto/chains"
 import { getRates } from "@/lib/crypto/rates"
+import { mailCryptoDeposit } from "@/lib/funding-mail"
 
 export type Wallets = Partial<Record<AssetId, string>>
 
@@ -215,8 +216,9 @@ function incomingCached(asset: AssetId, address: string): Promise<IncomingTransf
 }
 
 async function credit(invoice: typeof cryptoInvoice.$inferSelect, txId: string): Promise<boolean> {
+  let credited: boolean
   try {
-    return await db.transaction(async (tx) => {
+    credited = await db.transaction(async (tx) => {
       const [paid] = await tx
         .update(cryptoInvoice)
         .set({ status: "paid", txHash: txId, paidAt: new Date() })
@@ -243,6 +245,15 @@ async function credit(invoice: typeof cryptoInvoice.$inferSelect, txId: string):
     if (isUniqueViolation(error)) return false
     throw error
   }
+  if (credited) {
+    await mailCryptoDeposit({
+      userId: invoice.userId,
+      invoiceId: invoice.id,
+      amount: Number(invoice.amountByn),
+      asset: invoice.asset,
+    })
+  }
+  return credited
 }
 
 /** Matches pending invoices against confirmed incoming transfers and credits balances. Returns credited count. */

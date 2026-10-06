@@ -219,7 +219,7 @@ export function renderLayout({
         <td style="padding:24px 32px 8px;font-size:13px;line-height:1.5;color:${COLORS.muted};">${note ? escapeHtml(note) : ""}</td>
       </tr>
       <tr>
-        <td style="padding:8px 32px 28px;font-size:12px;line-height:1.5;color:${COLORS.muted};border-top:1px solid #ece6f5;">Вы получили это письмо, потому что зарегистрированы на <a href="${SITE_URL}" style="color:${COLORS.muted};">${escapeHtml(SITE_NAME)}</a>. Участие — только для лиц старше 18 лет. Играйте ответственно.<br>Настройки аккаунта: <a href="${SITE_URL}/cabinet/profile" style="color:${COLORS.muted};">${SITE_URL}/cabinet/profile</a></td>
+        <td style="padding:8px 32px 28px;font-size:12px;line-height:1.5;color:${COLORS.muted};border-top:1px solid #ece6f5;">Вы получили это письмо, потому что зарегистрированы на <a href="${SITE_URL}" style="color:${COLORS.muted};">${escapeHtml(SITE_NAME)}</a>. Участие — только для лиц старше 18 лет. Играйте ответственно.<br>Настройки аккаун��а: <a href="${SITE_URL}/cabinet/profile" style="color:${COLORS.muted};">${SITE_URL}/cabinet/profile</a></td>
       </tr>
     </table>
   </body>
@@ -451,6 +451,151 @@ export async function sendDrawResultsEmail({
       content,
       cta: { label: won ? "Открыть кабинет" : "Купить билет на следующий тираж", url: `${SITE_URL}/cabinet` },
       note: "Бонусы начисляются в личный кабинет и могут быть использованы для покупки билетов.",
+    }),
+  })
+}
+
+export type FundingMailKind =
+  | "deposit_requested"
+  | "deposit_approved"
+  | "deposit_rejected"
+  | "withdrawal_requested"
+  | "withdrawal_approved"
+  | "withdrawal_rejected"
+
+type FundingMailInput = {
+  to: string
+  name: string
+  kind: FundingMailKind
+  id: number
+  amount: number
+  /** Human-readable payment method: "Карта •••• 1234", "USDT (TRC20)". */
+  method?: string | null
+  /** Admin's reason for a rejection. */
+  reason?: string | null
+}
+
+const FUNDING_COPY: Record<
+  FundingMailKind,
+  {
+    subject: (id: number, sum: string) => string
+    title: (sum: string) => string
+    badge: string
+    tone: "ok" | "wait" | "bad"
+    intro: (id: number, sum: string) => string
+    note: string
+    cta: { label: string; path: string }
+  }
+> = {
+  deposit_requested: {
+    subject: (id) => `Заявка на пополнение №${id} принята`,
+    title: () => "Заявка на пополнение принята",
+    badge: "В обработке",
+    tone: "wait",
+    intro: (id, sum) => `Мы получили заявку №${id} на пополнение баланса на ${sum}. Как только платёж будет подтверждён, деньги появятся на игровом балансе — мы сообщим отдельным письмом.`,
+    note: "Обычно проверка занимает несколько минут. Статус заявки всегда можно посмотреть в личном кабинете.",
+    cta: { label: "Открыть кабинет", path: "/cabinet/deposit" },
+  },
+  deposit_approved: {
+    subject: (_id, sum) => `Баланс пополнен на ${sum}`,
+    title: (sum) => `Баланс пополнен на ${sum}`,
+    badge: "Зачислено",
+    tone: "ok",
+    intro: (id, sum) => `Заявка №${id} подтверждена: ${sum} уже на вашем игровом балансе. За пополнение может быть доступен бонус — загляните в раздел «Бонусы».`,
+    note: "Если сумма не совпадает с ожидаемой, напишите нам в поддержку — мы разберёмся.",
+    cta: { label: "Перейти к играм", path: "/play" },
+  },
+  deposit_rejected: {
+    subject: (id) => `Пополнение №${id} не прошло`,
+    title: () => "Пополнение не прошло",
+    badge: "Отклонено",
+    tone: "bad",
+    intro: (id, sum) => `К сожалению, заявка №${id} на пополнение ${sum} отклонена, деньги на баланс не зачислены.`,
+    note: "Попробуйте другую карту или пополнение криптовалютой. Если списание всё же произошло, напишите в поддержку — вернём деньги.",
+    cta: { label: "Пополнить снова", path: "/cabinet/deposit" },
+  },
+  withdrawal_requested: {
+    subject: (id) => `Заявка на вывод №${id} принята`,
+    title: () => "Заявка на вывод принята",
+    badge: "В обработке",
+    tone: "wait",
+    intro: (id, sum) => `Заявка №${id} на вывод ${sum} принята. Сумма зарезервирована на балансе до решения, потратить её на билеты в это время нельзя.`,
+    note: "Мы сообщим о результате отдельным письмом. Если вы не создавали эту заявку, срочно смените пароль и напишите в поддержку.",
+    cta: { label: "Статус заявки", path: "/cabinet/deposit?tab=withdraw" },
+  },
+  withdrawal_approved: {
+    subject: (_id, sum) => `Вывод ${sum} отправлен`,
+    title: (sum) => `Вывод ${sum} отправлен`,
+    badge: "Выплачено",
+    tone: "ok",
+    intro: (id, sum) => `Заявка №${id} подтверждена: ${sum} отправлены на указанные реквизиты.`,
+    note: "Зачисление на карту может занять до нескольких банковских дней, на кошелёк — несколько минут после подтверждения сети.",
+    cta: { label: "Открыть кабинет", path: "/cabinet" },
+  },
+  withdrawal_rejected: {
+    subject: (id) => `Вывод №${id} отклонён`,
+    title: () => "Вывод отклонён",
+    badge: "Отклонено",
+    tone: "bad",
+    intro: (id, sum) => `Заявка №${id} на вывод ${sum} отклонена. Зарезервированная сумма уже возвращена на ваш игровой баланс.`,
+    note: "Проверьте реквизиты и создайте новую заявку. Если причина непонятна, напишите в поддержку.",
+    cta: { label: "Создать новую заявку", path: "/cabinet/deposit?tab=withdraw" },
+  },
+}
+
+const TONE_COLORS = {
+  ok: { bg: "#e4f6ec", fg: "#12703f" },
+  wait: { bg: "#fff1e6", fg: "#c2480a" },
+  bad: { bg: "#fde8e8", fg: "#b42318" },
+} as const
+
+function formatSum(amount: number) {
+  return `${amount.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} BYN`
+}
+
+export async function sendFundingEmail({ to, name, kind, id, amount, method, reason }: FundingMailInput) {
+  const copy = FUNDING_COPY[kind]
+  const sum = formatSum(amount)
+  const greeting = greet(name)
+  const intro = copy.intro(id, sum)
+  const tone = TONE_COLORS[copy.tone]
+  const url = `${SITE_URL}${copy.cta.path}`
+
+  const rows: Array<[string, string]> = [
+    ["Заявка", `№${id}`],
+    ["Сумма", sum],
+  ]
+  if (method) rows.push([kind.startsWith("deposit") ? "Способ пополнения" : "Способ вывода", method])
+  if (reason) rows.push(["Причина", reason])
+
+  const rowsHtml = rows
+    .map(
+      ([label, value]) =>
+        `<tr>
+          <td style="padding:10px 0;border-top:1px solid ${COLORS.line};font-size:13px;color:${COLORS.muted};width:42%;">${escapeHtml(label)}</td>
+          <td style="padding:10px 0;border-top:1px solid ${COLORS.line};font-size:14px;font-weight:700;color:${COLORS.ink};text-align:right;">${escapeHtml(value)}</td>
+        </tr>`,
+    )
+    .join("")
+
+  const summary = `<div style="margin:4px 0 18px;padding:18px 20px;border-radius:16px;background:${COLORS.page};">
+    <div style="margin-bottom:10px;"><span style="display:inline-block;padding:5px 12px;border-radius:999px;background:${tone.bg};color:${tone.fg};font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;font-family:${FONT};">${escapeHtml(copy.badge)}</span></div>
+    <div style="font-size:30px;line-height:1.1;font-weight:900;color:${COLORS.ink};font-family:${FONT};">${escapeHtml(sum)}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;">${rowsHtml}</table>
+  </div>`
+
+  const textRows = rows.map(([label, value]) => `${label}: ${value}`).join("\n")
+
+  await sendMail({
+    to,
+    subject: `${copy.subject(id, sum)} — ${SITE_NAME}`,
+    text: `${greeting}\n\n${intro}\n\n${textRows}\n\n${url}\n\n${copy.note}`,
+    html: renderLayout({
+      title: copy.title(sum),
+      preheader: intro,
+      content: paragraph(escapeHtml(greeting)) + paragraph(escapeHtml(intro)) + summary,
+      cta: { label: copy.cta.label, url },
+      note: copy.note,
     }),
   })
 }

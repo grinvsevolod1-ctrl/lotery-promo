@@ -7,6 +7,7 @@ import { rewardReferrer } from "@/lib/referrals"
 import { CARD_EVENT_FOR_STATUS, emitCardEvent } from "@/lib/card-webhook"
 import { notifyCardChange } from "@/lib/realtime"
 import { formatByn, notify, type NewNotification } from "@/lib/notifications"
+import { mailFundingRequest } from "@/lib/funding-mail"
 
 export async function getReviewResult(target: ReviewTarget) {
   if (target.kind === "referral") {
@@ -76,8 +77,8 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
     return Boolean(changed)
   }
   if (target.kind === "funding") {
-    return db.transaction(async (tx) => {
-      const note = cardExtras.fundingNote?.trim().slice(0, 300) || null
+    const note = cardExtras.fundingNote?.trim().slice(0, 300) || null
+    const processed = await db.transaction(async (tx) => {
       const [row] = await tx.update(fundingRequest).set({ status, processedAt: new Date(), ...(note ? { note } : {}) })
         .where(and(eq(fundingRequest.id, target.id), eq(fundingRequest.status, "pending")))
         .returning({ userId: fundingRequest.userId, type: fundingRequest.type, amount: fundingRequest.amount })
@@ -102,6 +103,8 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
       await notify(tx, row.userId, fundingNotice(target.id, row.type, status, row.amount, note))
       return true
     })
+    if (processed && (status === "approved" || status === "rejected")) await mailFundingRequest(target.id, status, note)
+    return processed
   }
   return false
 }
