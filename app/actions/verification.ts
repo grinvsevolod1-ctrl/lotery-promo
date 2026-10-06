@@ -78,7 +78,10 @@ export async function submitVerification(raw: Partial<Record<keyof VerificationI
       "<b>Заявка на верификацию</b>",
       `Игрок: ${escapeTelegram(current.name)} (${escapeTelegram(current.email)})`,
       `ФИО: ${escapeTelegram([input.lastName, input.firstName, input.middleName].filter(Boolean).join(" "))}`,
-      `Документ: ${DOCUMENT_TYPES[input.documentType as DocumentType]}`,
+      `Документ: ${escapeTelegram(DOCUMENT_TYPES[input.documentType as DocumentType])}`,
+      `Номер документа: ${escapeTelegram(input.documentNumber)}`,
+      `Идентификационный номер паспорта: ${escapeTelegram(input.personalNumber)}`,
+      `Номер телефона: ${escapeTelegram(input.phone)}`,
     ].join("\n"),
   )
   return { ok: true }
