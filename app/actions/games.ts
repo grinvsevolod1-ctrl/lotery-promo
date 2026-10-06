@@ -21,6 +21,8 @@ import {
 import { SCRATCH_GAME_NAME, isScratchPrice, playScratch, type ScratchSymbol } from "@/lib/games/scratch"
 import type { ActionResult } from "@/app/actions/cabinet"
 import { logActivity } from "@/lib/visitors"
+import { bestOf } from "@/lib/luck"
+import { getLuckAttempts } from "@/lib/luck-server"
 
 class InsufficientFundsError extends Error {}
 
@@ -100,8 +102,9 @@ export async function dropPlinkoBall(stake: number, rows: number, risk: PlinkoRi
   if (!isPlinkoRows(rows) || !isPlinkoRisk(risk)) return { ok: false, error: "Неверные настройки игры" } as const
   if (!(await allowUserAction(userId, "plinko"))) return { ok: false, error: RATE_LIMIT_ERROR } as const
 
+  const luck = await getLuckAttempts()
   return settleRound<PlinkoResult>(userId, PLINKO_GAME_NAME, stake, (rng) => {
-    const out = playPlinko(stake, rows, risk, rng)
+    const out = bestOf(luck, rng, (r) => playPlinko(stake, rows, risk, r), (o) => o.payout)
     return {
       result: out,
       round: {
@@ -109,7 +112,7 @@ export async function dropPlinkoBall(stake: number, rows: number, risk: PlinkoRi
         winningNumbers: String(out.slot),
         matches: out.slot,
         prize: out.payout,
-        details: { kind: "plinko", rows, risk, path: out.path, slot: out.slot, multiplier: out.multiplier },
+        details: { kind: "plinko", rows, risk, path: out.path, slot: out.slot, multiplier: out.multiplier, luck },
         prizeDescription: formatMultiplier(out.multiplier),
       },
     }
@@ -129,8 +132,9 @@ export async function buyScratchCard(price: number) {
   if (!isScratchPrice(price)) return { ok: false, error: "Неверная цена билета" } as const
   if (!(await allowUserAction(userId, "scratch"))) return { ok: false, error: RATE_LIMIT_ERROR } as const
 
+  const luck = await getLuckAttempts()
   return settleRound<ScratchResult>(userId, SCRATCH_GAME_NAME, price, (rng) => {
-    const out = playScratch(price, rng)
+    const out = bestOf(luck, rng, (r) => playScratch(price, r), (o) => o.prize)
     return {
       result: out,
       round: {
@@ -138,7 +142,7 @@ export async function buyScratchCard(price: number) {
         winningNumbers: out.winningSymbol,
         matches: out.matches,
         prize: out.prize,
-        details: { kind: "scratch", price, ...out },
+        details: { kind: "scratch", price, ...out, luck },
         prizeDescription: `${out.matches} одинаковых, x${out.multiplier}`,
       },
     }
