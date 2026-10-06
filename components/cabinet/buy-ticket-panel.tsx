@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { BoltMark, ShuffleMark, TicketMark, TrophyMark } from "@/components/icons"
+import { Zap as BoltMark, Shuffle as ShuffleMark, Ticket as TicketMark, Trophy as TrophyMark } from "lucide-react"
 import { LottoBall } from "@/components/lotto-ball"
 import { NumberPicker } from "@/components/cabinet/number-picker"
 import { Notice, Panel, PanelTitle } from "@/components/cabinet/panel"

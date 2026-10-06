@@ -1,4 +1,4 @@
-import { CloverMark } from "@/components/icons"
+import { Clover as CloverMark } from "lucide-react"
 import { ScratchSymbolBadge } from "@/components/games/scratch/scratch-symbol"
 import type { ScratchSymbol } from "@/lib/games/scratch"
 import { BallRow } from "@/components/lotto-ball"

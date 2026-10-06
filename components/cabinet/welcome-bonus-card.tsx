@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { CoinMark } from "@/components/icons"
+import { Coins as CoinMark } from "lucide-react"
 import { Notice } from "@/components/cabinet/panel"
 import { claimWelcomeBonus } from "@/app/actions/cabinet"
 import { WELCOME_BONUS } from "@/lib/lottery"

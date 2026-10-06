@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRightMark } from "@/components/icons"
+import { ArrowRight } from "lucide-react"
 import { ShowcaseTile } from "@/components/play/showcase-tile"
 import type { ShowcaseGame } from "@/lib/games/showcase"
 
@@ -7,10 +7,10 @@ function PlayButton({ href, arrow = true }: { href: string; arrow?: boolean }) {
   return (
     <Link
       href={href}
-      className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background sm:px-5 sm:text-base"
+      className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-extrabold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       Играть
-      {arrow && <ArrowRightMark className="size-4" aria-hidden="true" />}
+      {arrow && <ArrowRight className="size-4" aria-hidden="true" />}
     </Link>
   )
 }
@@ -27,11 +27,11 @@ export function ShowcaseBanner({
   games?: readonly ShowcaseGame[]
 }) {
   return (
-    <section className="rounded-3xl bg-foreground p-5 text-background sm:p-6">
+    <section className="rounded-3xl bg-card p-5 text-foreground ring-1 ring-border sm:p-6">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 className="font-display text-2xl font-extrabold text-balance sm:text-3xl">{title}</h2>
-          <p className="mt-1 text-sm text-background/80 text-pretty">{subtitle}</p>
+          <p className="mt-1 text-sm text-muted-foreground text-pretty">{subtitle}</p>
         </div>
         <PlayButton href={href} arrow={Boolean(games)} />
       </div>
@@ -69,7 +69,7 @@ function SectionHeading({
       </h2>
       <Link
         href={href}
-        className="rounded-xl px-3 py-2 text-sm font-bold text-primary ring-2 ring-primary transition hover:bg-primary hover:text-primary-foreground"
+        className="rounded-full px-3 py-1.5 text-sm font-bold text-primary ring-1 ring-primary/40 transition hover:bg-primary hover:text-primary-foreground"
       >
         Все игры ({count})
       </Link>

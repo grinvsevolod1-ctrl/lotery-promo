@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { getTickets } from "@/app/actions/cabinet"
+import { countTickets, getTickets } from "@/app/actions/cabinet"
+import { Pagination } from "@/components/cabinet/pagination"
 import { settleLegacyTickets } from "@/lib/draws"
 import { PageHeading } from "@/components/account/page-heading"
 import { EmptyState } from "@/components/cabinet/panel"
@@ -11,10 +12,14 @@ import { requireSession } from "@/lib/require-session"
 
 export const metadata: Metadata = { title: "Мои билеты — bytoloto.com" }
 
-export default async function TicketsPage() {
+const PAGE_SIZE = 15
+
+export default async function TicketsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   await requireSession()
   await settleLegacyTickets()
-  const tickets = await getTickets()
+  const page = Math.max(1, Number.parseInt((await searchParams).page ?? "1", 10) || 1)
+  const [tickets, totalCount] = await Promise.all([getTickets(PAGE_SIZE, (page - 1) * PAGE_SIZE), countTickets()])
+  const pages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   return (
     <div className="flex flex-col gap-4">
@@ -38,6 +43,7 @@ export default async function TicketsPage() {
           ))}
         </ul>
       )}
+      <Pagination page={page} pages={pages} hrefFor={(p) => (p > 1 ? `/play/tickets?page=${p}` : "/play/tickets")} />
     </div>
   )
 }

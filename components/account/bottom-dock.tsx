@@ -22,7 +22,7 @@ export function BottomDock({ unread = 0 }: { unread?: number }) {
       aria-label="Основная навигация"
       className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),12px)]"
     >
-      <ul className="flex w-full max-w-md items-stretch gap-1 rounded-[28px] bg-foreground/90 p-1.5 shadow-[0_18px_50px_-14px_rgb(22_26_34/0.6)] ring-1 ring-background/10 backdrop-blur-xl backdrop-saturate-150 [transform:translateZ(0)]">
+      <ul className="flex w-full max-w-md items-stretch gap-1 rounded-[28px] bg-card/90 p-1.5 shadow-[0_14px_40px_-18px_rgb(22_26_34/0.35)] ring-1 ring-border backdrop-blur-xl backdrop-saturate-150 [transform:translateZ(0)]">
         {TABS.map(({ href, label, icon: Icon, match }) => {
           const active = match(pathname)
           const badge = href === "/cabinet/notifications" && unread > 0 ? unread : 0
@@ -33,7 +33,7 @@ export function BottomDock({ unread = 0 }: { unread?: number }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "group flex flex-col items-center gap-1 rounded-[22px] px-1 py-2 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
-                  active ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40" : "text-background/60 hover:text-background",
+                  active ? "bg-primary text-primary-foreground shadow-md shadow-primary/30" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <span className="relative">
@@ -42,7 +42,7 @@ export function BottomDock({ unread = 0 }: { unread?: number }) {
                     <span
                       className={cn(
                         "absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-extrabold leading-none ring-2",
-                        active ? "bg-background text-primary ring-primary" : "bg-primary text-primary-foreground ring-foreground",
+                        active ? "bg-background text-primary ring-primary" : "bg-primary text-primary-foreground ring-card",
                       )}
                     >
                       {badge > 9 ? "9+" : badge}

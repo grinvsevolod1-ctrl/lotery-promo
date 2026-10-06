@@ -21,7 +21,7 @@ import { logActivity } from "@/lib/visitors"
 import { formatByn, notify } from "@/lib/notifications"
 import { bestOf } from "@/lib/luck"
 import { getLuckAttempts } from "@/lib/luck-server"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string }
@@ -53,7 +53,15 @@ export type TicketRow = {
   details: unknown
 }
 
-export async function getTickets(): Promise<TicketRow[]> {
+export async function countTickets(): Promise<number> {
+  const userId = await getUserId()
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(ticket).where(eq(ticket.userId, userId))
+  return row?.n ?? 0
+}
+
+export async function getTickets(limit = 50, offset = 0): Promise<TicketRow[]> {
+  const safeLimit = Math.min(Math.max(1, Math.trunc(limit)), 50)
+  const safeOffset = Math.max(0, Math.trunc(offset))
   const userId = await getUserId()
   return db
     .select({
@@ -71,7 +79,8 @@ export async function getTickets(): Promise<TicketRow[]> {
     .from(ticket)
     .where(eq(ticket.userId, userId))
     .orderBy(desc(ticket.createdAt))
-    .limit(50)
+    .limit(safeLimit)
+    .offset(safeOffset)
 }
 
 export async function getSpinStatus() {

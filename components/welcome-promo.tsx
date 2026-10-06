@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useSession } from "@/lib/auth-client"
 import { WELCOME_BONUS } from "@/lib/lottery"
-import { CheckMark } from "@/components/icons"
+import { Check as CheckMark } from "lucide-react"
 
 const DISMISSED_KEY = "welcome-promo-dismissed"
 const SHOW_DELAY_MS = 1500

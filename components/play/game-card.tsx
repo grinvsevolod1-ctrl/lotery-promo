@@ -1,6 +1,6 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
-import { ArrowRightMark as ArrowRight } from "@/components/icons"
+import { ArrowRight as ArrowRight } from "lucide-react"
 
 export function GameCard({
   href,

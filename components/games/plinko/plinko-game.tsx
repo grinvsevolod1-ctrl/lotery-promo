@@ -120,13 +120,7 @@ export function PlinkoGame({ initialBalance }: { initialBalance: number }) {
   return (
     <div className="flex flex-col gap-5">
       <section className="overflow-hidden rounded-3xl bg-card p-4 ring-1 ring-border sm:p-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="rounded-2xl bg-secondary px-3 py-2">
-            <p className="text-[11px] font-medium text-muted-foreground">Баланс</p>
-            <p className="font-display text-lg font-extrabold tabular-nums text-foreground">
-              {formatMoney(balance)} <span className="text-sm text-primary">BYN</span>
-            </p>
-          </div>
+        <div className="mb-3 flex min-h-12 items-center justify-end gap-3">
           <div aria-live="polite" className="min-w-0 text-right">
             {last ? (
               <>

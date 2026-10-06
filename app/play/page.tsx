@@ -1,7 +1,6 @@
-import { getBalance, getSpinStatus, getTickets } from "@/app/actions/cabinet"
+import { getSpinStatus, getTickets } from "@/app/actions/cabinet"
 import { settleLegacyTickets } from "@/lib/draws"
 import { PageHeading } from "@/components/account/page-heading"
-import { BalanceBadge } from "@/components/play/balance-badge"
 import { CategoryBanner } from "@/components/play/category-banner"
 import { GameLobby } from "@/components/play/game-lobby"
 import type { LobbyGame } from "@/components/play/game-tile"
@@ -49,7 +48,7 @@ const HERO_SLIDES: HeroSlide[] = [
 export default async function PlayPage() {
   const session = await requireSession()
   await settleLegacyTickets()
-  const [balance, tickets, spinStatus] = await Promise.all([getBalance(), getTickets(), getSpinStatus()])
+  const [tickets, spinStatus] = await Promise.all([getTickets(), getSpinStatus()])
 
   const plinkoTop = Math.max(...plinkoMultipliers(PLINKO_MAX_ROWS, "high"))
   const scratchTop = Math.max(...SCRATCH_TIERS.map((tier) => tier.multiplier))
@@ -100,12 +99,7 @@ export default async function PlayPage() {
         eyebrow="Игровой зал"
         title="Игры"
         description="Выберите игру — каждая открывается на отдельной странице."
-        aside={
-          <div className="flex items-center gap-2">
-            <SoundToggle />
-            <BalanceBadge balance={balance} />
-          </div>
-        }
+        aside={<SoundToggle />}
       />
 
       <HeroSlider slides={HERO_SLIDES} />
@@ -126,27 +120,28 @@ export default async function PlayPage() {
         games={BANNER_LIVE}
       />
 
-      <ShowcaseBanner title="Мгновенные игры" subtitle="Лотерея, Plinko, Скретч…" href="#catalog" />
-
       <CategoryBanner
-        title="Все игры"
-        subtitle={`${games.length} игры · результат сразу`}
+        title="Фирменные игры"
+        subtitle="Лотерея, Скретч, Plinko, Колесо — результат сразу"
         href="#catalog"
         games={games}
         live
       />
 
-      <CategoryBanner
-        title="Колесо удачи"
-        subtitle={spinStatus.spunToday ? "Следующий прокрут — завтра" : "Бесплатный прокрут ждёт вас"}
-        href="/play/wheel"
-      />
-
-      <CategoryBanner
-        title="Мои билеты"
-        subtitle={`Куплено билетов: ${tickets.length.toLocaleString("ru-RU")}`}
-        href="/play/tickets"
-      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <CategoryBanner
+          title="Колесо удачи"
+          subtitle={spinStatus.spunToday ? "Следующий прокрут — завтра" : "Бесплатный прокрут ждёт вас"}
+          href="/play/wheel"
+          cover="/games/covers/wheel.webp"
+        />
+        <CategoryBanner
+          title="Мои билеты"
+          subtitle={`Куплено билетов: ${tickets.length.toLocaleString("ru-RU")}`}
+          href="/play/tickets"
+          cover="/games/covers/lottery.webp"
+        />
+      </div>
 
       <div className="mt-4">
         <GameLobby games={games} />

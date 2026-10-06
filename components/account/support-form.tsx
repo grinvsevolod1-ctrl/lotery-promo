@@ -6,7 +6,7 @@ import { submitSupportRequest } from "@/app/actions/support"
 import { SUPPORT_TOPICS, type SupportTopic } from "@/lib/support-topics"
 import { fieldClass } from "@/components/ui/input"
 import { actionErrorMessage } from "@/lib/action-error"
-import { CheckMark } from "@/components/icons"
+import { Check as CheckMark } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function SupportForm() {
