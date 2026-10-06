@@ -106,6 +106,13 @@
       "when": 1791275521943,
       "tag": "0014_crypto_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791278199573,
+      "tag": "0015_funding_crypto_inbox_bonuses",
+      "breakpoints": true
     }
   ]
 }

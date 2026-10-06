@@ -3,14 +3,11 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { getBalance, getTickets, getTransactions } from "@/app/actions/cabinet"
-import { getFundingRequests } from "@/app/actions/funding"
 import { getPaymentCards } from "@/app/actions/cards"
 import { settleLegacyTickets } from "@/lib/draws"
 import { ArrowRightMark, TicketMark, TrophyMark, WalletMark } from "@/components/icons"
 import { Panel } from "@/components/cabinet/panel"
-import { WelcomeBonusCard } from "@/components/cabinet/welcome-bonus-card"
 import { TransactionsList } from "@/components/cabinet/transactions-list"
-import { FundingPanel } from "@/components/cabinet/funding-panel"
 import { ReferralPanel } from "@/components/cabinet/referral-panel"
 import { AutoRefresh } from "@/components/auto-refresh"
 
@@ -19,11 +16,10 @@ export default async function CabinetPage() {
   if (!session?.user) redirect("/sign-in")
   await settleLegacyTickets()
 
-  const [balance, tickets, transactions, fundingRequests, cards] = await Promise.all([
+  const [balance, tickets, transactions, cards] = await Promise.all([
     getBalance(),
     getTickets(),
     getTransactions(),
-    getFundingRequests(),
     getPaymentCards(),
   ])
 
@@ -53,7 +49,7 @@ export default async function CabinetPage() {
             Играть
           </Link>
           <Link
-            href="#funding"
+            href="/cabinet/deposit"
             className="flex h-14 items-center justify-center gap-2 rounded-full bg-card text-base font-semibold text-foreground ring-1 ring-border transition active:scale-[0.97]"
           >
             <WalletMark className="size-5" />
@@ -68,11 +64,20 @@ export default async function CabinetPage() {
         <Stat href="/cabinet/cards" label="Карт" value={String(confirmedCards)} icon={<WalletMark className="size-5" />} />
       </div>
 
-      {!hasWelcome && <WelcomeBonusCard />}
-
-      <section id="funding" className="scroll-mt-24">
-        <FundingPanel requests={fundingRequests} cards={cards} balance={balance} />
-      </section>
+      {!hasWelcome && (
+        <Link
+          href="/cabinet/bonuses"
+          className="flex items-center justify-between gap-4 rounded-3xl bg-foreground p-5 text-background ring-2 ring-primary transition active:scale-[0.98]"
+        >
+          <span>
+            <span className="block font-display text-lg font-extrabold">Приветственный бонус ждёт вас</span>
+            <span className="block text-sm text-background/70">Заберите его в разделе «Бонусы»</span>
+          </span>
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+            <ArrowRightMark className="size-4" />
+          </span>
+        </Link>
+      )}
 
       <section id="referral" className="scroll-mt-24">
         <ReferralPanel />

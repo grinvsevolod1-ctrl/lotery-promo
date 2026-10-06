@@ -99,3 +99,20 @@ export function isPlausibleAddress(asset: AssetId, address: string): boolean {
       return /^([UE]Q[A-Za-z0-9_-]{46}|-?\d:[a-fA-F0-9]{64})$/.test(a)
   }
 }
+
+const BASE58 = "[1-9A-HJ-NP-Za-km-z]"
+const ADDRESS_PATTERNS: Record<AssetId, RegExp> = {
+  USDT_TRC20: new RegExp(`^T${BASE58}{33}$`),
+  TRX: new RegExp(`^T${BASE58}{33}$`),
+  USDT_ERC20: /^0x[a-fA-F0-9]{40}$/,
+  USDC_ERC20: /^0x[a-fA-F0-9]{40}$/,
+  ETH: /^0x[a-fA-F0-9]{40}$/,
+  BTC: new RegExp(`^(bc1[a-z0-9]{25,87}|[13]${BASE58}{25,34})$`),
+  LTC: new RegExp(`^(ltc1[a-z0-9]{25,87}|[LM3]${BASE58}{26,33})$`),
+  TON: /^((EQ|UQ|kQ|0Q)[A-Za-z0-9_-]{46}|-?\d:[a-fA-F0-9]{64})$/,
+}
+
+/** Format check only — catches typos and wrong-network addresses before an admin pays out. */
+export function isValidAddress(asset: AssetId, address: string): boolean {
+  return ADDRESS_PATTERNS[asset].test(address.trim())
+}

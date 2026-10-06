@@ -301,6 +301,9 @@ export const fundingRequest = pgTable(
     type: text("type").notNull(), // "deposit" | "withdrawal"
     amount: integer("amount").notNull(),
     cardId: integer("cardId"),
+    /** Crypto withdrawals carry the asset and the player's address instead of a card. */
+    asset: text("asset"),
+    wallet: text("wallet"),
     status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected"
     note: text("note"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
@@ -350,4 +353,40 @@ export const visitorEvent = pgTable(
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [index("visitor_event_visitor_idx").on(table.visitorId, table.createdAt)],
+)
+
+/** In-app inbox: money movements, card reviews, bonuses and system news for one player. */
+export const notification = pgTable(
+  "notification",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // "money" | "card" | "bonus" | "win" | "system"
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    href: text("href"),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [index("notification_user_idx").on(table.userId, table.createdAt)],
+)
+
+/**
+ * Claimed promo bonuses. `code` encodes the period for repeatable offers
+ * (e.g. "reload:2026-W41"), so the unique index alone blocks double claims.
+ */
+export const bonusClaim = pgTable(
+  "bonus_claim",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    amount: money("amount").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("bonus_claim_once").on(table.userId, table.code)],
 )

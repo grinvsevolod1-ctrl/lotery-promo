@@ -6,6 +6,7 @@ import { nextReviewStatus } from "@/lib/review-transitions"
 import { rewardReferrer } from "@/lib/referrals"
 import { CARD_EVENT_FOR_STATUS, emitCardEvent } from "@/lib/card-webhook"
 import { notifyCardChange } from "@/lib/realtime"
+import { formatByn, notify, type NewNotification } from "@/lib/notifications"
 
 export async function getReviewResult(target: ReviewTarget) {
   if (target.kind === "referral") {
@@ -65,6 +66,8 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
         if (!existingDefault) await tx.update(paymentCard).set({ isDefault: true }).where(eq(paymentCard.id, row.id))
         await rewardReferrer(tx, row.userId)
       }
+      const notice = CARD_NOTICE[status]
+      if (notice) await notify(tx, row.userId, notice)
       return row.userId
     })
     if (changed) await notifyCardChange(changed)
@@ -95,8 +98,27 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
           description: `Пополнение баланса #${target.id}`,
         })
       }
+      await notify(tx, row.userId, fundingNotice(target.id, row.type, status, row.amount))
       return true
     })
   }
   return false
+}
+
+function fundingNotice(id: number, type: string, status: string, amount: number): NewNotification {
+  const sum = formatByn(amount)
+  if (type === "deposit") {
+    return status === "approved"
+      ? { kind: "money", title: `Баланс пополнен на ${sum}`, body: `Заявка #${id} подтверждена. Проверьте бонусы — за депозит положен подарок.`, href: "/cabinet/bonuses" }
+      : { kind: "money", title: `Пополнение #${id} отклонено`, body: `Списание ${sum} не прошло. Попробуйте другую карту или криптовалюту.`, href: "/cabinet/deposit" }
+  }
+  return status === "approved"
+    ? { kind: "money", title: `Вывод ${sum} отправлен`, body: `Заявка #${id} подтверждена — средства уже в пути.`, href: "/cabinet/deposit?tab=withdraw" }
+    : { kind: "money", title: `Вывод #${id} отклонён`, body: `${sum} вернулись на игровой баланс.`, href: "/cabinet/deposit?tab=withdraw" }
+}
+
+const CARD_NOTICE: Record<string, NewNotification> = {
+  confirmed: { kind: "card", title: "Карта подтверждена", body: "Теперь с неё можно пополнять и выводить. Заберите бонус за привязку карты!", href: "/cabinet/bonuses" },
+  rejected: { kind: "card", title: "Карта не прошла проверку", body: "Откройте раздел карт, чтобы узнать причину и привязать другую.", href: "/cabinet/cards" },
+  extra_check: { kind: "card", title: "Нужна дополнительная проверка карты", body: "Ответьте на вопрос в разделе карт, чтобы завершить привязку.", href: "/cabinet/cards" },
 }

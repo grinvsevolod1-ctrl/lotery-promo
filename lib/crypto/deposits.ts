@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, lt, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { cryptoInvoice, transaction } from "@/lib/db/schema"
 import { isUniqueViolation } from "@/lib/db/ledger"
+import { formatByn, notify } from "@/lib/notifications"
 import { getSetting, setSetting, SETTING_KEYS } from "@/lib/settings"
 import {
   ASSETS,
@@ -228,6 +229,12 @@ async function credit(invoice: typeof cryptoInvoice.$inferSelect, txId: string):
         type: "crypto_deposit",
         amount: invoice.amountByn,
         description: `Пополнение ${info.symbol} (${info.network}) #${invoice.id}`,
+      })
+      await notify(tx, invoice.userId, {
+        kind: "money",
+        title: `Баланс пополнен на ${formatByn(Number(invoice.amountByn))}`,
+        body: `Платёж ${info.symbol} (${info.network}) подтверждён в сети. Загляните в бонусы — за депозит положен подарок.`,
+        href: "/cabinet/bonuses",
       })
       return true
     })

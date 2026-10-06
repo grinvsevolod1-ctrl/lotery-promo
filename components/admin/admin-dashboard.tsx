@@ -88,8 +88,12 @@ export function AdminDashboard({ cards, requests }: { cards: PendingCardRow[]; r
                     {r.type === "deposit" ? "Пополнение" : "Вывод"} · {r.amount} BYN
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {r.userName} ({r.userEmail}) — карта •••• {r.cardLast4 ?? "—"}
+                    {r.userName} ({r.userEmail}) —{" "}
+                    {r.wallet ? `крипта ${r.asset ?? ""}` : `карта •••• ${r.cardLast4 ?? "—"}`}
                   </p>
+                  {r.wallet && (
+                    <p className="break-all font-mono text-xs text-foreground">{r.wallet}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</p>
                 </div>
                 <div className="flex gap-2">
