@@ -13,8 +13,6 @@ import { rewardReferrer } from "@/lib/referrals"
 import { notifyCardChange, publish, topics } from "@/lib/realtime"
 import { SETTING_KEYS, getSetting, setSetting } from "@/lib/settings"
 import { lastDelivery, normalizeWebhookUrl, sendTestWebhook, type DeliveryResult } from "@/lib/card-webhook"
-import { isLuckAttempts, luckLabel } from "@/lib/luck"
-import { getLuckState } from "@/lib/luck-server"
 
 async function requireAdmin() {
   if (!(await isAdmin())) redirect("/admin/login")
@@ -68,23 +66,6 @@ export async function testWebhook(): Promise<DeliveryResult> {
   return result
 }
 
-export type LuckSettingsData = { attempts: number; updatedAt: string | null }
-
-export async function getLuckSettings(): Promise<LuckSettingsData> {
-  await requireAdmin()
-  const { attempts, updatedAt } = await getLuckState()
-  return { attempts, updatedAt: updatedAt?.toISOString() ?? null }
-}
-
-export async function setLuckLevel(attempts: number): Promise<{ ok: true } | { ok: false; error: string }> {
-  await requireAdmin()
-  if (!isLuckAttempts(attempts)) return { ok: false, error: "Неизвестный уровень" }
-  await setSetting(SETTING_KEYS.luckLevel, String(attempts))
-  console.info(`[luck] level set to x${attempts} (${luckLabel(attempts)})`)
-  revalidatePath("/", "layout")
-  return { ok: true }
-}
-
 export async function adminLogout() {
   await clearAdminSession()
   redirect("/admin/login")
@@ -111,9 +92,9 @@ export async function getPendingCards(): Promise<PendingCardRow[]> {
     .where(eq(paymentCard.status, "pending")).orderBy(desc(paymentCard.createdAt)).limit(100)
 }
 
-async function review(target: ReviewTarget, decision: ReviewDecision) {
+async function review(target: ReviewTarget, decision: ReviewDecision, note?: string) {
   await requireAdmin()
-  const changed = await processReview(target, decision)
+  const changed = await processReview(target, decision, note ? { fundingNote: note } : {})
   revalidatePath("/admin")
   revalidatePath("/cabinet", "layout")
   if (changed) await publish(topics.adminCounts)
@@ -186,8 +167,10 @@ export async function approveFundingRequest(id: number) {
   await review({ kind: "funding", id }, "approve")
 }
 
-export async function rejectFundingRequest(id: number) {
-  await review({ kind: "funding", id }, "reject")
+export async function rejectFundingRequest(id: number, formData?: FormData) {
+  const raw = formData?.get("reason")
+  const reason = typeof raw === "string" ? raw.trim().slice(0, 300) : ""
+  await review({ kind: "funding", id }, "reject", reason || undefined)
 }
 
 export async function getPendingReferrals() {

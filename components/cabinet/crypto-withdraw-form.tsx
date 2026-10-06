@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useCallback, useState, useTransition } from "react"
+import { WithdrawSuccess } from "@/components/cabinet/withdraw-success"
+import { track } from "@/lib/analytics"
 import { useRouter } from "next/navigation"
 import { TriangleAlert } from "lucide-react"
 import { requestCryptoWithdrawal } from "@/app/actions/funding"
@@ -17,6 +19,13 @@ export function CryptoWithdrawForm({ balance, hasPending }: { balance: number; h
   const [amount, setAmount] = useState("")
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
+  const [success, setSuccess] = useState<{ amount: number; destination: string } | null>(null)
+  const closeSuccess = useCallback(() => {
+    setSuccess(null)
+    router.refresh()
+  }, [router])
+
+  if (success) return <WithdrawSuccess {...success} onClose={closeSuccess} />
 
   if (hasPending) {
     return (
@@ -35,10 +44,10 @@ export function CryptoWithdrawForm({ balance, hasPending }: { balance: number; h
     startTransition(async () => {
       const result = await requestCryptoWithdrawal({ amount: Number(amount), asset, wallet })
       if (result.ok) {
+        setSuccess({ amount: Number(amount), destination: `кошелёк ${ASSETS[asset].symbol}` })
         setAmount("")
         setWallet("")
-        setMessage({ ok: true, text: "Заявка отправлена. Пришлём уведомление, как только перевод уйдёт на кошелёк." })
-        router.refresh()
+        track("withdraw_request")
       } else {
         setMessage({ ok: false, text: result.error })
       }

@@ -37,7 +37,7 @@ export async function setExtraCheckMessage(cardId: number, message: string) {
   return rows.length === 1
 }
 
-type CardReviewExtras = { resultReason?: string | null; extraCheckMessage?: string }
+type CardReviewExtras = { resultReason?: string | null; extraCheckMessage?: string; fundingNote?: string | null }
 
 export async function processReview(target: ReviewTarget, decision: ReviewDecision, cardExtras: CardReviewExtras = {}) {
   if (!Number.isInteger(target.id) || target.id <= 0 || target.id > 2147483647) return false
@@ -77,7 +77,8 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
   }
   if (target.kind === "funding") {
     return db.transaction(async (tx) => {
-      const [row] = await tx.update(fundingRequest).set({ status, processedAt: new Date() })
+      const note = cardExtras.fundingNote?.trim().slice(0, 300) || null
+      const [row] = await tx.update(fundingRequest).set({ status, processedAt: new Date(), ...(note ? { note } : {}) })
         .where(and(eq(fundingRequest.id, target.id), eq(fundingRequest.status, "pending")))
         .returning({ userId: fundingRequest.userId, type: fundingRequest.type, amount: fundingRequest.amount })
       if (!row) return false
@@ -98,15 +99,20 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
           description: `Пополнение баланса #${target.id}`,
         })
       }
-      await notify(tx, row.userId, fundingNotice(target.id, row.type, status, row.amount))
+      await notify(tx, row.userId, fundingNotice(target.id, row.type, status, row.amount, note))
       return true
     })
   }
   return false
 }
 
-function fundingNotice(id: number, type: string, status: string, amount: number): NewNotification {
+function fundingNotice(id: number, type: string, status: string, amount: number, note: string | null = null): NewNotification {
   const sum = formatByn(amount)
+  if (status === "rejected" && note) {
+    return type === "deposit"
+      ? { kind: "money", title: `Пополнение #${id} отклонено`, body: `Причина: ${note}`, href: "/cabinet/deposit" }
+      : { kind: "money", title: `Вывод #${id} отклонён`, body: `Причина: ${note}. ${sum} вернулись на игровой баланс.`, href: "/cabinet/deposit?tab=withdraw" }
+  }
   if (type === "deposit") {
     return status === "approved"
       ? { kind: "money", title: `Баланс пополнен на ${sum}`, body: `Заявка #${id} подтверждена. Проверьте бонусы — за депозит положен подарок.`, href: "/cabinet/bonuses" }

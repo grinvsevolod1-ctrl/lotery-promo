@@ -31,14 +31,17 @@ export function GameTile({ game, priority = false, size = "md" }: { game: LobbyG
           {game.badge}
         </span>
       )}
-      <span className="relative flex flex-col items-center px-2 pb-3 text-center text-background">
-        {size === "md" && <span className="text-[11px] font-extrabold uppercase tracking-wide opacity-90">{game.kicker}</span>}
+      <span
+        className={`relative flex w-full flex-col items-center justify-end text-center text-background ${size === "sm" ? "min-h-12 px-1 pb-2" : "min-h-20 px-2 pb-3"}`}
+      >
+        {size === "md" && <span className="truncate text-[11px] font-extrabold uppercase tracking-wide opacity-90">{game.kicker}</span>}
         <span
-          className={`font-display font-black uppercase leading-none text-balance ${size === "sm" ? "text-xs" : "text-lg sm:text-xl"}`}
+          lang="ru"
+          className={`line-clamp-2 w-full hyphens-auto font-display font-black uppercase leading-[1.05] text-balance [overflow-wrap:anywhere] ${size === "sm" ? "text-[10px] min-[400px]:text-xs" : "text-base min-[400px]:text-lg sm:text-xl"}`}
         >
           {game.title}
         </span>
-        <span className="mt-1 text-[10px] font-bold uppercase tracking-wider opacity-75">bytoloto</span>
+        <span className={`mt-1 font-bold uppercase tracking-wider opacity-75 ${size === "sm" ? "text-[8px]" : "text-[10px]"}`}>bytoloto</span>
       </span>
     </Link>
   )

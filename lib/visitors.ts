@@ -69,6 +69,7 @@ export type ActivityType =
   | "game"
   | "bonus"
   | "support"
+  | "funnel"
 
 const DEVICE_ID_PATTERN = /^[a-zA-Z0-9-]{16,64}$/
 const NEW_ACCOUNT_WINDOW_MS = 10 * 60 * 1000
@@ -171,6 +172,11 @@ export async function recordVisit(input: {
       )
     }
   }
+}
+
+/** Funnel goals keep the goal id as the first word of the label so the admin funnel can group by it. */
+export async function logFunnelGoal(goal: string, path: string, params: string) {
+  await logActivity("funnel", `${goal} ${path}${params ? ` (${params})` : ""}`)
 }
 
 /** Logs an action of the current request's device. Never throws; the action must not fail because of the log. */

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient, useSession } from "@/lib/auth-client"
+import { track } from "@/lib/analytics"
 import { User as UserMark, LogOut as LogoutMark } from "lucide-react"
 
 export function HeaderAuthNav() {
@@ -15,16 +16,17 @@ export function HeaderAuthNav() {
 
   if (!session?.user) {
     return (
-      <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+      <div className="flex min-w-0 items-center gap-0.5 min-[380px]:gap-1 sm:gap-2">
         <Link
           href="/sign-in"
-          className="rounded-full px-2.5 py-2 text-sm font-semibold text-foreground/80 transition-colors hover:text-foreground sm:px-4"
+          className="rounded-full px-2 py-2 text-[13px] font-semibold text-foreground/80 transition-colors hover:text-foreground min-[380px]:px-2.5 min-[380px]:text-sm sm:px-4"
         >
           Войти
         </Link>
         <Link
-          href="/sign-up"
-          className="whitespace-nowrap rounded-full bg-primary px-3 py-2 text-sm font-bold text-primary-foreground shadow-md shadow-primary/30 transition-transform hover:scale-105 sm:px-5"
+          href="/sign-up?from=header"
+          onClick={() => track("header_signup_click")}
+          className="whitespace-nowrap rounded-full bg-primary px-3 py-2 text-[13px] font-bold text-primary-foreground shadow-md shadow-primary/30 transition-transform hover:scale-105 min-[380px]:text-sm sm:px-5"
         >
           Регистрация
         </Link>

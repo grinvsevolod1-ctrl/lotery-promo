@@ -1,4 +1,5 @@
 import type { ShowcaseGame } from "@/lib/games/showcase"
+import { UNIQUE_COVERS } from "@/lib/games/covers"
 
 const THEMES = {
   candy: "#d94a9a",
@@ -303,7 +304,7 @@ function parse(rows: string): ShowcaseGame[] {
         id,
         title,
         provider,
-        cover: `/games/themes/${theme}.webp`,
+        cover: UNIQUE_COVERS.has(id) ? `/games/covers/${id}.webp` : `/games/themes/${theme}.webp`,
         tint: THEMES[theme as Theme],
         rtp: Number(rtp),
         hue: hueFor(id),

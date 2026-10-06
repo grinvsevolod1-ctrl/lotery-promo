@@ -45,11 +45,17 @@ export function BonusCard({ id, info, state, priority }: { id: BonusId; info: Bo
           fill
           sizes="(min-width: 640px) 360px, 100vw"
           priority={priority}
-          className={cn("object-cover", state.status === "claimed" && "opacity-50 grayscale")}
+          className={cn("object-cover", state.status === "claimed" && "saturate-[0.6]")}
         />
-        <span className="absolute left-3 top-3 rounded-full bg-card/90 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-foreground backdrop-blur">
+        <span className="absolute left-3 top-3 rounded-full bg-card px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-foreground shadow-sm">
           {info.tag}
         </span>
+        {state.status === "claimed" && (
+          <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-success px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide text-success-foreground shadow-sm">
+            <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
+            Получен
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-5 pt-4">
@@ -69,7 +75,7 @@ export function BonusCard({ id, info, state, priority }: { id: BonusId; info: Bo
           )}
 
           {state.status === "claimed" && (
-            <p className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-secondary text-sm font-bold text-foreground">
+            <p className="flex min-h-12 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 rounded-2xl bg-secondary px-3 py-2 text-center text-sm font-bold text-foreground">
               <Check className="size-4" strokeWidth={3} />
               {`Получено ${state.amount.toLocaleString("ru-RU")} BYN`}
               {state.until && <span className="font-medium text-muted-foreground">{`· снова ${state.until}`}</span>}

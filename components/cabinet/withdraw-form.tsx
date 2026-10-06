@@ -1,8 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useTransition } from "react"
+import { useCallback, useState, useTransition } from "react"
 import { requestWithdrawal } from "@/app/actions/funding"
+import { WithdrawSuccess } from "@/components/cabinet/withdraw-success"
+import { track } from "@/lib/analytics"
 import { WITHDRAWAL_MAX, WITHDRAWAL_MIN } from "@/lib/funding"
 import { fieldClass } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -14,6 +16,10 @@ export function WithdrawForm({ cards, balance, hasPending }: { cards: CardOption
   const [cardId, setCardId] = useState(() => String((cards.find((c) => c.isDefault) ?? cards[0])?.id ?? ""))
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
+  const [success, setSuccess] = useState<{ amount: number; destination: string } | null>(null)
+  const closeSuccess = useCallback(() => setSuccess(null), [])
+
+  if (success) return <WithdrawSuccess {...success} onClose={closeSuccess} />
 
   if (cards.length === 0) {
     return (
@@ -40,8 +46,10 @@ export function WithdrawForm({ cards, balance, hasPending }: { cards: CardOption
     startTransition(async () => {
       const result = await requestWithdrawal({ amount: Number(amount), cardId: Number(cardId) })
       if (result.ok) {
+        const card = cards.find((c) => String(c.id) === cardId)
+        setSuccess({ amount: Number(amount), destination: card ? `карту •••• ${card.last4}` : "карту" })
         setAmount("")
-        setMessage({ ok: true, text: "Заявка отправлена. Сумма зарезервирована до завершения вывода." })
+        track("withdraw_request")
       } else {
         setMessage({ ok: false, text: result.error })
       }

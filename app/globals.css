@@ -28,6 +28,8 @@
   --color-background: var(--background);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -57,6 +59,8 @@
   /* "gold" is the prize highlight; a deeper orange keeps it readable on white */
   --gold: #d9480f;
   --gold-foreground: #ffffff;
+  --success: #15803d;
+  --success-foreground: #ffffff;
   --destructive: #d9281e;
   --border: rgb(22 26 34 / 10%);
   --input: rgb(22 26 34 / 16%);

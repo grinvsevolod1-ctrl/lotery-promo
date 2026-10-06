@@ -43,23 +43,26 @@ export function ShowcaseTile({ game, size = "md", index = 0 }: { game: ShowcaseG
           RTP: {game.rtp}%
         </span>
       )}
-      <span aria-hidden="true" className={`relative flex flex-col items-center text-center ${small ? "px-1 pb-2" : "px-2 pb-3"}`}>
+      <span
+        aria-hidden="true"
+        className={`relative flex w-full flex-col items-center justify-end text-center ${small ? "min-h-14 px-1 pb-2" : "min-h-24 px-2 pb-3"}`}
+      >
         {game.kicker && (
-          <span className={`font-display font-black uppercase leading-tight ${small ? "text-[8px]" : "text-xs sm:text-sm"}`}>
+          <span className={`w-full truncate font-display font-black uppercase leading-tight ${small ? "text-[8px]" : "text-xs sm:text-sm"}`}>
             {game.kicker}
           </span>
         )}
         <span
-          className={`font-display font-black uppercase leading-none text-balance drop-shadow ${small ? "text-[11px] sm:text-sm" : "text-lg sm:text-2xl"}`}
+          className={`line-clamp-2 w-full hyphens-auto font-display font-black uppercase leading-[1.05] text-balance drop-shadow [overflow-wrap:anywhere] ${small ? "text-[10px] min-[400px]:text-[11px] sm:text-sm" : "text-base min-[400px]:text-lg sm:text-2xl"}`}
         >
           {game.title}
         </span>
         {game.subtitle && (
-          <span className={`font-display font-black uppercase leading-tight ${small ? "text-[9px]" : "text-sm sm:text-base"}`}>
+          <span className={`w-full truncate font-display font-black uppercase leading-tight ${small ? "text-[9px]" : "text-sm sm:text-base"}`}>
             {game.subtitle}
           </span>
         )}
-        <span className={`mt-1 font-bold uppercase tracking-wider opacity-85 ${small ? "text-[6px] sm:text-[8px]" : "text-[10px]"}`}>
+        <span className={`mt-1 w-full truncate font-bold uppercase tracking-wider opacity-85 ${small ? "text-[6px] sm:text-[8px]" : "text-[10px]"}`}>
           {game.provider}
         </span>
       </span>

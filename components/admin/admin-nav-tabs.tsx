@@ -9,6 +9,7 @@ const TABS = [
   { href: "/admin", label: "Заявки", key: "queue" },
   { href: "/admin/api", label: "API", key: "api" },
   { href: "/admin/users", label: "Пользователи", key: "users" },
+  { href: "/admin/funnel", label: "Воронка", key: "funnel" },
 ] as const
 
 export type AdminTabKey = (typeof TABS)[number]["key"]
@@ -39,7 +40,7 @@ export function AdminNavTabs({ active, initial }: { active: AdminTabKey; initial
             key={tab.key}
             href={tab.href}
             aria-current={isActive ? "page" : undefined}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-2 text-center text-sm font-semibold transition-colors sm:flex-none ${
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-2.5 py-2 sm:px-5 text-center text-sm font-semibold transition-colors sm:flex-none ${
               isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
