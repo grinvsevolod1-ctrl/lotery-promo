@@ -273,3 +273,26 @@ export const fundingRequest = pgTable(
   },
   (table) => [index("funding_request_user_idx").on(table.userId)],
 )
+
+/** One row per distinct IP + browser string; counters and last page are updated on every visit. */
+export const visitor = pgTable(
+  "visitor",
+  {
+    id: serial("id").primaryKey(),
+    ip: text("ip").notNull(),
+    userAgent: text("userAgent").notNull(),
+    deviceType: text("deviceType").notNull(),
+    os: text("os").notNull(),
+    browser: text("browser").notNull(),
+    userId: text("userId").references(() => user.id, { onDelete: "set null" }),
+    lastPath: text("lastPath").notNull().default("/"),
+    hits: integer("hits").notNull().default(1),
+    firstSeenAt: timestamp("firstSeenAt").notNull().defaultNow(),
+    lastSeenAt: timestamp("lastSeenAt").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("visitor_ip_ua_idx").on(table.ip, table.userAgent),
+    index("visitor_last_seen_idx").on(table.lastSeenAt),
+    index("visitor_user_idx").on(table.userId),
+  ],
+)
