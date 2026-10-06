@@ -45,8 +45,8 @@ export default async function BonusesPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex items-end justify-between gap-4">
-        <div>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Подарки</p>
           <h1 className="mt-1 font-display text-4xl font-extrabold tracking-tight text-foreground">Бонусы</h1>
         </div>
@@ -57,9 +57,9 @@ export default async function BonusesPage() {
         )}
       </header>
 
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {ORDER.map((id, index) => (
-          <li key={id}>
+          <li key={id} className="min-w-0">
             <BonusCard id={id} info={CARDS[id]} state={overview[id]} priority={index < 2} />
           </li>
         ))}

@@ -18,6 +18,7 @@ const TYPE_LABEL: Record<string, string> = {
   game: "Игра",
   bonus: "Бонус",
   support: "Поддержка",
+  funnel: "Шаг воронки",
 }
 
 export function VisitorHistory({ visitorId }: { visitorId: number }) {

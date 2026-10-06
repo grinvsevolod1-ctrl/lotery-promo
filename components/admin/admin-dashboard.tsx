@@ -15,6 +15,14 @@ function formatDate(date: Date) {
 export function AdminDashboard({ cards, requests }: { cards: PendingCardRow[]; requests: PendingFundingRow[] }) {
   return (
     <>
+      <datalist id="reject-reasons">
+        <option value="Не выполнен отыгрыш бонуса" />
+        <option value="Неверные реквизиты карты или кошелька" />
+        <option value="Карта не принадлежит владельцу аккаунта" />
+        <option value="Требуется верификация личности" />
+        <option value="Подозрение на мультиаккаунт" />
+        <option value="Технические работы платёжной системы, повторите позже" />
+      </datalist>
       <header className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-extrabold text-foreground">Админ-панель</h1>
@@ -96,17 +104,34 @@ export function AdminDashboard({ cards, requests }: { cards: PendingCardRow[]; r
                   )}
                   <p className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</p>
                 </div>
-                <div className="flex gap-2">
-                  <form action={approveFundingRequest.bind(null, r.id)}>
-                    <button type="submit" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+                  <form action={approveFundingRequest.bind(null, r.id)} className="w-full sm:w-auto">
+                    <button type="submit" className="w-full rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground sm:w-auto">
                       Одобрить
                     </button>
                   </form>
-                  <form action={rejectFundingRequest.bind(null, r.id)}>
-                    <button type="submit" className="rounded-full border border-destructive/50 px-4 py-2 text-sm font-semibold text-destructive">
+                  <details className="group w-full sm:w-72">
+                    <summary className="flex cursor-pointer list-none items-center justify-center rounded-full border border-destructive/50 px-4 py-2 text-sm font-semibold text-destructive [&::-webkit-details-marker]:hidden">
                       Отклонить
-                    </button>
-                  </form>
+                    </summary>
+                    <form action={rejectFundingRequest.bind(null, r.id)} className="mt-2 flex flex-col gap-2 rounded-2xl border border-border/60 bg-background p-3">
+                      <label htmlFor={`reason-${r.id}`} className="text-xs font-semibold text-muted-foreground">
+                        Причина отклонения (увидит игрок)
+                      </label>
+                      <input
+                        id={`reason-${r.id}`}
+                        name="reason"
+                        list="reject-reasons"
+                        required
+                        maxLength={300}
+                        placeholder="Выберите или впишите причину"
+                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                      />
+                      <button type="submit" className="rounded-full bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground">
+                        Отклонить заявку
+                      </button>
+                    </form>
+                  </details>
                 </div>
               </li>
             ))}

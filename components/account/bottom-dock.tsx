@@ -20,9 +20,9 @@ export function BottomDock({ unread = 0 }: { unread?: number }) {
   return (
     <nav
       aria-label="Основная навигация"
-      className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),12px)]"
+      className="fixed inset-x-0 bottom-0 z-50 flex justify-center bg-gradient-to-t from-background via-background to-transparent px-3 pb-[max(env(safe-area-inset-bottom),12px)] pt-6"
     >
-      <ul className="flex w-full max-w-md items-stretch gap-1 rounded-[28px] bg-card/90 p-1.5 shadow-[0_14px_40px_-18px_rgb(22_26_34/0.35)] ring-1 ring-border backdrop-blur-xl backdrop-saturate-150 [transform:translateZ(0)]">
+      <ul className="flex w-full max-w-md items-stretch gap-1 rounded-[28px] bg-card p-1.5 shadow-[0_14px_40px_-18px_rgb(22_26_34/0.35)] ring-1 ring-border">
         {TABS.map(({ href, label, icon: Icon, match }) => {
           const active = match(pathname)
           const badge = href === "/cabinet/notifications" && unread > 0 ? unread : 0

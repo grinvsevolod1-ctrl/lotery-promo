@@ -10,6 +10,7 @@ import { WithdrawForm } from "@/components/cabinet/withdraw-form"
 import { CryptoWithdrawForm } from "@/components/cabinet/crypto-withdraw-form"
 import { WalletMethodPicker } from "@/components/cabinet/wallet-method-picker"
 import { Panel } from "@/components/cabinet/panel"
+import { TrackView } from "@/components/track-view"
 import { CryptoIcon } from "@/components/crypto-icon"
 import { isAssetId } from "@/lib/crypto/assets"
 import { requireSession } from "@/lib/require-session"
@@ -48,6 +49,7 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="flex flex-col gap-5">
+      {tab === "deposit" && <TrackView goal="deposit_view" />}
       <section className="relative overflow-hidden rounded-3xl bg-foreground p-6 text-background sm:p-8">
         <p className="relative text-xs font-bold uppercase tracking-[0.2em] text-background/60">Игровой баланс</p>
         <p className="relative mt-2 flex items-baseline gap-2 font-display text-5xl font-extrabold tracking-tight tabular-nums sm:text-6xl">

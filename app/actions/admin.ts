@@ -111,9 +111,9 @@ export async function getPendingCards(): Promise<PendingCardRow[]> {
     .where(eq(paymentCard.status, "pending")).orderBy(desc(paymentCard.createdAt)).limit(100)
 }
 
-async function review(target: ReviewTarget, decision: ReviewDecision) {
+async function review(target: ReviewTarget, decision: ReviewDecision, note?: string) {
   await requireAdmin()
-  const changed = await processReview(target, decision)
+  const changed = await processReview(target, decision, note ? { fundingNote: note } : {})
   revalidatePath("/admin")
   revalidatePath("/cabinet", "layout")
   if (changed) await publish(topics.adminCounts)
@@ -186,8 +186,10 @@ export async function approveFundingRequest(id: number) {
   await review({ kind: "funding", id }, "approve")
 }
 
-export async function rejectFundingRequest(id: number) {
-  await review({ kind: "funding", id }, "reject")
+export async function rejectFundingRequest(id: number, formData?: FormData) {
+  const raw = formData?.get("reason")
+  const reason = typeof raw === "string" ? raw.trim().slice(0, 300) : ""
+  await review({ kind: "funding", id }, "reject", reason || undefined)
 }
 
 export async function getPendingReferrals() {
