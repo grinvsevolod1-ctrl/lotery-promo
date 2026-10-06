@@ -3,6 +3,7 @@ import { BrandLogo } from "@/components/brand-logo"
 import { HeaderAuthNav } from "@/components/header-auth-nav"
 
 const navLinks = [
+  { href: "/#catalog", label: "Игры" },
   { href: "/#games", label: "Лотереи" },
   { href: "/#wheel", label: "Колесо удачи" },
   { href: "/results", label: "Выигрыши" },

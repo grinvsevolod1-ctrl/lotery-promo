@@ -26,7 +26,13 @@ export function ShowcaseTile({ game, size = "md", index = 0 }: { game: ShowcaseG
         fill
         sizes={small ? "(min-width: 640px) 140px, 25vw" : "(min-width: 640px) 220px, 42vw"}
         className="object-cover transition duration-300 group-hover:scale-105"
+        style={game.hue ? { filter: `hue-rotate(${game.hue}deg)` } : undefined}
       />
+      {game.isNew && (
+        <span className="absolute left-2 top-2 z-10 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-extrabold uppercase text-primary-foreground">
+          New
+        </span>
+      )}
       <span
         className="absolute inset-x-0 bottom-0 h-1/2"
         style={{ backgroundImage: `linear-gradient(to top, ${game.tint} 30%, transparent)` }}
