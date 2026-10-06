@@ -9,6 +9,7 @@ import { getSessionUser } from "@/lib/session"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { escapeTelegram, notifyTelegram } from "@/lib/telegram"
 import { DEPOSIT_MAX, DEPOSIT_MIN, WITHDRAWAL_MAX, WITHDRAWAL_MIN } from "@/lib/funding"
+import { logActivity } from "@/lib/visitors"
 
 export type FundingRequestRow = {
   id: number
@@ -61,6 +62,7 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
     `Спишите сумму в bePaid и подтвердите — баланс пополнится автоматически.`,
     { kind: "funding", id: created.id },
   )
+  await logActivity("deposit", `Заявка на пополнение #${created.id}: ${amount.toLocaleString("ru-RU")} BYN с карты •••• ${created.last4}`)
 
   revalidatePath("/cabinet")
   revalidatePath("/admin")
@@ -139,6 +141,7 @@ export async function requestWithdrawal(input: { amount: number; cardId: number 
     `Сумма уже зарезервирована. Переведите деньги и подтвердите — или отклоните, сумма вернётся на баланс.`,
     { kind: "funding", id: created.id },
   )
+  await logActivity("withdrawal", `Заявка на вывод #${created.id}: ${amount.toLocaleString("ru-RU")} BYN на карту •••• ${created.last4}`)
 
   revalidatePath("/cabinet")
   revalidatePath("/admin")

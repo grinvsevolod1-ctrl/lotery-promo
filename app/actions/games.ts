@@ -20,6 +20,7 @@ import {
 } from "@/lib/games/plinko"
 import { SCRATCH_GAME_NAME, isScratchPrice, playScratch, type ScratchSymbol } from "@/lib/games/scratch"
 import type { ActionResult } from "@/app/actions/cabinet"
+import { logActivity } from "@/lib/visitors"
 
 class InsufficientFundsError extends Error {}
 
@@ -42,6 +43,7 @@ async function settleRound<T>(
   cost: number,
   play: (rng: Rng) => { round: Round; result: T },
 ): Promise<ActionResult<T & { ticketId: number; balance: number }>> {
+  let prizePaid = 0
   try {
     const settled = await db.transaction(async (tx) => {
       await lockUser(tx, userId)
@@ -75,8 +77,10 @@ async function settleRound<T>(
           description: `Выигрыш: ${game} #${created.id}, ${round.prizeDescription}`,
         })
       }
+      prizePaid = round.prize
       return { ...result, ticketId: created.id, balance: Math.round((before - cost + round.prize) * 100) / 100 }
     })
+    await logActivity("game", `${game}: ставка ${cost} BYN, выигрыш ${prizePaid} BYN`)
     revalidatePath("/cabinet")
     revalidatePath("/play", "layout")
     return { ok: true, ...settled }

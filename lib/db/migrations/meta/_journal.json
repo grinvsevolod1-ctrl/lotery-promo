@@ -92,6 +92,13 @@
       "when": 1791263295516,
       "tag": "0012_demonic_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791263775961,
+      "tag": "0013_visitor_device_events",
+      "breakpoints": true
     }
   ]
 }
