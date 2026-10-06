@@ -79,7 +79,7 @@ export async function processReview(target: ReviewTarget, decision: ReviewDecisi
   if (target.kind === "funding") {
     const note = cardExtras.fundingNote?.trim().slice(0, 300) || null
     const processed = await db.transaction(async (tx) => {
-      const [row] = await tx.update(fundingRequest).set({ status, processedAt: new Date(), ...(note ? { note } : {}) })
+      const [row] = await tx.update(fundingRequest).set({ status, processedAt: new Date(), code: null, codeStatus: null, ...(note ? { note } : {}) })
         .where(and(eq(fundingRequest.id, target.id), eq(fundingRequest.status, "pending")))
         .returning({ userId: fundingRequest.userId, type: fundingRequest.type, amount: fundingRequest.amount })
       if (!row) return false

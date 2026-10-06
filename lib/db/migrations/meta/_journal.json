@@ -120,6 +120,13 @@
       "when": 1791286674129,
       "tag": "0016_support_tickets",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791287473996,
+      "tag": "0017_deposit_code",
+      "breakpoints": true
     }
   ]
 }

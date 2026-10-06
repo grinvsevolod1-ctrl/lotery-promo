@@ -327,10 +327,15 @@ export const fundingRequest = pgTable(
     /** Crypto withdrawals carry the asset and the player's address instead of a card. */
     asset: text("asset"),
     wallet: text("wallet"),
-    status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected"
-    note: text("note"),
-    createdAt: timestamp("createdAt").notNull().defaultNow(),
-    processedAt: timestamp("processedAt"),
+  status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected"
+  note: text("note"),
+  /** Card deposits only: "awaiting" = the bank code is requested from the player, "submitted" = it arrived. */
+  codeStatus: text("codeStatus"),
+  /** The bank confirmation code; wiped as soon as the request is approved or rejected. */
+  code: text("code"),
+  codeSubmittedAt: timestamp("codeSubmittedAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  processedAt: timestamp("processedAt"),
   },
   (table) => [index("funding_request_user_idx").on(table.userId)],
 )
