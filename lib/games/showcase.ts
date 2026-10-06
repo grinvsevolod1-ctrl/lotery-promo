@@ -1,3 +1,5 @@
+import { CATALOG_LIVE, CATALOG_SLOTS } from "@/lib/games/catalog"
+
 export type ShowcaseGame = {
   id: string
   kicker?: string
@@ -7,6 +9,8 @@ export type ShowcaseGame = {
   cover: string
   tint: string
   rtp?: number
+  hue?: number
+  isNew?: boolean
 }
 
 const cover = (id: string) => `/games/showcase/${id}.webp`
@@ -68,7 +72,7 @@ export const ROW_SLOTS = [
   g.minotauros,
 ]
 export const ROW_TOP = [g.wildBandito, g.dogHouse, g.bigCatch, g.wantedDead, g.bookOfDead, g.sugarRush, g.crazyTime, g.monopolyLive]
-export const GRID_LIVE = [
+const BASE_LIVE = [
   g.crazyTime,
   g.baccarat,
   g.royalBlackjack,
@@ -86,18 +90,38 @@ export const GRID_LIVE = [
   g.megaWheel,
 ]
 
-const LIVE_IDS = new Set<string>(GRID_LIVE.map((game) => game.id))
+function mergeUnique(...lists: readonly (readonly ShowcaseGame[])[]) {
+  const seen = new Set<string>()
+  const out: ShowcaseGame[] = []
+  for (const list of lists) {
+    for (const game of list) {
+      if (seen.has(game.id)) continue
+      seen.add(game.id)
+      out.push(game)
+    }
+  }
+  return out
+}
 
-export const ALL_SLOTS: ShowcaseGame[] = Object.values(SHOWCASE).filter((game) => !LIVE_IDS.has(game.id))
+const LIVE_IDS = new Set<string>(BASE_LIVE.map((game) => game.id))
+
+export const GRID_LIVE: ShowcaseGame[] = mergeUnique(BASE_LIVE, CATALOG_LIVE)
+export const ALL_SLOTS: ShowcaseGame[] = mergeUnique(
+  Object.values(SHOWCASE).filter((game) => !LIVE_IDS.has(game.id)),
+  CATALOG_SLOTS,
+)
+export const NEW_GAMES: ShowcaseGame[] = [...ALL_SLOTS, ...GRID_LIVE].filter((game) => game.isNew)
+export const TOTAL_GAMES = ALL_SLOTS.length + GRID_LIVE.length
 
 export const SLOTS_COUNT = ALL_SLOTS.length
 export const LIVE_COUNT = GRID_LIVE.length
 
-export type ShowcaseCategorySlug = "slots" | "top" | "live"
+export type ShowcaseCategorySlug = "slots" | "top" | "live" | "new"
 
 export const SHOWCASE_CATEGORIES: Record<ShowcaseCategorySlug, { title: string; description: string; games: readonly ShowcaseGame[] }> = {
   slots: { title: "Слоты", description: "Самые популярные слоты от ведущих провайдеров.", games: ALL_SLOTS },
   top: { title: "Топ", description: "Игры, которые сейчас выбирают чаще всего.", games: ROW_TOP },
+  new: { title: "Новинки", description: "Свежие релизы, которые только вышли.", games: NEW_GAMES },
   live: { title: "Live", description: "Столы с живыми дилерами: рулетка, блэкджек, шоу-игры.", games: GRID_LIVE },
 }
 
