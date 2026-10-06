@@ -9,6 +9,7 @@ import { CARD_BRAND_LABEL, maskCard } from "@/lib/payment-cards"
 import { CardBrandMark } from "@/components/cabinet/card-brand-mark"
 import { Panel } from "@/components/cabinet/panel"
 import { actionErrorMessage } from "@/lib/action-error"
+import { useLiveEvents } from "@/components/use-live-events"
 import { cn } from "@/lib/utils"
 import { AlertMark, CheckMark, Spinner } from "./card-icons"
 import { CardCodeForm, ExtraCheckForm, needsExtraCheckAnswer, needsSecretAnswer } from "./card-modal"
@@ -95,9 +96,17 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
     fallbackData: initial,
     refreshInterval: (latest) => {
       const current = latest?.find((c) => c.id === cardId)
-      return current && !FINAL_STATUSES.has(current.status) ? 2500 : 0
+      return current && !FINAL_STATUSES.has(current.status) ? 8000 : 0
     },
   })
+  useLiveEvents(
+    "me",
+    [],
+    (topic) => {
+      if (topic.endsWith(":cards")) void mutate()
+    },
+    () => void mutate(),
+  )
   const redirected = useRef(false)
   const [finishedUrl, setFinishedUrl] = useState<string | null>(null)
   const [acceptedHoldUrl, setAcceptedHoldUrl] = useState<string | null>(null)
@@ -165,7 +174,7 @@ export function CardConfirmation({ cardId, initial }: { cardId: number; initial:
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link href="/cabinet/cards?new=1" className={primaryLink}>Привязать другую карту</Link>
-          <Link href="/cabinet" className={secondaryLink}>В кабинет</Link>
+          <Link href="/cabinet" className={secondaryLink}>В кабине��</Link>
         </div>
       </Panel>
     )

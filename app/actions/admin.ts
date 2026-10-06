@@ -10,7 +10,7 @@ import type { ReviewDecision, ReviewTarget } from "@/lib/telegram-security"
 import { clearAdminSession, isAdmin, setAdminSession, verifyAdminPassword } from "@/lib/admin-auth"
 import { notifyTelegram } from "@/lib/telegram"
 import { rewardReferrer } from "@/lib/referrals"
-import { notifyCardChange } from "@/lib/realtime"
+import { notifyCardChange, publish, topics } from "@/lib/realtime"
 import { SETTING_KEYS, getSetting, setSetting } from "@/lib/settings"
 import { lastDelivery, normalizeWebhookUrl, sendTestWebhook, type DeliveryResult } from "@/lib/card-webhook"
 
@@ -97,6 +97,7 @@ async function review(target: ReviewTarget, decision: ReviewDecision) {
   const changed = await processReview(target, decision)
   revalidatePath("/admin")
   revalidatePath("/cabinet", "layout")
+  if (changed) await publish(topics.adminCounts)
   const label = target.kind === "funding" ? "Заявка" : target.kind === "card" ? "Карта" : "Приглашение"
   if (changed) void notifyTelegram(`<b>${label} #${target.id}</b>\n${decision === "approve" ? "Подтверждено" : "Отклонено"}.`)
   return changed

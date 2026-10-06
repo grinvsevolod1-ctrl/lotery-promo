@@ -3,6 +3,7 @@
 import { useId, useState, useTransition } from "react"
 import { getVisitorEvents, type VisitorEventRow } from "@/app/actions/admin-users"
 import { formatDateTime } from "@/lib/format"
+import { useLiveEvents } from "@/components/use-live-events"
 
 const TYPE_LABEL: Record<string, string> = {
   first_visit: "Заход",
@@ -36,6 +37,15 @@ export function VisitorHistory({ visitorId }: { visitorId: number }) {
       }
     })
   }
+
+  useLiveEvents(
+    open ? "admin" : null,
+    ["admin:users"],
+    (_topic, id) => {
+      if (Number(id) === visitorId) load()
+    },
+    load,
+  )
 
   function toggle() {
     const next = !open

@@ -1,13 +1,8 @@
-import Link from "next/link"
 import { adminLogout } from "@/app/actions/admin"
+import { getAdminCounts } from "@/lib/admin-counts"
+import { AdminNavTabs, type AdminTabKey } from "@/components/admin/admin-nav-tabs"
 
-const TABS = [
-  { href: "/admin", label: "Заявки", key: "queue" },
-  { href: "/admin/api", label: "API", key: "api" },
-  { href: "/admin/users", label: "Пользователи", key: "users" },
-] as const
-
-export function AdminNav({ active, subtitle }: { active: (typeof TABS)[number]["key"]; subtitle: string }) {
+export async function AdminNav({ active, subtitle }: { active: AdminTabKey; subtitle: string }) {
   return (
     <header className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -30,23 +25,7 @@ export function AdminNav({ active, subtitle }: { active: (typeof TABS)[number]["
           </form>
         </div>
       </div>
-      <nav aria-label="Разделы админки" className="flex w-full gap-1 rounded-full border border-border/60 bg-card p-1 sm:w-fit">
-        {TABS.map((tab) => {
-          const isActive = tab.key === active
-          return (
-            <Link
-              key={tab.key}
-              href={tab.href}
-              aria-current={isActive ? "page" : undefined}
-              className={`flex-1 rounded-full px-5 py-2 text-center text-sm font-semibold transition-colors sm:flex-none ${
-                isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </Link>
-          )
-        })}
-      </nav>
+      <AdminNavTabs active={active} initial={await getAdminCounts()} />
     </header>
   )
 }

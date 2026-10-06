@@ -2,16 +2,17 @@
 
 import { useEffect, useRef } from "react"
 
-type Scope = "admin" | "me"
+export type LiveScope = "admin" | "me"
 
 /**
- * Subscribes to the server event stream and calls `onEvent` when one of `topics` fires.
+ * Subscribes to the server event stream and calls `onEvent` when one of `topics` fires
+ * (an empty list means every topic the scope allows). Pass `null` as scope to stay disconnected.
  * EventSource reconnects on its own; `onReconnect` lets the caller refetch what it missed.
  */
 export function useLiveEvents(
-  scope: Scope,
+  scope: LiveScope | null,
   topics: string[],
-  onEvent: (topic: string) => void,
+  onEvent: (topic: string, id?: string | number) => void,
   onReconnect?: () => void,
 ) {
   const handlerRef = useRef(onEvent)
@@ -24,6 +25,7 @@ export function useLiveEvents(
   const topicsKey = topics.join("|")
 
   useEffect(() => {
+    if (!scope) return
     const wanted = topicsKey ? topicsKey.split("|") : []
     const source = new EventSource(`/api/events?scope=${scope}`)
     let opened = false
@@ -34,9 +36,9 @@ export function useLiveEvents(
     }
     source.onmessage = (message) => {
       try {
-        const { topic } = JSON.parse(message.data) as { topic: string }
-        if (wanted.some((wantedTopic) => topic === wantedTopic || topic.startsWith(`${wantedTopic}:`)) || wanted.length === 0) {
-          handlerRef.current(topic)
+        const { topic, id } = JSON.parse(message.data) as { topic: string; id?: string | number }
+        if (wanted.length === 0 || wanted.some((name) => topic === name || topic.startsWith(`${name}:`))) {
+          handlerRef.current(topic, id)
         }
       } catch {}
     }
