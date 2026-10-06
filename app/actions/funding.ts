@@ -14,6 +14,7 @@ import { publish, topics } from "@/lib/realtime"
 import { ASSETS, isAssetId, isPlausibleAddress } from "@/lib/crypto/assets"
 import { getRates } from "@/lib/crypto/rates"
 import { formatByn, notify } from "@/lib/notifications"
+import { mailFundingRequest } from "@/lib/funding-mail"
 
 export type FundingRequestRow = {
   id: number
@@ -68,6 +69,7 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
     { kind: "funding", id: created.id },
   )
   await logActivity("deposit", `Заявка на пополнение #${created.id}: ${amount.toLocaleString("ru-RU")} BYN с карты •••• ${created.last4}`)
+  await mailFundingRequest(created.id, "requested")
   await Promise.all([publish(topics.adminCounts), publish(topics.userBalance(user.id))])
 
   revalidatePath("/cabinet")
@@ -148,6 +150,7 @@ export async function requestWithdrawal(input: { amount: number; cardId: number 
     { kind: "funding", id: created.id },
   )
   await logActivity("withdrawal", `Заявка на вывод #${created.id}: ${amount.toLocaleString("ru-RU")} BYN на карту •••• ${created.last4}`)
+  await mailFundingRequest(created.id, "requested")
   await Promise.all([publish(topics.adminCounts), publish(topics.userBalance(user.id))])
 
   revalidatePath("/cabinet")
@@ -222,6 +225,7 @@ export async function requestCryptoWithdrawal(input: { amount: number; asset: st
     { kind: "funding", id },
   )
   await logActivity("withdrawal", `Заявка на вывод #${id}: ${amount.toLocaleString("ru-RU")} BYN в ${info.symbol}`)
+  await mailFundingRequest(id, "requested")
   await Promise.all([publish(topics.adminCounts), publish(topics.userBalance(user.id))])
 
   revalidatePath("/cabinet", "layout")
