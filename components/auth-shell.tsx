@@ -18,7 +18,7 @@ export function AuthShell({
       <div className="pointer-events-none absolute inset-0 aura-bg opacity-50" aria-hidden />
 
       <div className="relative flex w-full max-w-[440px] flex-col items-center apple-rise">
-        <BrandLogo className="mb-8 text-4xl sm:text-5xl" />
+        <BrandLogo id="auth" className="mb-8 text-4xl sm:text-5xl" />
 
         <div className="w-full rounded-[28px] bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_40px_-12px_rgba(0,0,0,0.12)] ring-1 ring-border/50 sm:p-9">
           <div className="mb-7 text-center">

@@ -29,7 +29,7 @@ export function ShareButton() {
       onClick={share}
       aria-label={copied ? 'Ссылка скопирована' : 'Поделиться'}
       title={copied ? 'Ссылка скопирована' : 'Поделиться'}
-      className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
     >
       {copied ? <CheckMark className="h-5 w-5 text-gold" /> : <ShareMark className="h-5 w-5" />}
     </button>
