@@ -1,4 +1,3 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowRightMark } from "@/components/icons"
 import { ShowcaseTile } from "@/components/play/showcase-tile"
@@ -20,19 +19,15 @@ export function ShowcaseBanner({
   title,
   subtitle,
   href,
-  background,
   games,
 }: {
   title: string
   subtitle: string
   href: string
-  background: string
   games?: readonly ShowcaseGame[]
 }) {
   return (
-    <section className="relative isolate overflow-hidden rounded-3xl bg-foreground p-5 text-background sm:p-6">
-      <Image src={background} alt="" fill sizes="(min-width: 768px) 720px, 100vw" className="-z-20 object-cover opacity-40 blur-sm" />
-      <span className="absolute inset-0 -z-10 bg-foreground/60" aria-hidden="true" />
+    <section className="rounded-3xl bg-foreground p-5 text-background sm:p-6">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 className="font-display text-2xl font-extrabold text-balance sm:text-3xl">{title}</h2>
@@ -53,14 +48,31 @@ export function ShowcaseBanner({
   )
 }
 
-function SectionHeading({ id, title, count, icon }: { id: string; title: string; count: number; icon: React.ReactNode }) {
+function SectionHeading({
+  id,
+  title,
+  count,
+  icon,
+  href,
+}: {
+  id: string
+  title: string
+  count: number
+  icon: React.ReactNode
+  href: string
+}) {
   return (
     <div className="flex items-center justify-between gap-3">
       <h2 id={id} className="flex items-center gap-3 font-display text-2xl font-extrabold">
         <span className="text-primary">{icon}</span>
         {title}
       </h2>
-      <span className="rounded-xl px-3 py-2 text-sm font-bold text-primary ring-2 ring-primary">Все игры ({count})</span>
+      <Link
+        href={href}
+        className="rounded-xl px-3 py-2 text-sm font-bold text-primary ring-2 ring-primary transition hover:bg-primary hover:text-primary-foreground"
+      >
+        Все игры ({count})
+      </Link>
     </div>
   )
 }
@@ -83,10 +95,24 @@ const LiveIcon = (
   </svg>
 )
 
-export function ShowcaseRow({ id, title, icon, games }: { id: string; title: string; icon: "gem" | "top"; games: readonly ShowcaseGame[] }) {
+export function ShowcaseRow({
+  id,
+  title,
+  icon,
+  games,
+  count,
+  href,
+}: {
+  id: string
+  title: string
+  icon: "gem" | "top"
+  games: readonly ShowcaseGame[]
+  count: number
+  href: string
+}) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3">
-      <SectionHeading id={id} title={title} count={games.length} icon={icon === "gem" ? GemIcon : TopIcon} />
+      <SectionHeading id={id} title={title} count={count} icon={icon === "gem" ? GemIcon : TopIcon} href={href} />
       <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
         {games.map((game) => (
           <li key={game.id} className="w-[42%] shrink-0 snap-start sm:w-52">
@@ -98,10 +124,22 @@ export function ShowcaseRow({ id, title, icon, games }: { id: string; title: str
   )
 }
 
-export function ShowcaseGrid({ id, title, games }: { id: string; title: string; games: readonly ShowcaseGame[] }) {
+export function ShowcaseGrid({
+  id,
+  title,
+  games,
+  count,
+  href,
+}: {
+  id: string
+  title: string
+  games: readonly ShowcaseGame[]
+  count: number
+  href: string
+}) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3">
-      <SectionHeading id={id} title={title} count={games.length} icon={LiveIcon} />
+      <SectionHeading id={id} title={title} count={count} icon={LiveIcon} href={href} />
       <ul className="grid grid-cols-3 gap-2 sm:gap-3">
         {games.map((game) => (
           <li key={game.id}>

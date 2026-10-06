@@ -1,4 +1,3 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowRightMark } from "@/components/icons"
 import { GameTile, type LobbyGame } from "@/components/play/game-tile"
@@ -8,20 +7,16 @@ export function CategoryBanner({
   subtitle,
   href,
   games,
-  background,
   live = false,
 }: {
   title: string
   subtitle: string
   href: string
   games?: readonly LobbyGame[]
-  background: string
   live?: boolean
 }) {
   return (
-    <section className="relative isolate overflow-hidden rounded-3xl bg-foreground p-5 text-background sm:p-6">
-      <Image src={background} alt="" fill sizes="(min-width: 768px) 720px, 100vw" className="-z-20 object-cover opacity-30 blur-sm" />
-      <span className="absolute inset-0 -z-10 bg-foreground/60" aria-hidden="true" />
+    <section className="rounded-3xl bg-foreground p-5 text-background sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="font-display text-2xl font-extrabold text-balance sm:text-3xl">{title}</h2>

@@ -15,7 +15,7 @@ export function useDepositGate() {
   return ctx
 }
 
-export function DepositGateProvider({ hasDeposit, children }: { hasDeposit: boolean; children: React.ReactNode }) {
+export function DepositGateProvider({ children }: { children: React.ReactNode }) {
   const [game, setGame] = useState<ShowcaseGame | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
@@ -66,12 +66,10 @@ export function DepositGateProvider({ hasDeposit, children }: { hasDeposit: bool
                 </span>
                 <div>
                   <h2 id="deposit-gate-title" className="font-display text-lg font-extrabold text-balance">
-                    {hasDeposit ? "Игра скоро откроется" : "Доступно после пополнения"}
+                    Доступно после пополнения
                   </h2>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground text-pretty">
-                    {hasDeposit
-                      ? "Мы подключаем провайдера. Как только стол заработает, он откроется прямо отсюда."
-                      : "Слоты и live-игры открываются после первого пополнения баланса. Пополнить можно криптовалютой — зачисление в BYN по текущему курсу."}
+                    Слоты и live-игры открываются после пополнения баланса. Пополнить можно криптовалютой — зачисление в BYN по текущему курсу.
                   </p>
                 </div>
               </div>
@@ -83,14 +81,12 @@ export function DepositGateProvider({ hasDeposit, children }: { hasDeposit: bool
                 >
                   Закрыть
                 </button>
-                {!hasDeposit && (
-                  <Link
-                    href="/cabinet/deposit/crypto"
-                    className="flex-1 rounded-xl bg-primary px-4 py-3 text-center text-sm font-extrabold text-primary-foreground transition hover:brightness-110"
-                  >
-                    Пополнить
-                  </Link>
-                )}
+                <Link
+                  href="/cabinet/deposit/crypto"
+                  className="flex-1 rounded-xl bg-primary px-4 py-3 text-center text-sm font-extrabold text-primary-foreground transition hover:brightness-110"
+                >
+                  Пополнить
+                </Link>
               </div>
             </div>
           </div>
