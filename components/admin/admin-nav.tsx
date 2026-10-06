@@ -4,6 +4,7 @@ import { adminLogout } from "@/app/actions/admin"
 const TABS = [
   { href: "/admin", label: "Заявки", key: "queue" },
   { href: "/admin/api", label: "API", key: "api" },
+  { href: "/admin/users", label: "Пользователи", key: "users" },
 ] as const
 
 export function AdminNav({ active, subtitle }: { active: (typeof TABS)[number]["key"]; subtitle: string }) {

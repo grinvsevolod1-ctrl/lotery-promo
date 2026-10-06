@@ -3,6 +3,7 @@ import { Montserrat } from 'next/font/google'
 import { PwaRegister } from '@/components/pwa'
 import { Analytics } from '@/components/analytics'
 import { StaleDeploymentGuard } from '@/components/stale-deployment-guard'
+import { VisitTracker } from '@/components/visit-tracker'
 import { site } from '@/lib/site'
 import './globals.css'
 
@@ -87,6 +88,7 @@ export default function RootLayout({
         <PwaRegister />
         <StaleDeploymentGuard />
         <Analytics />
+        <VisitTracker />
       </body>
     </html>
   )
