@@ -8,6 +8,7 @@ import { cancelCryptoInvoice, createCryptoInvoice, pollCryptoInvoice } from "@/a
 import { ASSETS, MAX_DEPOSIT_BYN, MIN_DEPOSIT_BYN, type AssetId } from "@/lib/crypto/assets"
 import type { InvoiceView } from "@/lib/crypto/deposits"
 import { cn } from "@/lib/utils"
+import { CryptoIcon } from "@/components/crypto-icon"
 
 const PRESETS = [20, 50, 100, 300, 500]
 
@@ -85,13 +86,7 @@ function InvoiceForm({
                   selected ? "bg-primary/10 ring-2 ring-primary" : "bg-background ring-border hover:ring-foreground/30",
                 )}
               >
-                <span
-                  aria-hidden
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-primary-foreground"
-                  style={{ backgroundColor: a.color }}
-                >
-                  {a.symbol.slice(0, 1)}
-                </span>
+                <CryptoIcon asset={id} size={36} />
                 <span className="min-w-0">
                   <span className="block text-sm font-extrabold text-foreground">{a.symbol}</span>
                   <span className="block truncate text-xs text-muted-foreground">{a.network}</span>

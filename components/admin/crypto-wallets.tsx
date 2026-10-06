@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { adminCheckCrypto, saveCryptoWallets } from "@/app/actions/crypto"
 import { ASSETS, ASSET_IDS } from "@/lib/crypto/assets"
+import { CryptoIcon } from "@/components/crypto-icon"
 
 type RecentInvoice = { id: number; asset: string; cryptoAmount: string; amountByn: number; status: string; createdAt: string; txHash: string | null }
 
@@ -31,7 +32,8 @@ export function CryptoWallets({ wallets, recent }: { wallets: Record<string, str
       >
         {ASSET_IDS.map((id) => (
           <label key={id} className="flex flex-col gap-1">
-            <span className="text-xs font-bold text-muted-foreground">
+            <span className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+              <CryptoIcon asset={id} size={20} />
               {ASSETS[id].symbol} · {ASSETS[id].network}
             </span>
             <input

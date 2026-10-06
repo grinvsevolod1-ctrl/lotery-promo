@@ -5,6 +5,7 @@ import { getCryptoRates } from "@/app/actions/crypto"
 import { PageHeading } from "@/components/account/page-heading"
 import { CryptoDeposit } from "@/components/cabinet/crypto-deposit"
 import { Panel } from "@/components/cabinet/panel"
+import { CryptoIcon } from "@/components/crypto-icon"
 import { ASSETS, ASSET_IDS, type AssetId } from "@/lib/crypto/assets"
 import { getUserInvoices, getWallets } from "@/lib/crypto/deposits"
 import { requireSession } from "@/lib/require-session"
@@ -32,7 +33,7 @@ export default async function CryptoDepositPage() {
         description="Укажите сумму в BYN — мы пересчитаем её по текущему курсу. Баланс зачисляется в BYN автоматически после поступления перевода."
         aside={
           <Link href="/cabinet/deposit" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-            Картой
+            Другой способ
           </Link>
         }
       />
@@ -46,6 +47,8 @@ export default async function CryptoDepositPage() {
           <ul className="flex flex-col gap-2">
             {invoices.map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-3 rounded-2xl bg-card px-4 py-3 ring-1 ring-border">
+                <span className="flex min-w-0 items-center gap-3">
+                <CryptoIcon asset={i.asset} size={32} />
                 <span className="min-w-0">
                   <span className="block text-sm font-bold tabular-nums text-foreground">
                     {i.cryptoAmount} {ASSETS[i.asset].symbol}
@@ -54,6 +57,7 @@ export default async function CryptoDepositPage() {
                     {new Date(i.createdAt).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })} ·{" "}
                     {i.amountByn.toLocaleString("ru-RU", { minimumFractionDigits: 2 })} BYN
                   </span>
+                </span>
                 </span>
                 <span className={i.status === "paid" ? "text-xs font-semibold text-primary" : "text-xs text-muted-foreground"}>
                   {STATUS[i.status] ?? i.status}
