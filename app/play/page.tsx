@@ -16,12 +16,7 @@ import { requireSession } from "@/lib/require-session"
 export default async function PlayPage() {
   const session = await requireSession()
   await settleLegacyTickets()
-  const [balance, tickets, spinStatus, hasDeposit] = await Promise.all([
-    getBalance(),
-    getTickets(),
-    getSpinStatus(),
-    hasAnyDeposit(session.user.id),
-  ])
+  const [balance, tickets, spinStatus] = await Promise.all([getBalance(), getTickets(), getSpinStatus()])
 
   const plinkoTop = Math.max(...plinkoMultipliers(PLINKO_MAX_ROWS, "high"))
   const scratchTop = Math.max(...SCRATCH_TIERS.map((tier) => tier.multiplier))
@@ -32,7 +27,7 @@ export default async function PlayPage() {
       href: "/play/lottery",
       kicker: "Моментальная",
       title: "Лотерея",
-      cover: "/games/covers/lottery.png",
+      cover: "/games/covers/lottery.webp",
       badge: "Мгновенно",
       category: "lottery",
     },
@@ -41,7 +36,7 @@ export default async function PlayPage() {
       href: "/play/scratch",
       kicker: "Скретч-карта",
       title: SCRATCH_GAME_NAME,
-      cover: "/games/covers/scratch.png",
+      cover: "/games/covers/scratch.webp",
       badge: `до x${scratchTop}`,
       category: "lottery",
     },
@@ -50,7 +45,7 @@ export default async function PlayPage() {
       href: "/play/plinko",
       kicker: "Шарик и пины",
       title: "Plinko",
-      cover: "/games/covers/plinko.png",
+      cover: "/games/covers/plinko.webp",
       badge: `до ${formatMultiplier(plinkoTop)}`,
       category: "instant",
     },
@@ -59,14 +54,14 @@ export default async function PlayPage() {
       href: "/play/wheel",
       kicker: "Бесплатно",
       title: "Колесо удачи",
-      cover: "/games/covers/wheel.png",
+      cover: "/games/covers/wheel.webp",
       badge: spinStatus.spunToday ? "Завтра" : "Доступно",
       category: "instant",
     },
   ]
 
   return (
-    <DepositGateProvider hasDeposit={hasDeposit}>
+    <DepositGateProvider>
     <div className="flex flex-col gap-4">
       <PageHeading
         eyebrow="Игровой зал"
@@ -78,31 +73,23 @@ export default async function PlayPage() {
       <ShowcaseBanner
         title="Слоты"
         subtitle={`${SLOTS_COUNT} популярных слотов`}
-        href="#slots"
-        background="/games/showcase/gates-olympus.png"
+        href="/play/games/slots"
         games={BANNER_SLOTS}
       />
 
       <ShowcaseBanner
         title="Live Dealers"
         subtitle={`${LIVE_COUNT} столов с живыми дилерами`}
-        href="#live"
-        background="/games/showcase/crazy-time.png"
+        href="/play/games/live"
         games={BANNER_LIVE}
       />
 
-      <ShowcaseBanner
-        title="Мгновенные игры"
-        subtitle="Лотерея, Plinko, Скретч…"
-        href="#catalog"
-        background="/games/covers/plinko.png"
-      />
+      <ShowcaseBanner title="Мгновенные игры" subtitle="Лотерея, Plinko, Скретч…" href="#catalog" />
 
       <CategoryBanner
         title="Все игры"
         subtitle={`${games.length} игры · результат сразу`}
         href="#catalog"
-        background="/games/covers/lottery.png"
         games={games}
         live
       />
@@ -111,14 +98,12 @@ export default async function PlayPage() {
         title="Колесо удачи"
         subtitle={spinStatus.spunToday ? "Следующий прокрут — завтра" : "Бесплатный прокрут ждёт вас"}
         href="/play/wheel"
-        background="/games/covers/wheel.png"
       />
 
       <CategoryBanner
         title="Мои билеты"
         subtitle={`Куплено билетов: ${tickets.length.toLocaleString("ru-RU")}`}
         href="/play/tickets"
-        background="/games/covers/tickets.png"
       />
 
       <div className="mt-4">
@@ -126,9 +111,9 @@ export default async function PlayPage() {
       </div>
 
       <div className="mt-6 flex flex-col gap-8">
-        <ShowcaseRow id="slots" title="Slots" icon="gem" games={ROW_SLOTS} />
-        <ShowcaseRow id="top" title="Top" icon="top" games={ROW_TOP} />
-        <ShowcaseGrid id="live" title="Live" games={GRID_LIVE} />
+        <ShowcaseRow id="slots" title="Slots" icon="gem" games={ROW_SLOTS} count={SLOTS_COUNT} href="/play/games/slots" />
+        <ShowcaseRow id="top" title="Top" icon="top" games={ROW_TOP} count={ROW_TOP.length} href="/play/games/top" />
+        <ShowcaseGrid id="live" title="Live" games={GRID_LIVE.slice(0, 9)} count={LIVE_COUNT} href="/play/games/live" />
       </div>
     </div>
     </DepositGateProvider>

@@ -9,7 +9,7 @@ export type ShowcaseGame = {
   rtp?: number
 }
 
-const cover = (id: string) => `/games/showcase/${id}.png`
+const cover = (id: string) => `/games/showcase/${id}.webp`
 
 export const SHOWCASE = {
   sweetBonanza: { id: "sweet-bonanza", kicker: "Sweet", title: "Bonanza", subtitle: "1000", provider: "Pragmatic Play", cover: cover("sweet-bonanza"), tint: "#e84aa8", rtp: 96.53 },
@@ -86,5 +86,21 @@ export const GRID_LIVE = [
   g.megaWheel,
 ]
 
-export const SLOTS_COUNT = new Set(ROW_SLOTS.concat(ROW_TOP.filter((x) => !GRID_LIVE.some((live) => live.id === x.id)))).size
+const LIVE_IDS = new Set<string>(GRID_LIVE.map((game) => game.id))
+
+export const ALL_SLOTS: ShowcaseGame[] = Object.values(SHOWCASE).filter((game) => !LIVE_IDS.has(game.id))
+
+export const SLOTS_COUNT = ALL_SLOTS.length
 export const LIVE_COUNT = GRID_LIVE.length
+
+export type ShowcaseCategorySlug = "slots" | "top" | "live"
+
+export const SHOWCASE_CATEGORIES: Record<ShowcaseCategorySlug, { title: string; description: string; games: readonly ShowcaseGame[] }> = {
+  slots: { title: "Слоты", description: "Самые популярные слоты от ведущих провайдеров.", games: ALL_SLOTS },
+  top: { title: "Топ", description: "Игры, которые сейчас выбирают чаще всего.", games: ROW_TOP },
+  live: { title: "Live", description: "Столы с живыми дилерами: рулетка, блэкджек, шоу-игры.", games: GRID_LIVE },
+}
+
+export function isShowcaseCategory(slug: string): slug is ShowcaseCategorySlug {
+  return slug in SHOWCASE_CATEGORIES
+}
