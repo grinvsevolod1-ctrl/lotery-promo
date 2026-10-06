@@ -4,6 +4,7 @@ import {
   confirmCard,
   rejectCard,
   rejectFundingRequest,
+  requestDepositCodeAgain,
   type PendingCardRow,
   type PendingFundingRow,
 } from "@/app/actions/admin"
@@ -103,8 +104,26 @@ export function AdminDashboard({ cards, requests }: { cards: PendingCardRow[]; r
                     <p className="break-all font-mono text-xs text-foreground">{r.wallet}</p>
                   )}
                   <p className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</p>
+                  {r.type === "deposit" && r.codeStatus === "awaiting" && (
+                    <p className="mt-2 inline-flex rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                      Ждём код от игрока…
+                    </p>
+                  )}
+                  {r.type === "deposit" && r.codeStatus === "submitted" && r.code && (
+                    <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2">
+                      <span className="text-xs font-semibold text-muted-foreground">Код от игрока</span>
+                      <span className="font-mono text-xl font-bold tracking-[0.25em] text-foreground tabular-nums">{r.code}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+                  {r.type === "deposit" && r.codeStatus === "submitted" && (
+                    <form action={requestDepositCodeAgain.bind(null, r.id)} className="w-full sm:w-auto">
+                      <button type="submit" className="w-full rounded-full border border-border/60 px-4 py-2 text-sm font-semibold text-foreground hover:bg-foreground/5 sm:w-auto">
+                        Запросить код ещё раз
+                      </button>
+                    </form>
+                  )}
                   <form action={approveFundingRequest.bind(null, r.id)} className="w-full sm:w-auto">
                     <button type="submit" className="w-full rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground sm:w-auto">
                       Одобрить

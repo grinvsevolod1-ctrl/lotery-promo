@@ -6,6 +6,7 @@ import { requestDeposit } from "@/app/actions/funding"
 import { track } from "@/lib/analytics"
 import { DEPOSIT_MAX, DEPOSIT_MIN, DEPOSIT_PRESETS } from "@/lib/funding"
 import { fieldClass } from "@/components/ui/input"
+import { DepositCodeStep } from "@/components/cabinet/deposit-code-step"
 import { actionErrorMessage } from "@/lib/action-error"
 import { cn } from "@/lib/utils"
 
@@ -16,6 +17,11 @@ export function DepositForm({ cards, hasPending }: { cards: CardOption[]; hasPen
   const [cardId, setCardId] = useState(() => String((cards.find((c) => c.isDefault) ?? cards[0])?.id ?? ""))
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
+  const [active, setActive] = useState<{ id: number; amount: number } | null>(null)
+
+  if (active) {
+    return <DepositCodeStep requestId={active.id} amount={active.amount} onClose={() => setActive(null)} />
+  }
 
   if (cards.length === 0) {
     return (
@@ -43,10 +49,12 @@ export function DepositForm({ cards, hasPending }: { cards: CardOption[]; hasPen
     startTransition(async () => {
       try {
         const result = await requestDeposit({ amount: numeric, cardId: Number(cardId) })
-        if (result.ok) track("deposit_request", { method: "card", amount: numeric })
-        setMessage(result.ok
-          ? { ok: true, text: `Заявка №${result.id} принята. Баланс пополнится сразу после подтверждения оплаты.` }
-          : { ok: false, text: result.error })
+        if (result.ok) {
+          track("deposit_request", { method: "card", amount: numeric })
+          setActive({ id: result.id, amount: numeric })
+        } else {
+          setMessage({ ok: false, text: result.error })
+        }
       } catch (e) {
         setMessage({ ok: false, text: actionErrorMessage(e, "Не удалось отправить заявку. Попробуйте ещё раз.") })
       }
