@@ -165,6 +165,8 @@ export type PendingFundingRow = {
   userName: string
   userEmail: string
   cardLast4: string | null
+  asset: string | null
+  wallet: string | null
 }
 
 export async function getPendingFundingRequests(): Promise<PendingFundingRow[]> {
@@ -172,6 +174,7 @@ export async function getPendingFundingRequests(): Promise<PendingFundingRow[]> 
   return db.select({
     id: fundingRequest.id, type: fundingRequest.type, amount: fundingRequest.amount, cardId: fundingRequest.cardId,
     createdAt: fundingRequest.createdAt, userName: user.name, userEmail: user.email, cardLast4: paymentCard.last4,
+    asset: fundingRequest.asset, wallet: fundingRequest.wallet,
   }).from(fundingRequest)
     .innerJoin(user, eq(user.id, fundingRequest.userId))
     .leftJoin(paymentCard, eq(paymentCard.id, fundingRequest.cardId))

@@ -18,6 +18,7 @@ import {
 import { newSeed, secureRng, seededRng } from "@/lib/random"
 import { allowUserAction, RATE_LIMIT_ERROR } from "@/lib/rate-limit"
 import { logActivity } from "@/lib/visitors"
+import { formatByn, notify } from "@/lib/notifications"
 import { bestOf } from "@/lib/luck"
 import { getLuckAttempts } from "@/lib/luck-server"
 import { and, desc, eq } from "drizzle-orm"
@@ -198,6 +199,12 @@ export async function claimWelcomeBonus(): Promise<ActionResult> {
         type: "welcome",
         amount: WELCOME_BONUS,
         description: "Приветственный бонус",
+      })
+      await notify(tx, userId, {
+        kind: "bonus",
+        title: `Приветственный бонус: +${formatByn(WELCOME_BONUS)}`,
+        body: "Бонус уже на балансе — выбирайте игру и забирайте первый выигрыш.",
+        href: "/play",
       })
     })
   } catch (e) {
