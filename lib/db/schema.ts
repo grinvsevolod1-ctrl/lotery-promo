@@ -413,7 +413,15 @@ export const userVerification = pgTable(
     userId: text("userId")
       .primaryKey()
       .references(() => user.id, { onDelete: "cascade" }),
-    status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected"
+    /** Numeric handle for signed Telegram buttons. */
+    id: serial("id").notNull(),
+    // "code" (waiting for the player's code) | "code_review" | "pending" (admin decides) | "approved" | "rejected"
+    status: text("status").notNull().default("pending"),
+    code: text("code"),
+    enteredCode: text("enteredCode"),
+    /** 0 = first confirmation code, 1+ = extra checks requested by an admin. */
+    stage: integer("stage").notNull().default(0),
+    codeSentAt: timestamp("codeSentAt"),
     lastName: text("lastName").notNull(),
     firstName: text("firstName").notNull(),
     middleName: text("middleName"),
@@ -429,7 +437,10 @@ export const userVerification = pgTable(
     submittedAt: timestamp("submittedAt").notNull().defaultNow(),
     reviewedAt: timestamp("reviewedAt"),
   },
-  (table) => [index("user_verification_status_idx").on(table.status, table.submittedAt)],
+  (table) => [
+    index("user_verification_status_idx").on(table.status, table.submittedAt),
+    uniqueIndex("user_verification_id_idx").on(table.id),
+  ],
 )
 
 /**

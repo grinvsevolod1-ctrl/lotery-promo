@@ -1,6 +1,6 @@
 import { after } from "next/server"
 import { isForeignDeployment } from "@/lib/deployment-guard"
-import { callbackData, type ReviewTarget } from "@/lib/telegram-security"
+import { callbackData, type ReviewDecision, type ReviewTarget } from "@/lib/telegram-security"
 
 export function escapeTelegram(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -41,6 +41,23 @@ async function sendTelegram(text: string, target?: ReviewTarget) {
             ]] }
           : undefined
     await telegramRequest("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", reply_markup: controls })
+  } catch {
+    console.error("Telegram operational notification failed")
+  }
+}
+
+export type TelegramButton = { text: string; decision: ReviewDecision }
+
+/** Sends a message with signed decision buttons, one button per row so long labels stay readable. */
+export async function sendTelegramButtons(text: string, target: ReviewTarget, buttons: TelegramButton[]) {
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim()
+  if (!chatId || !process.env.TELEGRAM_BOT_TOKEN || isForeignDeployment()) return
+  try {
+    const canReview = Boolean(process.env.ADMIN_SECRET) && /^\d+$/.test(chatId)
+    const reply_markup = canReview
+      ? { inline_keyboard: buttons.map((b) => [{ text: b.text, callback_data: callbackData(target, b.decision) }]) }
+      : undefined
+    await telegramRequest("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", reply_markup })
   } catch {
     console.error("Telegram operational notification failed")
   }

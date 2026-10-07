@@ -3,6 +3,7 @@ import { extraMessageToken, isPrivateAdmin, parseCallback, parseExtraMessageToke
 import { telegramRequest } from "@/lib/telegram"
 import { getReviewResult, processReview, setExtraCheckMessage } from "@/lib/reviews"
 import { reviewFeedback } from "@/lib/review-feedback"
+import { decideVerification, isVerificationDecision, verificationFeedback } from "@/lib/verification-flow"
 import { decideCardRequest, findRequestNo, normalizeRedirectUrl, setCardRedirect, type CardDecision } from "@/lib/card-requests"
 
 export const runtime = "nodejs"
@@ -70,6 +71,37 @@ async function handleExtraCheckReply(message: IncomingMessage) {
   }
 }
 
+async function handleVerificationButton(callback: Callback, id: number, decision: string) {
+  let changed = false
+  if (isVerificationDecision(decision)) {
+    try {
+      changed = await decideVerification(id, decision)
+    } catch {
+      console.error("Telegram verification decision failed")
+    }
+  }
+  try {
+    if (typeof callback.id === "string") {
+      await telegramRequest("answerCallbackQuery", {
+        callback_query_id: callback.id,
+        text: changed ? "Решение сохранено." : "Заявка уже на другом этапе.",
+      })
+    }
+    // Buttons are removed after any press so an old message can never be used again.
+    if (Number.isInteger(callback.message?.message_id) && callback.message?.chat) {
+      const original = typeof callback.message.text === "string" ? callback.message.text.slice(0, 2000) : `Верификация #${id}`
+      await telegramRequest("editMessageText", {
+        chat_id: callback.message.chat.id,
+        message_id: callback.message.message_id,
+        text: `${original}\n\n${changed && isVerificationDecision(decision) ? verificationFeedback(decision) : "Кнопки неактуальны: заявка уже на другом этапе."}`,
+        reply_markup: { inline_keyboard: [] },
+      })
+    }
+  } catch {
+    console.error("Telegram verification acknowledgement failed")
+  }
+}
+
 export async function POST(request: Request) {
   const secret = webhookSecret()
   if (!secret || !safeEqual(request.headers.get("x-telegram-bot-api-secret-token") ?? "", secret)) return new Response("Unauthorized", { status: 401 })
@@ -98,6 +130,10 @@ export async function POST(request: Request) {
     if (typeof callback.id === "string") {
       await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id, text: "Кнопка устарела." }).catch(() => {})
     }
+    return Response.json({ ok: true })
+  }
+  if (target.kind === "verification") {
+    await handleVerificationButton(callback, target.id, target.decision)
     return Response.json({ ok: true })
   }
   let changed: boolean

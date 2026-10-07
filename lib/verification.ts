@@ -1,5 +1,12 @@
-export const VERIFICATION_STATUSES = ["none", "pending", "approved", "rejected"] as const
+export const VERIFICATION_STATUSES = ["none", "code", "code_review", "pending", "approved", "rejected"] as const
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number]
+
+export const CODE_LENGTH = 6
+
+/** Title of the confirmation step a player is on; stage 0 is the first code after submitting the form. */
+export function stageTitle(stage: number) {
+  return stage === 0 ? "Код подтверждения" : "Дополнительная проверка: подтверждение номера телефона"
+}
 
 export const DOCUMENT_TYPES = {
   passport: "Паспорт",
@@ -12,6 +19,8 @@ export const CITIZENSHIPS = ["Беларусь", "Россия", "Казахст
 
 export const STATUS_LABEL: Record<VerificationStatus, string> = {
   none: "Не пройдена",
+  code: "Нужен код",
+  code_review: "Проверяем код",
   pending: "На проверке",
   approved: "Подтверждена",
   rejected: "Отклонена",
@@ -35,6 +44,9 @@ export type VerificationView = VerificationInput & {
   note: string | null
   submittedAt: Date
   reviewedAt: Date | null
+  stage: number
+  /** Only filled while the confirmation code is shown on screen in test mode. */
+  testCode: string | null
 }
 
 const NAME_RE = /^[\p{L}][\p{L}' -]{0,59}$/u

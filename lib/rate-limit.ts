@@ -48,6 +48,7 @@ export const LIMITS = {
   crypto_invoice: { max: 6, windowSec: 600 },
   support: { max: 3, windowSec: 600 },
   verification: { max: 5, windowSec: 600 },
+  "verification-code": { max: 10, windowSec: 600 },
 } as const
 
 export async function allowUserAction(userId: string, action: keyof typeof LIMITS) {

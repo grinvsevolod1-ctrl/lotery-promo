@@ -14,6 +14,8 @@ import { ActionMessage, fieldClass, labelClass } from "@/components/admin/player
 const VERIFICATION_LABEL: Record<string, { text: string; className: string }> = {
   approved: { text: "Верифицирован", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" },
   pending: { text: "На проверке", className: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
+  code: { text: "Ждём код", className: "bg-sky-500/15 text-sky-700 dark:text-sky-400" },
+  code_review: { text: "Проверить код", className: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
   rejected: { text: "Отклонена", className: "bg-destructive/15 text-destructive" },
 }
 

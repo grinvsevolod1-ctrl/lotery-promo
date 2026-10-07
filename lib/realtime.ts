@@ -11,6 +11,7 @@ export const topics = {
   adminVerification: "admin:verification",
   userCards: (userId: string) => `user:${userId}:cards`,
   userBalance: (userId: string) => `user:${userId}:balance`,
+  userVerification: (userId: string) => `user:${userId}:verification`,
 } as const
 
 export type LiveEvent = { topic: string; id?: string | number }

@@ -27,7 +27,7 @@ export async function getAdminCounts(): Promise<AdminCounts> {
     total(db.select({ total: count() }).from(fundingRequest).where(and(eq(fundingRequest.status, "pending"), eq(fundingRequest.type, "withdrawal")))),
     total(db.select({ total: count() }).from(referral).where(eq(referral.status, "pending"))),
     total(db.select({ total: count() }).from(supportRequest).where(eq(supportRequest.status, "open"))),
-    total(db.select({ total: count() }).from(userVerification).where(eq(userVerification.status, "pending"))),
+    total(db.select({ total: count() }).from(userVerification).where(inArray(userVerification.status, ["pending", "code_review"]))),
   ])
   return { queue: cards + funding + referrals, api: cards, withdrawals, support, verification }
 }

@@ -9,6 +9,8 @@ const TABS = [
 
 const STATUS_DOT: Record<VerificationStatus, string> = {
   none: "bg-muted-foreground/60",
+  code: "bg-primary",
+  code_review: "bg-primary",
   pending: "bg-primary",
   approved: "bg-success",
   rejected: "bg-destructive",
@@ -16,6 +18,8 @@ const STATUS_DOT: Record<VerificationStatus, string> = {
 
 const STATUS_TEXT: Record<VerificationStatus, string> = {
   none: "text-muted-foreground",
+  code: "text-primary",
+  code_review: "text-primary",
   pending: "text-primary",
   approved: "text-success",
   rejected: "text-destructive",
