@@ -113,6 +113,21 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    session: {
+      create: {
+        before: async (newSession) => {
+          const { rows } = await pool.query<{ blockedAt: Date | null; blockReason: string | null }>(
+            `select "blockedAt", "blockReason" from "user" where id = $1`,
+            [newSession.userId],
+          )
+          if (rows[0]?.blockedAt) {
+            throw new APIError("FORBIDDEN", {
+              message: `Аккаунт заблокирован${rows[0].blockReason ? `: ${rows[0].blockReason}` : ""}. Напишите в поддержку.`,
+            })
+          }
+        },
+      },
+    },
     user: {
       create: {
         before: async (user) => ({ data: { ...user, termsAcceptedAt: new Date() } }),

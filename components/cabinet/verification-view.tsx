@@ -5,7 +5,8 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { BadgeCheck, Clock, IdCard, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Input, fieldClass } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Notice, Panel, PanelTitle } from "@/components/cabinet/panel"
 import { submitVerification } from "@/app/actions/verification"
@@ -27,8 +28,15 @@ const EMPTY: VerificationInput = {
 
 type FieldErrors = Partial<Record<keyof VerificationInput, string>>
 
-const selectClass =
-  "h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+const selectClass = cn(
+  fieldClass,
+  "appearance-none bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")] bg-[length:16px] bg-[position:right_1rem_center] bg-no-repeat pr-11",
+)
+
+// iOS Safari gives date inputs an intrinsic width wider than small screens and centres the value;
+// block + appearance-none lets the field shrink to its column and keeps the text left-aligned.
+const dateClass =
+  "block appearance-none text-left [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-left"
 
 function Field({
   id,
@@ -44,7 +52,7 @@ function Field({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       {children}
       {error ? (
@@ -196,7 +204,16 @@ export function VerificationView({ data, accountName }: { data: View | null; acc
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="v-birthDate" label="Дата рождения" error={errors.birthDate}>
-                <Input id="v-birthDate" type="date" max={maxBirth} autoComplete="bday" value={form.birthDate} onChange={set("birthDate")} {...aria("birthDate")} />
+                <Input
+                  id="v-birthDate"
+                  type="date"
+                  max={maxBirth}
+                  autoComplete="bday"
+                  value={form.birthDate}
+                  onChange={set("birthDate")}
+                  className={dateClass}
+                  {...aria("birthDate")}
+                />
               </Field>
               <Field id="v-citizenship" label="Гражданство" error={errors.citizenship}>
                 <select id="v-citizenship" className={selectClass} value={form.citizenship} onChange={set("citizenship")} {...aria("citizenship")}>

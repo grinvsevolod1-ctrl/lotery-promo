@@ -1,7 +1,10 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
+import { and, eq, gt } from "drizzle-orm"
 import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
+import { session as sessionTable } from "@/lib/db/schema"
 import { ProfileView, type SessionInfo } from "@/components/cabinet/profile-view"
 import { ProfileTabs } from "@/components/cabinet/profile-tabs"
 import { getMyVerification } from "@/app/actions/verification"
@@ -20,7 +23,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const session = await auth.api.getSession({ headers: requestHeaders })
   if (!session?.user) redirect("/sign-in")
 
-  const rawSessions = await auth.api.listSessions({ headers: requestHeaders })
+  // auth.api.listSessions requires a "fresh" session (signed in within a day) and throws otherwise,
+  // so the list is read straight from the session table, scoped to the signed-in user.
+  const rawSessions = await db
+    .select()
+    .from(sessionTable)
+    .where(and(eq(sessionTable.userId, session.user.id), gt(sessionTable.expiresAt, new Date())))
   const sessions: SessionInfo[] = rawSessions
     .map((s) => ({
       id: s.id,

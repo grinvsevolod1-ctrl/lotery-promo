@@ -599,3 +599,35 @@ export async function sendFundingEmail({ to, name, kind, id, amount, method, rea
     }),
   })
 }
+
+/** Free-form letter from the operator: balance credits, verification requests, promo broadcasts. */
+export async function sendAdminMessageEmail({
+  to,
+  name,
+  title,
+  body,
+  cta,
+}: {
+  to: string
+  name: string
+  title: string
+  body: string
+  cta?: { label: string; url: string }
+}) {
+  const greeting = greet(name)
+  const paragraphs = body.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean)
+  const url = cta ? (cta.url.startsWith("http") ? cta.url : `${SITE_URL}${cta.url}`) : undefined
+  await sendMail({
+    to,
+    subject: `${title} — ${SITE_NAME}`,
+    text: `${greeting}\n\n${body}${url ? `\n\n${url}` : ""}`,
+    html: renderLayout({
+      title,
+      preheader: paragraphs[0] ?? title,
+      content:
+        paragraph(escapeHtml(greeting)) +
+        paragraphs.map((part) => paragraph(escapeHtml(part).replace(/\n/g, "<br>"))).join(""),
+      cta: cta && url ? { label: cta.label, url } : undefined,
+    }),
+  })
+}

@@ -9,6 +9,7 @@ const TABS = [
   { href: "/admin", label: "Заявки", key: "queue" },
   { href: "/admin/api", label: "API", key: "api" },
   { href: "/admin/users", label: "Пользователи", key: "users" },
+  { href: "/admin/visitors", label: "Посетители", key: "visitors" },
   { href: "/admin/verification", label: "Верификация", key: "verification" },
   { href: "/admin/funnel", label: "Воронка", key: "funnel" },
   { href: "/admin/support", label: "Поддержка", key: "support" },
