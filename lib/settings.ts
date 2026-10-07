@@ -7,6 +7,8 @@ export const SETTING_KEYS = {
   cardWebhookLastDelivery: "card_webhook_last_delivery",
   cardWebhookLog: "card_webhook_log",
   cryptoWallets: "crypto_wallets",
+  telegramBotToken: "telegram_bot_token",
+  telegramAdminIds: "telegram_admin_ids",
 } as const
 
 export async function getSetting(key: string): Promise<string | null> {
