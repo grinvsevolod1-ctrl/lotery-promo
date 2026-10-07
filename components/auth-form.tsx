@@ -69,12 +69,15 @@ export function AuthForm({
         return
       }
       track("signup_success")
-      if (data?.token) {
-        router.push("/cabinet")
-        router.refresh()
-        return
+      if (!data?.token) {
+        const signIn = await authClient.signIn.email({ email, password })
+        if (signIn.error) {
+          setError("Аккаунт создан. Войдите со своим e-mail и паролем.")
+          return
+        }
       }
-      setSentTo(email)
+      router.push("/cabinet")
+      router.refresh()
       return
     }
 
