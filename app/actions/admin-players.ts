@@ -25,8 +25,7 @@ export interface PlayerRow {
   verification: string | null
 }
 
-export const PLAYER_FILTERS = ["all", "active", "blocked", "unverified"] as const
-export type PlayerFilter = (typeof PLAYER_FILTERS)[number]
+import { PLAYER_FILTERS, type PlayerFilter } from "@/lib/player-filters"
 
 async function assertAdmin() {
   if (!(await isAdmin())) throw new Error("Unauthorized")
@@ -173,7 +172,7 @@ export async function setPlayerBlock(_prev: ActionResult | null, formData: FormD
         title: block ? "Ваш аккаунт заблокирован" : "Ваш аккаунт разблокирован",
         body: block
           ? `Доступ к аккаунту ограничен.\n\nПричина: ${reason}\n\nЕсли вы не согласны с решением, ответьте на это письмо.`
-          : "Доступ к аккаунту восстановлен. Вы снова можете войти в личный кабинет.",
+          : "Доступ к аккаунту восстановл��н. Вы снова можете войти в личный кабинет.",
         cta: block ? undefined : { label: "Войти", url: "/sign-in" },
       }).catch((error) => console.error("admin block mail failed", error)),
     )
