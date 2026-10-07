@@ -1,7 +1,5 @@
 "use server"
 
-import { verificationBlock } from "@/lib/verification-gate"
-
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { isUniqueViolation, lockUser } from "@/lib/db/ledger"
@@ -33,8 +31,6 @@ export async function claimBonus(rawId: string): Promise<{ ok: true; amount: num
   const id = CLAIMABLE.find((b) => b === rawId)
   if (!id) return { ok: false, error: "Неизвестный бонус" }
   if (!(await allowUserAction(user.id, "bonus"))) return { ok: false, error: RATE_LIMIT_ERROR }
-  const unverified = await verificationBlock(user.id)
-  if (unverified) return { ok: false, error: unverified }
 
   let amount: number
   try {
