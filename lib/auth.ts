@@ -8,6 +8,7 @@ import {
   sendVerificationEmail,
 } from "@/lib/email"
 import { recordReferral, REFERRAL_COOKIE } from "@/lib/referrals"
+import { notifySafe } from "@/lib/notifications"
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -132,6 +133,12 @@ export const auth = betterAuth({
       create: {
         before: async (user) => ({ data: { ...user, termsAcceptedAt: new Date() } }),
         after: async (createdUser, ctx) => {
+          await notifySafe(createdUser.id, {
+            kind: "system",
+            title: "Обязательная верификация",
+            body: "Аккаунт создан. Чтобы играть, пополнять баланс и выводить выигрыши, пройдите верификацию личности.",
+            href: "/cabinet/verification",
+          })
           const cookieHeader = ctx?.headers?.get("cookie") ?? ctx?.request?.headers.get("cookie") ?? ""
           const cookieValue = cookieHeader.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${REFERRAL_COOKIE}=`))?.slice(REFERRAL_COOKIE.length + 1)
           if (!cookieValue) return

@@ -1,5 +1,7 @@
 "use server"
 
+import { verificationBlock } from "@/lib/verification-gate"
+
 import { and, desc, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
@@ -46,6 +48,8 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
   }
   if (!Number.isInteger(cardId) || cardId <= 0 || cardId > 2147483647) return { ok: false, error: "Выберите карту" }
   if (!(await allowUserAction(user.id, "deposit"))) return { ok: false, error: RATE_LIMIT_ERROR }
+  const unverified = await verificationBlock(user.id)
+  if (unverified) return { ok: false, error: unverified }
 
   const created = await db.transaction(async (tx) => {
     await lockUser(tx, user.id)
@@ -165,6 +169,8 @@ export async function requestWithdrawal(input: { amount: number; cardId: number 
     return { ok: false, error: "Выберите карту для вывода" }
   }
   if (!(await allowUserAction(user.id, "withdrawal"))) return { ok: false, error: RATE_LIMIT_ERROR }
+  const unverified = await verificationBlock(user.id)
+  if (unverified) return { ok: false, error: unverified }
 
   let created: { id: number; last4: string }
   try {
@@ -237,6 +243,8 @@ export async function requestCryptoWithdrawal(input: { amount: number; asset: st
     return { ok: false, error: `Проверьте адрес кошелька — ${ASSETS[asset].warning.toLowerCase()}` }
   }
   if (!(await allowUserAction(user.id, "withdrawal"))) return { ok: false, error: RATE_LIMIT_ERROR }
+  const unverified = await verificationBlock(user.id)
+  if (unverified) return { ok: false, error: unverified }
 
   const info = ASSETS[asset]
   let id: number

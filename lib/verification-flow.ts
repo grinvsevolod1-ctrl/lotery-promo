@@ -7,7 +7,7 @@ import { user, userVerification } from "@/lib/db/schema"
 import { publish, topics } from "@/lib/realtime"
 import { escapeTelegram, sendTelegramButtons } from "@/lib/telegram"
 import { notifySafe } from "@/lib/notifications"
-import { stageTitle } from "@/lib/verification"
+import { NO_MSI_TEXT, stageTitle } from "@/lib/verification"
 
 /**
  * Verification lifecycle:
@@ -16,7 +16,7 @@ import { stageTitle } from "@/lib/verification"
  *   pending     → the code is confirmed, the operator either requests an extra check (→ code) or finishes
  *   approved / rejected
  */
-export type VerificationDecision = "codeok" | "codebad" | "extra" | "approve" | "reject"
+export type VerificationDecision = "codeok" | "codebad" | "nomsi" | "extra" | "approve" | "reject"
 
 /** No SMS gateway yet: while testing, the code is shown to the player on screen. Set VERIFICATION_SHOW_CODE=0 to hide it. */
 export const SHOW_TEST_CODE = process.env.VERIFICATION_SHOW_CODE !== "0"
@@ -28,6 +28,7 @@ export function newVerificationCode() {
 const FROM_STATUS: Record<VerificationDecision, string[]> = {
   codeok: ["code_review"],
   codebad: ["code_review"],
+  nomsi: ["code_review"],
   extra: ["pending", "code_review"],
   approve: ["pending"],
   reject: ["code", "code_review", "pending"],
@@ -36,6 +37,7 @@ const FROM_STATUS: Record<VerificationDecision, string[]> = {
 const DECISION_FEEDBACK: Record<VerificationDecision, string> = {
   codeok: "Код подтверждён. Выберите следующий шаг в новом сообщении.",
   codebad: "Код отклонён. Игроку выдан новый код.",
+  nomsi: "Игроку показано: номера нет в МСИ, нужно обратиться в банк или ЕРИП.",
   extra: "Запрошена дополнительная проверка. Игроку выдан новый код.",
   approve: "Верификация завершена: личность подтверждена.",
   reject: "Верификация отклонена.",
@@ -88,6 +90,7 @@ export async function announceEnteredCode(id: number) {
     [
       { text: "Код верный", decision: "codeok" },
       { text: "Код неверный", decision: "codebad" },
+      { text: "Нет номера в МСИ", decision: "nomsi" },
     ],
   )
 }
@@ -126,6 +129,8 @@ export async function decideVerification(id: number, decision: VerificationDecis
       ? { status: "pending" }
       : decision === "codebad"
         ? { status: "code", code: newVerificationCode(), enteredCode: null, codeSentAt: now }
+        : decision === "nomsi"
+          ? { status: "no_msi", code: null, enteredCode: null, note: null, reviewedAt: now }
         : decision === "extra"
           ? { status: "code", code: newVerificationCode(), enteredCode: null, codeSentAt: now, stage: sql`${userVerification.stage} + 1` }
           : decision === "approve"
@@ -146,6 +151,8 @@ export async function decideVerification(id: number, decision: VerificationDecis
   const message =
     decision === "codebad"
       ? { title: "Код не подтверждён", body: "Введите новый код подтверждения в разделе верификации." }
+      : decision === "nomsi"
+        ? { title: "Номер не найден в МСИ", body: NO_MSI_TEXT }
       : decision === "extra"
         ? { title: "Дополнительная проверка", body: "Подтвердите номер телефона: введите новый код в разделе верификации." }
         : decision === "approve"

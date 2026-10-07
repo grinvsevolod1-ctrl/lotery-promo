@@ -1,5 +1,7 @@
 "use server"
 
+import { verificationBlock } from "@/lib/verification-gate"
+
 import { db } from "@/lib/db"
 import { balanceOf, isUniqueViolation, lockUser } from "@/lib/db/ledger"
 import { getUserId } from "@/lib/session"
@@ -116,6 +118,8 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
   const game = getGame(gameId)
   if (!game) return { ok: false, error: "Неизвестная игра" }
   if (!(await allowUserAction(userId, "buyTicket"))) return { ok: false, error: RATE_LIMIT_ERROR }
+  const unverified = await verificationBlock(userId)
+  if (unverified) return { ok: false, error: unverified }
 
   let picked: number[]
   if (numbers === undefined) {
@@ -188,6 +192,8 @@ export async function buyTicket(gameId: string, numbers?: number[]): Promise<Act
 export async function claimWelcomeBonus(): Promise<ActionResult> {
   const userId = await getUserId()
   if (!(await allowUserAction(userId, "welcome"))) return { ok: false, error: RATE_LIMIT_ERROR }
+  const unverified = await verificationBlock(userId)
+  if (unverified) return { ok: false, error: unverified }
 
   try {
     await db.transaction(async (tx) => {
@@ -228,6 +234,8 @@ export async function claimWelcomeBonus(): Promise<ActionResult> {
 export async function spinWheel(): Promise<ActionResult<{ segment: number; amount: number }>> {
   const userId = await getUserId()
   if (!(await allowUserAction(userId, "spin"))) return { ok: false, error: RATE_LIMIT_ERROR }
+  const unverified = await verificationBlock(userId)
+  if (unverified) return { ok: false, error: unverified }
   const day = minskDayKey()
   const segment = pickWeighted(WHEEL_SEGMENTS, secureRng)
   const { amount, label } = WHEEL_SEGMENTS[segment]

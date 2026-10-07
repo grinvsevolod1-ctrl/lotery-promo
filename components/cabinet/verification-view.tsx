@@ -13,7 +13,7 @@ import { GhostInput, exampleTail } from "@/components/cabinet/ghost-input"
 import { VerificationCodeStep } from "@/components/cabinet/verification-code"
 import { AutoRefresh } from "@/components/auto-refresh"
 import { submitVerification } from "@/app/actions/verification"
-import { CITIZENSHIPS, DOCUMENT_TYPES, type DocumentType, type VerificationInput, type VerificationView as View } from "@/lib/verification"
+import { CITIZENSHIPS, DOCUMENT_TYPES, NO_MSI_TEXT, type DocumentType, type VerificationInput, type VerificationView as View } from "@/lib/verification"
 import {
   EXAMPLES,
   MASKS,
@@ -108,6 +108,15 @@ function StatusBanner({ data }: { data: View }) {
     case "code_review":
     case "pending":
       return <WaitingBanner />
+    case "no_msi":
+      return (
+        <Banner
+          tone="destructive"
+          icon={<ShieldAlert className="size-5" aria-hidden />}
+          title="Номер не найден в МСИ"
+          text={NO_MSI_TEXT}
+        />
+      )
     default:
       return (
         <Banner
@@ -153,7 +162,7 @@ function initialForm(data: View | null, accountName: string): VerificationInput 
 
 export function VerificationView({ data, accountName }: { data: View | null; accountName: string }) {
   const router = useRouter()
-  const editable = !data || data.status === "rejected"
+  const editable = !data || data.status === "rejected" || data.status === "no_msi"
   const waiting = data?.status === "code_review" || data?.status === "pending" || data?.status === "code"
   const [form, setForm] = useState<VerificationInput>(() => initialForm(data, accountName))
   const [birthDisplay, setBirthDisplay] = useState(() => isoToDisplayDate(form.birthDate))

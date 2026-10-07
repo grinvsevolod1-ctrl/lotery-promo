@@ -1,4 +1,4 @@
-export const VERIFICATION_STATUSES = ["none", "code", "code_review", "pending", "approved", "rejected"] as const
+export const VERIFICATION_STATUSES = ["none", "code", "code_review", "pending", "approved", "rejected", "no_msi"] as const
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number]
 
 export const CODE_LENGTH = 6
@@ -24,7 +24,11 @@ export const STATUS_LABEL: Record<VerificationStatus, string> = {
   pending: "На проверке",
   approved: "Подтверждена",
   rejected: "Отклонена",
+  no_msi: "Нужно обновить данные",
 }
+
+export const NO_MSI_TEXT =
+  "Ваш номер телефона не найден в МСИ (межбанковской системе идентификации). Пожалуйста, обратитесь в свой банк или через ЕРИП для актуализации данных, затем отправьте заявку повторно."
 
 export type VerificationInput = {
   lastName: string

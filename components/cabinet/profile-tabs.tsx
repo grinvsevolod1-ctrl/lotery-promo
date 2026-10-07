@@ -14,6 +14,7 @@ const STATUS_DOT: Record<VerificationStatus, string> = {
   pending: "bg-primary",
   approved: "bg-success",
   rejected: "bg-destructive",
+  no_msi: "bg-destructive",
 }
 
 const STATUS_TEXT: Record<VerificationStatus, string> = {
@@ -23,6 +24,7 @@ const STATUS_TEXT: Record<VerificationStatus, string> = {
   pending: "text-primary",
   approved: "text-success",
   rejected: "text-destructive",
+  no_msi: "text-destructive",
 }
 
 export function ProfileTabs({ active, status }: { active: (typeof TABS)[number]["key"]; status: VerificationStatus }) {

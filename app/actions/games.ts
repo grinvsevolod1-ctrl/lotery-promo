@@ -1,5 +1,7 @@
 "use server"
 
+import { verificationBlock } from "@/lib/verification-gate"
+
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { balanceOf, lockUser } from "@/lib/db/ledger"
@@ -104,6 +106,8 @@ export async function dropPlinkoBall(stake: number, rows: number, risk: PlinkoRi
   }
   if (!isPlinkoRows(rows) || !isPlinkoRisk(risk)) return { ok: false, error: "Неверные настройки игры" } as const
   if (!(await allowUserAction(userId, "plinko"))) return { ok: false, error: RATE_LIMIT_ERROR } as const
+  const unverified = await verificationBlock(userId)
+  if (unverified) return { ok: false, error: unverified } as const
 
   return settleRound<PlinkoResult>(userId, PLINKO_GAME_NAME, stake, (rng) => {
     const out = playPlinko(stake, rows, risk, rng)
@@ -133,6 +137,8 @@ export async function buyScratchCard(price: number) {
   const userId = await getUserId()
   if (!isScratchPrice(price)) return { ok: false, error: "Неверная цена билета" } as const
   if (!(await allowUserAction(userId, "scratch"))) return { ok: false, error: RATE_LIMIT_ERROR } as const
+  const unverified = await verificationBlock(userId)
+  if (unverified) return { ok: false, error: unverified } as const
 
   return settleRound<ScratchResult>(userId, SCRATCH_GAME_NAME, price, (rng) => {
     const out = playScratch(price, rng)

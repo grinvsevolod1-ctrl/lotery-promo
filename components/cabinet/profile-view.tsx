@@ -77,6 +77,40 @@ export function ProfileView({
   )
 }
 
+function ConfirmEmail({ email }: { email: string }) {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle")
+
+  const send = async () => {
+    setState("sending")
+    const { error } = await authClient.sendVerificationEmail({ email, callbackURL: "/cabinet/profile" })
+    setState(error ? "error" : "sent")
+  }
+
+  return (
+    <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        {state === "sent"
+          ? "Письмо отправлено. Перейдите по ссылке из письма, чтобы подтвердить почту."
+          : state === "error"
+            ? "Не удалось отправить письмо. Попробуйте позже."
+            : "Почта не подтверждена. Подтверждение необязательно, но поможет восстановить доступ."}
+      </p>
+      {state !== "sent" && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={send}
+          disabled={state === "sending"}
+          className="shrink-0 rounded-full font-semibold"
+        >
+          {state === "sending" ? "Отправляем…" : "Подтвердить почту"}
+        </Button>
+      )}
+    </div>
+  )
+}
+
 function AccountCard({ user }: { user: { name: string; email: string; createdAt: Date; emailVerified: boolean } }) {
   const router = useRouter()
   const [name, setName] = useState(user.name)
@@ -117,6 +151,7 @@ function AccountCard({ user }: { user: { name: string; email: string; createdAt:
           <dd className="font-semibold text-foreground">{formatDate(user.createdAt)}</dd>
         </div>
       </dl>
+      {!user.emailVerified && <ConfirmEmail email={user.email} />}
       <form onSubmit={save} className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <Label htmlFor="profile-name">Имя</Label>

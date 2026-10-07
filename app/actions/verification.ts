@@ -1,6 +1,6 @@
 "use server"
 
-import { and, desc, eq, lt, or, isNull } from "drizzle-orm"
+import { and, desc, eq, inArray, lt, or, isNull } from "drizzle-orm"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
@@ -94,7 +94,7 @@ export async function submitVerification(raw: Partial<Record<keyof VerificationI
   const [saved] = await db
     .insert(userVerification)
     .values({ userId: current.id, ...values })
-    .onConflictDoUpdate({ target: userVerification.userId, set: values, setWhere: eq(userVerification.status, "rejected") })
+    .onConflictDoUpdate({ target: userVerification.userId, set: values, setWhere: inArray(userVerification.status, ["rejected", "no_msi"]) })
     .returning({ id: userVerification.id })
   if (!saved) return { ok: false, error: "Заявка уже на проверке или подтверждена." }
 
@@ -212,6 +212,10 @@ export async function confirmVerificationCode(userId: string) {
 
 export async function declineVerificationCode(userId: string) {
   await decideByUser(userId, "codebad")
+}
+
+export async function markNoMsiNumber(userId: string) {
+  await decideByUser(userId, "nomsi")
 }
 
 export async function rejectVerification(userId: string, formData: FormData) {

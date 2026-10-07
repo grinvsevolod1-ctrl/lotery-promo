@@ -5,6 +5,7 @@ import {
   confirmVerificationCode,
   declineVerificationCode,
   getVerificationQueue,
+  markNoMsiNumber,
   rejectVerification,
   requestExtraVerification,
 } from "@/app/actions/verification"
@@ -22,6 +23,7 @@ const STATUS_TONE = {
   pending: "bg-primary/15 text-primary",
   approved: "bg-success/15 text-success",
   rejected: "bg-destructive/15 text-destructive",
+  no_msi: "bg-destructive/15 text-destructive",
 } as const
 
 const BUTTON = "h-10 rounded-full px-5 text-sm font-semibold"
@@ -31,7 +33,7 @@ export default async function AdminVerificationPage() {
   const rows = await getVerificationQueue()
   const actionable = rows.filter((r) => r.status === "pending" || r.status === "code_review")
   const waiting = rows.filter((r) => r.status === "code")
-  const reviewed = rows.filter((r) => r.status === "approved" || r.status === "rejected")
+  const reviewed = rows.filter((r) => r.status === "approved" || r.status === "rejected" || r.status === "no_msi")
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-8">
@@ -93,6 +95,9 @@ export default async function AdminVerificationPage() {
                             </form>
                             <form action={declineVerificationCode.bind(null, r.userId)}>
                               <button type="submit" className={`${BUTTON} w-full border border-border/60 text-foreground`}>Код неверный</button>
+                            </form>
+                            <form action={markNoMsiNumber.bind(null, r.userId)}>
+                              <button type="submit" className={`${BUTTON} w-full border border-destructive/40 text-destructive`}>Нет номера в МСИ</button>
                             </form>
                           </>
                         )}
