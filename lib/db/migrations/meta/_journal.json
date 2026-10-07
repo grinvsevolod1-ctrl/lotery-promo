@@ -148,6 +148,13 @@
       "when": 1791500000000,
       "tag": "0020_verification_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791600000000,
+      "tag": "0021_bonus_offers",
+      "breakpoints": true
     }
   ]
 }

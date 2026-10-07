@@ -27,16 +27,40 @@ function getTransporter() {
   }
 
   const port = Number(process.env.SMTP_PORT ?? 587)
+  // A pooled connection removes the TLS+AUTH handshake from every letter, and
+  // the rate limit keeps bursts (broadcasts) below Gmail's throttling threshold,
+  // which otherwise delays or silently drops messages.
   transporter = nodemailer.createTransport({
+    pool: true,
+    maxConnections: 2,
+    maxMessages: 100,
+    rateDelta: 1000,
+    rateLimit: 3,
     host,
     port,
     secure: process.env.SMTP_SECURE === "true" || port === 465,
+    connectionTimeout: 15_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 30_000,
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? "" }
       : undefined,
   })
   return transporter
 }
+
+const MAIL_DOMAIN = (() => {
+  const from = process.env.MAIL_FROM ?? process.env.SMTP_USER ?? ""
+  return from.match(/@([^>\s]+)/)?.[1] ?? new URL(SITE_URL).hostname
+})()
+
+function isPermanentSmtpError(error: unknown) {
+  const err = error as { code?: string; responseCode?: number }
+  if (err?.code === "EAUTH" || err?.code === "EENVELOPE") return true
+  return typeof err?.responseCode === "number" && err.responseCode >= 500 && err.responseCode < 600
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export async function sendMail(input: MailInput) {
   if (mailTestMode) {
@@ -71,11 +95,32 @@ export async function sendMail(input: MailInput) {
     return
   }
 
-  await transport.sendMail({
+  const headers: Record<string, string> = {
+    "X-Entity-Ref-ID": crypto.randomUUID(),
+    "List-Unsubscribe": `<mailto:${site.operator.email}?subject=unsubscribe>, <${SITE_URL}/cabinet/profile>`,
+  }
+  const message = {
     from: process.env.MAIL_FROM ?? process.env.SMTP_USER,
     replyTo: site.operator.email,
+    messageId: `<${crypto.randomUUID()}@${MAIL_DOMAIN}>`,
+    date: new Date(),
+    headers,
     ...input,
-  })
+  }
+
+  const started = Date.now()
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const info = await transport.sendMail(message)
+      console.info(`[mail] sent "${input.subject}" to ${input.to} in ${Date.now() - started}ms (${info.response ?? "ok"})`)
+      return
+    } catch (error) {
+      const permanent = isPermanentSmtpError(error)
+      console.error(`[mail] attempt ${attempt} failed for ${input.to}: ${(error as Error).message}`)
+      if (permanent || attempt === 3) throw error
+      await sleep(attempt * 2000)
+    }
+  }
 }
 
 const RESEND_SANDBOX_FROM = `${SITE_NAME} <onboarding@resend.dev>`

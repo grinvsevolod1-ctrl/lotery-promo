@@ -27,7 +27,7 @@ const STATUS: Record<string, { label: string; tone: string }> = {
 }
 
 const money = new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const dateFmt = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Minsk" })
+const dateFmt = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow" })
 
 export default async function WalletPage({ searchParams }: { searchParams: Promise<{ tab?: string; method?: string }> }) {
   const session = await requireSession()

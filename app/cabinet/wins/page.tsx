@@ -55,7 +55,7 @@ function categoryOf(type: string, description: string): (typeof FILTERS)[number]
   return FILTERS[3]
 }
 
-const dateFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Minsk" })
+const dateFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow" })
 
 export default async function WinsPage({ searchParams }: { searchParams: Promise<{ game?: string; page?: string }> }) {
   const session = await requireSession()

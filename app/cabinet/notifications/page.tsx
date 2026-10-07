@@ -17,7 +17,7 @@ const KIND: Record<string, { icon: LucideIcon; tone: string; label: string }> = 
 }
 
 const rtf = new Intl.RelativeTimeFormat("ru", { numeric: "auto" })
-const dateFmt = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", timeZone: "Europe/Minsk" })
+const dateFmt = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", timeZone: "Europe/Moscow" })
 
 function when(date: Date) {
   const minutes = Math.round((date.getTime() - Date.now()) / 60_000)

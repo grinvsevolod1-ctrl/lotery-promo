@@ -3,6 +3,8 @@ import { getBonuses } from "@/app/actions/bonuses"
 import { BonusCard, type BonusCardInfo } from "@/components/cabinet/bonus-card"
 import { claimableTotal, FIRST_DEPOSIT_CAP, RELOAD_CAP, RELOAD_MIN_DEPOSITS, CARD_BONUS, type BonusId } from "@/lib/bonuses"
 import { requireSession } from "@/lib/require-session"
+import { listActiveBonusOffers } from "@/app/actions/admin-bonuses"
+import { BonusOffersList } from "@/components/cabinet/bonus-offers-list"
 
 export const metadata: Metadata = { title: "Бонусы — bytoloto.com" }
 
@@ -64,6 +66,8 @@ export default async function BonusesPage() {
           </li>
         ))}
       </ul>
+
+      <BonusOffersList offers={await listActiveBonusOffers()} />
 
       <p className="px-2 text-center text-xs leading-relaxed text-muted-foreground">
         Бонусы зачисляются на игровой баланс и доступны для игры сразу. Каждый бонус можно получить один раз (релоад — раз в неделю).

@@ -59,6 +59,9 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: *db-url
+      # Keep the process in UTC: "timestamp" columns hold UTC, and node-postgres
+      # serialises raw Date parameters in the process zone. Display uses Europe/Moscow.
+      TZ: UTC
       # Caddy sits on the compose network; trust its forwarded client IP.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12,10.0.0.0/8,127.0.0.1,::1}
     depends_on:
@@ -96,6 +99,7 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: lotery
       BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      TZ: Europe/Moscow
     volumes:
       - ./backups:/backups
       - ./deploy/backup.sh:/backup.sh:ro

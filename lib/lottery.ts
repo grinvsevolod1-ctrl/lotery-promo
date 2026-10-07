@@ -11,9 +11,13 @@ export const WELCOME_BONUS = 100
 /** Paid to the inviter once the invited friend's first card is confirmed. */
 export const REFERRAL_BONUS = 10
 
-/** Europe/Minsk has used UTC+3 without daylight saving since 2011. */
+/**
+ * Site time is Moscow (UTC+3, no daylight saving since 2014 — the same offset as Minsk).
+ * Timestamps are stored in UTC; this zone is applied only when displaying them.
+ */
 export const MINSK_UTC_OFFSET_MS = 3 * 60 * 60 * 1000
-export const MINSK_TIME_ZONE = "Europe/Minsk"
+export const SITE_TIME_ZONE = "Europe/Moscow"
+export const MINSK_TIME_ZONE = SITE_TIME_ZONE
 
 export type GameId = "super" | "five" | "keno"
 

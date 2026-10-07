@@ -460,3 +460,29 @@ export const bonusClaim = pgTable(
   },
   (table) => [uniqueIndex("bonus_claim_once").on(table.userId, table.code)],
 )
+
+/** Promotional bonus campaigns managed from the admin "Бонусы" tab. */
+export const bonusOffer = pgTable("bonus_offer", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  kind: text("kind").notNull(),
+  category: text("category").notNull(),
+  gameTitle: text("gameTitle"),
+  percent: integer("percent"),
+  amount: money("amount"),
+  maxBonus: money("maxBonus"),
+  minDeposit: money("minDeposit"),
+  freeSpins: integer("freeSpins"),
+  spinValue: money("spinValue"),
+  wager: integer("wager").notNull().default(0),
+  wagerContribution: integer("wagerContribution").notNull().default(100),
+  validDays: integer("validDays").notNull().default(7),
+  maxWin: money("maxWin"),
+  audience: text("audience").notNull().default("all"),
+  promoCode: text("promoCode"),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
