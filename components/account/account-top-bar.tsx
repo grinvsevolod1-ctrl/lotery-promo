@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
 import { BrandLogo } from "@/components/brand-logo"
+import { AnimalAvatar } from "@/components/animal-avatar"
 import { useLiveEvents } from "@/components/use-live-events"
 import { cn } from "@/lib/utils"
 
@@ -37,7 +38,6 @@ export function AccountTopBar({ name, email, balance }: { name: string; email: s
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-  const initial = (name.trim()[0] ?? "?").toUpperCase()
 
   useLiveEvents("me", [], () => router.refresh())
   useEffect(() => setOpen(false), [pathname])
@@ -89,9 +89,7 @@ export function AccountTopBar({ name, email, balance }: { name: string; email: s
             aria-label="Меню аккаунта"
             className="flex items-center gap-1 rounded-full p-0.5 transition-colors hover:bg-foreground/5 active:scale-[0.97] sm:pr-2"
           >
-            <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-primary to-gold font-display text-sm font-black text-primary-foreground shadow-md shadow-primary/30">
-              {initial}
-            </span>
+            <AnimalAvatar seed={email || name} decorative className="size-9 shadow-md ring-2 ring-card" />
             <ChevronDown className={cn("hidden size-4 text-muted-foreground transition-transform duration-300 sm:block", open && "rotate-180")} />
           </button>
 
@@ -104,9 +102,7 @@ export function AccountTopBar({ name, email, balance }: { name: string; email: s
             )}
           >
             <div className="flex items-center gap-3 px-3 pb-3 pt-2">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-gold font-display text-base font-black text-primary-foreground">
-                {initial}
-              </span>
+              <AnimalAvatar seed={email || name} className="size-10" />
               <div className="min-w-0">
                 <p className="truncate font-display text-base font-extrabold text-foreground">{name}</p>
                 <p className="truncate text-xs text-muted-foreground">{email}</p>
