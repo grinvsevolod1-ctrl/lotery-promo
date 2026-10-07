@@ -141,7 +141,8 @@ function parseOffer(formData: FormData) {
 
 function failure(error: unknown): ActionResult {
   const message = (error as Error).message
-  if (/bonus_offer_promo_code/.test(message)) return { ok: false, error: "Такой промокод уже используется" }
+  const code = (error as { code?: string }).code
+  if (code === "23505" && /bonus_offer_promo_code/.test(message)) return { ok: false, error: "Такой промокод уже используется" }
   return { ok: false, error: message.length < 120 ? message : "Не удалось сохранить бонус" }
 }
 
@@ -188,7 +189,7 @@ export async function announceBonusOffer(id: number, sendEmail: boolean): Promis
   const offer = toRow(row)
 
   const title = `${offer.title}: ${offerHeadline(offer)}`
-  const body = [offer.description, offerConditions(offer).join("\n"), offer.promoCode ? `Промокод: ${offer.promoCode}` : ""]
+  const body = [offer.description, offerConditions(offer).join("\n"), offer.promoCode ? `Про��окод: ${offer.promoCode}` : ""]
     .filter(Boolean)
     .join("\n\n")
   const href = "/cabinet/bonuses"
