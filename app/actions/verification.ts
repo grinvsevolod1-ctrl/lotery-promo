@@ -193,7 +193,12 @@ export async function getVerificationQueue(): Promise<PendingVerificationRow[]> 
 async function decideByUser(userId: string, decision: VerificationDecision, note: string | null = null) {
   await requireAdmin()
   if (typeof userId !== "string" || !userId) return
-  const [row] = await db.select({ id: userVerification.id }).from(userVerification).where(eq(userVerification.userId, userId)).limit(1)
+  const [row] = await db
+    .select({ id: userVerification.id })
+    .from(userVerification)
+    .where(eq(userVerification.userId, userId))
+    .orderBy(desc(userVerification.submittedAt))
+    .limit(1)
   if (row) await decideVerification(row.id, decision, note)
   revalidatePath("/admin/verification")
 }
