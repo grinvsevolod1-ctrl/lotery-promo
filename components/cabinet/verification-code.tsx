@@ -59,16 +59,9 @@ export function VerificationCodeStep({ data }: { data: View }) {
       >
         <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
           {extra
-            ? `Оператор запросил дополнительную проверку. Введите ${CODE_LENGTH}-значный код, отправленный на номер ${data.phone}.`
+            ? `Требуется дополнительная проверка. Введите ${CODE_LENGTH}-значный код, отправленный на номер ${data.phone}.`
             : `Введите ${CODE_LENGTH}-значный код подтверждения, отправленный на номер ${data.phone}.`}
         </p>
-
-        {data.testCode && (
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3">
-            <span className="text-xs font-medium text-muted-foreground">Тестовый режим, ваш код:</span>
-            <span className="font-mono text-lg font-bold tracking-[0.3em] text-primary">{data.testCode}</span>
-          </div>
-        )}
 
         <label htmlFor="v-code" className="sr-only">
           Код подтверждения
@@ -99,14 +92,14 @@ export function VerificationCodeStep({ data }: { data: View }) {
                     active ? "border-primary bg-card ring-4 ring-primary/15" : "border-transparent",
                   )}
                 >
-                  {code[i] ?? <span className="text-muted-foreground/40">{data.testCode?.[i] ?? "•"}</span>}
+                  {code[i] ?? <span className="text-muted-foreground/40">•</span>}
                 </div>
               )
             })}
           </div>
         </div>
         <p id="v-code-hint" className="text-xs text-muted-foreground">
-          Код проверит оператор. После ввода дождитесь решения на этой странице.
+          После ввода кода дождитесь подтверждения на этой странице.
         </p>
 
         {message && <Notice tone={message.tone}>{message.text}</Notice>}

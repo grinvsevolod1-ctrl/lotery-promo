@@ -15,7 +15,6 @@ import {
   announceEnteredCode,
   decideVerification,
   newVerificationCode,
-  SHOW_TEST_CODE,
   type VerificationDecision,
 } from "@/lib/verification-flow"
 import {
@@ -51,7 +50,7 @@ function toView(row: typeof userVerification.$inferSelect): VerificationView {
     submittedAt: row.submittedAt,
     reviewedAt: row.reviewedAt,
     stage: row.stage,
-    testCode: SHOW_TEST_CODE && row.status === "code" ? row.code : null,
+    testCode: null,
   }
 }
 

@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { BadgeCheck, Clock, IdCard, ShieldAlert } from "lucide-react"
+import { BadgeCheck, Clock, IdCard, Loader2, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { fieldClass } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -78,6 +78,18 @@ function Banner({ tone, icon, title, text }: { tone: "success" | "primary" | "de
   )
 }
 
+function WaitingBanner() {
+  return (
+    <div role="status" aria-live="polite" className="flex flex-col items-center gap-3 rounded-2xl bg-primary/10 px-4 py-8 text-center">
+      <Loader2 className="size-9 animate-spin text-primary" aria-hidden />
+      <div>
+        <p className="font-semibold text-foreground">Ожидайте</p>
+        <p className="text-pretty text-sm text-muted-foreground">Идёт проверка, это может занять несколько минут.</p>
+      </div>
+    </div>
+  )
+}
+
 function StatusBanner({ data }: { data: View }) {
   switch (data.status) {
     case "approved":
@@ -94,23 +106,8 @@ function StatusBanner({ data }: { data: View }) {
         <Banner tone="primary" icon={<Clock className="size-5" aria-hidden />} title="Подтвердите код" text="Данные получены. Введите код подтверждения ниже." />
       )
     case "code_review":
-      return (
-        <Banner
-          tone="primary"
-          icon={<Clock className="size-5 animate-pulse" aria-hidden />}
-          title="Проверяем код"
-          text="Оператор проверяет введённый код. Страница обновится автоматически."
-        />
-      )
     case "pending":
-      return (
-        <Banner
-          tone="primary"
-          icon={<Clock className="size-5 animate-pulse" aria-hidden />}
-          title="Ожидание решения"
-          text={`Код подтверждён. Заявка от ${formatDateTime(data.submittedAt)} ожидает решения оператора — мы пришлём уведомление.`}
-        />
-      )
+      return <WaitingBanner />
     default:
       return (
         <Banner
