@@ -85,15 +85,11 @@ export function AuthForm({
     const { error } = await authClient.signIn.email({
       email,
       password,
-      callbackURL: VERIFY_CALLBACK,
+      callbackURL: "/cabinet",
     })
     setLoading(false)
 
     if (error) {
-      if (error.code === "EMAIL_NOT_VERIFIED") {
-        setSentTo(email)
-        return
-      }
       setError("Неверный e-mail или пароль.")
       return
     }
