@@ -1,7 +1,5 @@
 "use server"
 
-import { verificationBlock } from "@/lib/verification-gate"
-
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { getUserId } from "@/lib/session"
@@ -26,8 +24,6 @@ export async function createCryptoInvoice(
   if (!userId) return { ok: false, error: "Войдите в аккаунт" }
   if (!isAssetId(asset)) return { ok: false, error: "Неизвестная валюта" }
   if (!(await allowUserAction(userId, "crypto_invoice"))) return { ok: false, error: RATE_LIMIT_ERROR }
-  const unverified = await verificationBlock(userId)
-  if (unverified) return { ok: false, error: unverified }
   const amount = Math.round(Number(amountByn) * 100) / 100
   const result = await createInvoice(userId, asset, amount)
   if (result.ok) revalidatePath("/cabinet/deposit/crypto")

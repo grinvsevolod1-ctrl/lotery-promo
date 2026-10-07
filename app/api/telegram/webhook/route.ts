@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache"
 import { extraMessageToken, isPrivateAdmin, parseCallback, parseExtraMessageToken, safeEqual, webhookSecret } from "@/lib/telegram-security"
 import { telegramRequest } from "@/lib/telegram"
+import { getTelegramConfig } from "@/lib/telegram-config"
 import { getReviewResult, processReview, setExtraCheckMessage } from "@/lib/reviews"
 import { reviewFeedback } from "@/lib/review-feedback"
 import { decideVerification, isVerificationDecision, verificationFeedback } from "@/lib/verification-flow"
@@ -45,8 +46,8 @@ async function handleCardRequestCommand(message: IncomingMessage) {
   return true
 }
 
-async function handleExtraCheckReply(message: IncomingMessage) {
-  if (!isPrivateAdmin(message.chat, message.from?.id)) return
+async function handleExtraCheckReply(message: IncomingMessage, adminIds: string[]) {
+  if (!isPrivateAdmin(message.chat, message.from?.id, adminIds)) return
   try {
     if (await handleCardRequestCommand(message)) return
   } catch {
@@ -103,7 +104,8 @@ async function handleVerificationButton(callback: Callback, id: number, decision
 }
 
 export async function POST(request: Request) {
-  const secret = webhookSecret()
+  const { token, adminIds } = await getTelegramConfig()
+  const secret = webhookSecret(token)
   if (!secret || !safeEqual(request.headers.get("x-telegram-bot-api-secret-token") ?? "", secret)) return new Response("Unauthorized", { status: 401 })
   if (Number(request.headers.get("content-length") ?? 0) > 16_384) return new Response("Too large", { status: 413 })
   let update: Update
@@ -115,11 +117,11 @@ export async function POST(request: Request) {
     return new Response("Invalid update", { status: 400 })
   }
   if (!update.callback_query) {
-    if (update.message) await handleExtraCheckReply(update.message)
+    if (update.message) await handleExtraCheckReply(update.message, adminIds)
     return Response.json({ ok: true })
   }
   const callback = update.callback_query
-  if (!isPrivateAdmin(callback.message?.chat, callback.from?.id)) return Response.json({ ok: true })
+  if (!isPrivateAdmin(callback.message?.chat, callback.from?.id, adminIds)) return Response.json({ ok: true })
   let target
   try {
     target = parseCallback(typeof callback.data === "string" ? callback.data : "")

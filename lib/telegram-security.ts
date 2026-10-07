@@ -45,13 +45,14 @@ export function parseExtraMessageToken(text: string): { id: number } | null {
   return { id }
 }
 
-export function webhookSecret() {
-  const token = process.env.TELEGRAM_BOT_TOKEN
+export function webhookSecret(token: string | null | undefined) {
   if (!token) return null
   return createHmac("sha256", token).update("toloto-telegram-webhook-v1").digest("hex")
 }
 
-export function isPrivateAdmin(chat: { id: number; type?: string } | undefined, fromId: number | undefined) {
-  const configured = process.env.TELEGRAM_CHAT_ID?.trim()
-  return Boolean(configured && /^\d+$/.test(configured) && chat?.type === "private" && String(chat.id) === configured && String(fromId) === configured)
+/** Only a private chat with one of the configured admins, where the sender is that same admin. */
+export function isPrivateAdmin(chat: { id: number; type?: string } | undefined, fromId: number | undefined, adminIds: readonly string[]) {
+  if (chat?.type !== "private") return false
+  const chatId = String(chat.id)
+  return /^\d+$/.test(chatId) && chatId === String(fromId) && adminIds.includes(chatId)
 }

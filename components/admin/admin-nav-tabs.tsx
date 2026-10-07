@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import useSWR from "swr"
-import { BadgeCheck, ChartNoAxesColumn, Gift, Inbox, LifeBuoy, PlugZap, Radar, Users, type LucideIcon } from "lucide-react"
+import { BadgeCheck, ChartNoAxesColumn, Gift, Inbox, LifeBuoy, PlugZap, Radar, Send, Users, type LucideIcon } from "lucide-react"
 import type { AdminCounts } from "@/lib/admin-counts"
 import { useLiveEvents } from "@/components/use-live-events"
 
@@ -29,7 +29,13 @@ const GROUPS = [
     tabs: [
       { href: "/admin/visitors", label: "Посетители", key: "visitors", icon: Radar },
       { href: "/admin/funnel", label: "Воронка", key: "funnel", icon: ChartNoAxesColumn },
+    ],
+  },
+  {
+    title: "Настройки",
+    tabs: [
       { href: "/admin/api", label: "API", key: "api", icon: PlugZap },
+      { href: "/admin/telegram", label: "Telegram", key: "telegram", icon: Send },
     ],
   },
 ] as const satisfies readonly { title: string; tabs: readonly Tab[] }[]
@@ -54,7 +60,7 @@ export function AdminNavTabs({ active, initial }: { active: AdminTabKey; initial
     key === "queue" ? counts.queue : key === "api" ? counts.api : key === "support" ? counts.support : key === "verification" ? (counts.verification ?? 0) : 0
 
   return (
-    <nav aria-label="Разделы админки" className="grid gap-4 rounded-3xl border border-border/60 bg-card p-3 sm:grid-cols-[3fr_2fr_3fr] sm:p-4">
+    <nav aria-label="Разделы админки" className="grid gap-4 rounded-3xl border border-border/60 bg-card p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-[3fr_2fr_2fr_2fr]">
       {GROUPS.map((group) => (
         <div key={group.title} className="flex min-w-0 flex-col gap-2">
           <p className="px-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{group.title}</p>

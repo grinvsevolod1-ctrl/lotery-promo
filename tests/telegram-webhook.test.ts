@@ -5,12 +5,17 @@ const mocks = vi.hoisted(() => ({ processReview: vi.fn(), getReviewResult: vi.fn
 vi.mock("@/lib/reviews", () => ({ processReview: mocks.processReview, getReviewResult: mocks.getReviewResult }))
 vi.mock("@/lib/telegram", () => ({ telegramRequest: mocks.telegramRequest }))
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }))
+vi.mock("@/lib/telegram-config", () => ({
+  getTelegramConfig: async () => ({ token: "test-bot-token", adminIds: ["123", "456"], tokenSource: "admin", adminIdsSource: "admin" }),
+}))
 import { POST } from "@/app/api/telegram/webhook/route"
 
+const SECRET = webhookSecret("test-bot-token")!
+
 function update(data = callbackData({ kind: "referral", id: 7 }, "approve"), fromId = 123) {
-  return { callback_query: { id: "cb", data, from: { id: fromId }, message: { message_id: 12, text: "Приглашение #7", chat: { id: 123, type: "private" } } } }
+  return { callback_query: { id: "cb", data, from: { id: fromId }, message: { message_id: 12, text: "Приглашение #7", chat: { id: fromId, type: "private" } } } }
 }
-function request(body: unknown, secret = webhookSecret()!, contentLength?: string) {
+function request(body: unknown, secret = SECRET, contentLength?: string) {
   return new Request("https://example.com/api/telegram/webhook", { method: "POST", headers: { "x-telegram-bot-api-secret-token": secret, ...(contentLength ? { "content-length": contentLength } : {}) }, body: JSON.stringify(body) })
 }
 
@@ -34,6 +39,10 @@ describe("Telegram webhook", () => {
     expect((await POST(request(update(undefined, 999)))).status).toBe(200)
     expect(mocks.processReview).not.toHaveBeenCalled()
   })
+  it("accepts decisions from any configured admin", async () => {
+    expect((await POST(request(update(undefined, 456)))).status).toBe(200)
+    expect(mocks.processReview).toHaveBeenCalledTimes(1)
+  })
   it("ignores tampered signatures", async () => {
     const data = callbackData({ kind: "funding", id: 7 }, "approve").replace(":7:", ":8:")
     await POST(request(update(data)))
@@ -42,7 +51,7 @@ describe("Telegram webhook", () => {
   it("rejects oversized and malformed updates", async () => {
     expect((await POST(request(update(), undefined, "20000"))).status).toBe(413)
     expect((await POST(request({ data: "x".repeat(20000) }))).status).toBe(413)
-    expect((await POST(new Request("https://example.com", { method: "POST", headers: { "x-telegram-bot-api-secret-token": webhookSecret()! }, body: "{" }))).status).toBe(400)
+    expect((await POST(new Request("https://example.com", { method: "POST", headers: { "x-telegram-bot-api-secret-token": SECRET }, body: "{" }))).status).toBe(400)
   })
   it("records referral approval without any payment link", async () => {
     expect((await POST(request(update()))).status).toBe(200)

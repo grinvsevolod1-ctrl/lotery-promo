@@ -48,8 +48,6 @@ export async function requestDeposit(input: { amount: number; cardId: number }):
   }
   if (!Number.isInteger(cardId) || cardId <= 0 || cardId > 2147483647) return { ok: false, error: "Выберите карту" }
   if (!(await allowUserAction(user.id, "deposit"))) return { ok: false, error: RATE_LIMIT_ERROR }
-  const unverified = await verificationBlock(user.id)
-  if (unverified) return { ok: false, error: unverified }
 
   const created = await db.transaction(async (tx) => {
     await lockUser(tx, user.id)
