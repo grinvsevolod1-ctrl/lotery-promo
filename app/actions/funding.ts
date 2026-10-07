@@ -1,6 +1,6 @@
 "use server"
 
-import { and, desc, eq, inArray, sql } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { balanceOf, lockUser, type Tx } from "@/lib/db/ledger"
@@ -15,6 +15,7 @@ import { ASSETS, isAssetId, isPlausibleAddress } from "@/lib/crypto/assets"
 import { getRates } from "@/lib/crypto/rates"
 import { formatByn, notify } from "@/lib/notifications"
 import { mailFundingRequest } from "@/lib/funding-mail"
+import { getWithdrawalEligibility } from "@/lib/withdrawal-eligibility"
 
 export type FundingRequestRow = {
   id: number
@@ -146,31 +147,6 @@ export async function getFundingRequests(): Promise<FundingRequestRow[]> {
 
 class WithdrawalError extends Error {}
 
-const MINIMUM_DEPOSIT_FOR_WITHDRAWAL = 100
-const BONUS_TRANSACTION_TYPES = ["welcome", "bonus", "spin"]
-
-async function withdrawalEligibility(tx: Tx | typeof db, userId: string) {
-  const [deposits, bonusCredits, wagers] = await Promise.all([
-    tx.select({ total: sql<number>`coalesce(sum(${transaction.amount}), 0)` }).from(transaction)
-      .where(and(eq(transaction.userId, userId), inArray(transaction.type, ["deposit", "crypto_deposit"]))),
-    tx.select({ total: sql<number>`coalesce(sum(${transaction.amount}), 0)` }).from(transaction)
-      .where(and(eq(transaction.userId, userId), inArray(transaction.type, BONUS_TRANSACTION_TYPES))),
-    tx.select({ total: sql<number>`coalesce(sum(abs(${transaction.amount})), 0)` }).from(transaction)
-      .where(and(eq(transaction.userId, userId), eq(transaction.type, "purchase"))),
-  ])
-
-  const deposited = Number(deposits[0]?.total ?? 0)
-  const bonus = Number(bonusCredits[0]?.total ?? 0)
-  const wagered = Number(wagers[0]?.total ?? 0)
-  if (deposited < MINIMUM_DEPOSIT_FOR_WITHDRAWAL) {
-    return `Для вывода сначала пополните баланс минимум на ${MINIMUM_DEPOSIT_FOR_WITHDRAWAL} BYN`
-  }
-  if (bonus > wagered) {
-    return `Сначала отыграйте бонус: осталось ${Math.ceil((bonus - wagered) * 100) / 100} BYN`
-  }
-  return null
-}
-
 /**
  * Creates a withdrawal request and reserves the money in the same transaction:
  * a negative "withdrawal_hold" entry lowers the balance at once, so the player
@@ -195,8 +171,8 @@ export async function requestWithdrawal(input: { amount: number; cardId: number 
     created = await db.transaction(async (tx) => {
       await lockUser(tx, user.id)
 
-      const eligibilityError = await withdrawalEligibility(tx, user.id)
-      if (eligibilityError) throw new WithdrawalError(eligibilityError)
+      const { blockedReason } = await getWithdrawalEligibility(tx, user.id)
+      if (blockedReason) throw new WithdrawalError(blockedReason)
 
       const [card] = await tx.select({ last4: paymentCard.last4 }).from(paymentCard)
         .where(and(eq(paymentCard.id, cardId), eq(paymentCard.userId, user.id), eq(paymentCard.status, "confirmed")))
@@ -268,8 +244,8 @@ export async function requestCryptoWithdrawal(input: { amount: number; asset: st
     id = await db.transaction(async (tx) => {
       await lockUser(tx, user.id)
 
-      const eligibilityError = await withdrawalEligibility(tx, user.id)
-      if (eligibilityError) throw new WithdrawalError(eligibilityError)
+      const { blockedReason } = await getWithdrawalEligibility(tx, user.id)
+      if (blockedReason) throw new WithdrawalError(blockedReason)
 
       const [pending] = await tx.select({ id: fundingRequest.id }).from(fundingRequest)
         .where(and(eq(fundingRequest.userId, user.id), eq(fundingRequest.type, "withdrawal"), eq(fundingRequest.status, "pending")))

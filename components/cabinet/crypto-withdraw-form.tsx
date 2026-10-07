@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useCallback, useState, useTransition } from "react"
 import { WithdrawSuccess } from "@/components/cabinet/withdraw-success"
 import { track } from "@/lib/analytics"
@@ -12,7 +13,7 @@ import { CryptoIcon } from "@/components/crypto-icon"
 import { fieldClass } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
-export function CryptoWithdrawForm({ balance, hasPending }: { balance: number; hasPending: boolean }) {
+export function CryptoWithdrawForm({ balance, hasPending, blockedReason = null }: { balance: number; hasPending: boolean; blockedReason?: string | null }) {
   const router = useRouter()
   const [asset, setAsset] = useState<AssetId>("USDT_TRC20")
   const [wallet, setWallet] = useState("")
@@ -26,6 +27,15 @@ export function CryptoWithdrawForm({ balance, hasPending }: { balance: number; h
   }, [router])
 
   if (success) return <WithdrawSuccess {...success} onClose={closeSuccess} />
+
+  if (blockedReason) {
+    return (
+      <div role="status" className="flex flex-col gap-3 rounded-2xl bg-muted p-4 text-sm leading-relaxed text-foreground">
+        <p>{blockedReason}</p>
+        <Link href="/cabinet/deposit" className="font-semibold text-accent underline-offset-4 hover:underline">Перейти к пополнению</Link>
+      </div>
+    )
+  }
 
   if (hasPending) {
     return (

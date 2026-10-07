@@ -13,7 +13,9 @@ import { Panel } from "@/components/cabinet/panel"
 import { TrackView } from "@/components/track-view"
 import { CryptoIcon } from "@/components/crypto-icon"
 import { isAssetId } from "@/lib/crypto/assets"
+import { db } from "@/lib/db"
 import { requireSession } from "@/lib/require-session"
+import { getWithdrawalEligibility } from "@/lib/withdrawal-eligibility"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = { title: "Кошелёк — bytoloto.com" }
@@ -28,8 +30,9 @@ const money = new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximum
 const dateFmt = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Minsk" })
 
 export default async function WalletPage({ searchParams }: { searchParams: Promise<{ tab?: string; method?: string }> }) {
-  await requireSession()
+  const session = await requireSession()
   const [params, balance, cards, requests] = await Promise.all([searchParams, getBalance(), getPaymentCards(), getFundingRequests()])
+  const { blockedReason } = await getWithdrawalEligibility(db, session.user.id)
 
   const tab = params.tab === "withdraw" ? "withdraw" : "deposit"
   const method = params.method === "card" || params.method === "crypto" ? params.method : null
@@ -85,7 +88,7 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
           {tab === "deposit" ? (
             <DepositForm cards={confirmed} hasPending={hasPending} />
           ) : (
-            <WithdrawForm cards={confirmed} balance={balance} hasPending={hasPending} />
+            <WithdrawForm cards={confirmed} balance={balance} hasPending={hasPending} blockedReason={blockedReason} />
           )}
         </Panel>
       )}
@@ -93,7 +96,7 @@ export default async function WalletPage({ searchParams }: { searchParams: Promi
       {tab === "withdraw" && method === "crypto" && (
         <Panel className="p-5 sm:p-6">
           <h2 className="mb-4 font-display text-lg font-extrabold text-foreground">Вывод в криптовалюте</h2>
-          <CryptoWithdrawForm balance={balance} hasPending={hasPending} />
+          <CryptoWithdrawForm balance={balance} hasPending={hasPending} blockedReason={blockedReason} />
         </Panel>
       )}
 

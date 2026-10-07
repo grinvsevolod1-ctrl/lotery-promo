@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 
 type CardOption = { id: number; last4: string; bankName: string | null; isDefault: boolean }
 
-export function WithdrawForm({ cards, balance, hasPending }: { cards: CardOption[]; balance: number; hasPending: boolean }) {
+export function WithdrawForm({ cards, balance, hasPending, blockedReason = null }: { cards: CardOption[]; balance: number; hasPending: boolean; blockedReason?: string | null }) {
   const [amount, setAmount] = useState("")
   const [cardId, setCardId] = useState(() => String((cards.find((c) => c.isDefault) ?? cards[0])?.id ?? ""))
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
@@ -20,6 +20,15 @@ export function WithdrawForm({ cards, balance, hasPending }: { cards: CardOption
   const closeSuccess = useCallback(() => setSuccess(null), [])
 
   if (success) return <WithdrawSuccess {...success} onClose={closeSuccess} />
+
+  if (blockedReason) {
+    return (
+      <div role="status" className="flex flex-col gap-3 rounded-2xl bg-muted p-4 text-sm leading-relaxed text-foreground">
+        <p>{blockedReason}</p>
+        <Link href="/cabinet/deposit" className="font-semibold text-accent underline-offset-4 hover:underline">Перейти к пополнению</Link>
+      </div>
+    )
+  }
 
   if (cards.length === 0) {
     return (
