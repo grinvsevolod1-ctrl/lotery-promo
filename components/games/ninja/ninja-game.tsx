@@ -64,7 +64,7 @@ function replay(round: NinjaRoundView, count: number): NinjaState {
 export function NinjaGame({ initialBalance, initialRound }: { initialBalance: number; initialRound: NinjaRoundView | null }) {
   const router = useRouter()
   const boardRef = useRef<NinjaBoardHandle>(null)
-  const stageRef = useRef<HTMLElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const stopRef = useRef(false)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevRank = useRef<NinjaRankId | null>(initialRound?.state.rank ?? null)
@@ -87,6 +87,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
   const [error, setError] = useState<string | null>(null)
   const [dealKey, setDealKey] = useState(0)
   const [burstKey, setBurstKey] = useState(0)
+  const [sheet, setSheet] = useState(false)
 
   const celebrate = (multiplier: number) => {
     win(multiplier)
@@ -119,9 +120,9 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
     prevRank.current = rank
   }, [displayState?.rank, displayState?.refund, displayState?.status])
 
-  // The controls sit below the field; bring the field back on screen when a round starts.
+  // Everything lives on one screen; starting a round only needs the settings sheet out of the way.
   function focusBoard() {
-    stageRef.current?.scrollIntoView({ block: "start", behavior: "smooth" })
+    setSheet(false)
   }
 
   function scheduleRefresh() {
@@ -325,92 +326,105 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
   const multiplierShown = displayState ? currentMultiplier(displayState) : 0
   const maxReveals = NINJA_CELLS - effectiveTraps
 
+  const stepStake = (dir: -1 | 1) => setStakeInput(String(clampStake((stakeValid ? stake : NINJA_MIN_STAKE) + dir * (stake >= 50 ? 10 : stake >= 10 ? 5 : 1))))
+  const stepTraps = (dir: -1 | 1) => setTraps(Math.min(NINJA_MAX_TRAPS, Math.max(NINJA_MIN_TRAPS, traps + dir)))
+  const controlsLocked = settingsLocked || autoRunning
+
   return (
-    <NinjaShell balance={balance}>
-    <div className="ninja flex flex-col gap-4 pt-1">
-      <section ref={stageRef} className="flex scroll-mt-2 flex-col gap-4 overflow-hidden rounded-3xl bg-card p-3 ring-1 ring-border sm:p-5">
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-              {round ? `Раунд № ${String(round.id).padStart(6, "0")}` : "Выберите ставку и ловушки"}
-            </p>
-            <p className="font-display text-sm font-extrabold text-muted-foreground">
-              {effectiveTraps} {pluralTraps(effectiveTraps)} ·{" "}
-              {finished ? "раунд завершён" : active ? `следующий ${formatNinjaMultiplier(nextMult)}` : `первый свиток ${formatNinjaMultiplier(nextMult)}`}
-            </p>
-          </div>
-          <div className="text-right" aria-live="polite">
-            <p className="text-[11px] font-medium text-muted-foreground">{finished ? "Итог раунда" : "Сейчас"}</p>
-            <p
-              key={`${multiplierShown}-${displayState?.status ?? "idle"}`}
-              className={cn(
-                "ninja-bump font-display text-2xl font-black tabular-nums leading-none",
-                multiplierShown > 1 ? "text-primary" : "text-foreground",
-              )}
-            >
-              {displayState && displayState.revealed.length > 0 ? formatNinjaMultiplier(multiplierShown) : "x0"}
-            </p>
-            <p className="text-xs font-bold tabular-nums text-muted-foreground">{formatMoney(payoutNow)} BYN</p>
-          </div>
+    <NinjaShell balance={balance} onSettings={() => setSheet(true)} settingsOpen={sheet}>
+    <div ref={stageRef} className="ninja flex h-full min-h-0 flex-col gap-2">
+      <div className="flex shrink-0 items-center justify-between gap-3 px-1">
+        <div className="min-w-0">
+          <p className="truncate text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ninja-gold)]">
+            {round ? `Раунд № ${String(round.id).padStart(6, "0")}` : mode === "auto" ? "Авто-режим" : "Новый путь"}
+          </p>
+          <p className="truncate font-display text-xs font-extrabold text-muted-foreground">
+            {effectiveTraps} {pluralTraps(effectiveTraps)} ·{" "}
+            {finished ? "раунд завершён" : active ? `дальше ${formatNinjaMultiplier(nextMult)}` : `первый ${formatNinjaMultiplier(nextMult)}`}
+          </p>
+        </div>
+        <div className="flex items-baseline gap-2 text-right" aria-live="polite">
+          <p
+            key={`${multiplierShown}-${displayState?.status ?? "idle"}`}
+            className={cn(
+              "ninja-bump font-display text-3xl font-black tabular-nums leading-none",
+              multiplierShown > 1 ? "text-[var(--ninja-gold)]" : "text-foreground",
+            )}
+          >
+            {displayState && displayState.revealed.length > 0 ? formatNinjaMultiplier(multiplierShown) : "x0"}
+          </p>
+          <p className="text-xs font-bold tabular-nums text-muted-foreground">{formatMoney(payoutNow)} BYN</p>
+        </div>
+      </div>
+
+      <div className="relative min-h-0 flex-1 [container-type:size]">
+        <div className="mx-auto w-[min(100%,100cqh)]">
+          <NinjaBoard
+            ref={boardRef}
+            state={displayState}
+            trapCells={trapCells}
+            disabled={busy}
+            onOpen={open}
+            pickMode={pickMode}
+            picks={pickMode ? picks : []}
+            onTogglePick={togglePick}
+            tsukuyomi={tsukuyomi}
+            rankUp={rankUp}
+            dealKey={dealKey}
+            burstKey={burstKey}
+          />
         </div>
 
-        <NinjaBoard
-          ref={boardRef}
-          state={displayState}
-          trapCells={trapCells}
-          disabled={busy}
-          onOpen={open}
-          pickMode={pickMode}
-          picks={pickMode ? picks : []}
-          onTogglePick={togglePick}
-          tsukuyomi={tsukuyomi}
-          rankUp={rankUp}
-          dealKey={dealKey}
-          burstKey={burstKey}
-        />
+        {finished && round && displayState && (
+          <div className="pointer-events-none absolute inset-x-2 bottom-2 z-40">
+            <ResultCard view={round} state={displayState} />
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-x-2 top-2 z-40">
+            <Notice tone="error">{error}</Notice>
+          </div>
+        )}
+      </div>
 
+      <div className="shrink-0">
         <RankBar
           reveals={displayState?.revealed.length ?? 0}
           rank={displayState?.rank ?? null}
           refund={displayState?.refund ?? 0}
           maxReveals={maxReveals}
         />
+      </div>
 
-        {finished && round && displayState && (
-          <ResultCard view={round} state={displayState} />
-        )}
+      <div className="flex shrink-0 items-stretch gap-2">
+        <Stepper
+          label="Ставка"
+          unit="BYN"
+          value={stakeInput}
+          disabled={controlsLocked}
+          onDec={() => stepStake(-1)}
+          onInc={() => stepStake(1)}
+          onInput={(v) => setStakeInput(v.replace(/\D/g, "").slice(0, 3))}
+          onBlur={() => setStakeInput(String(clampStake(Number(stakeInput) || NINJA_MIN_STAKE)))}
+          inputId="ninja-stake"
+        />
+        <Stepper
+          label="Ловушки"
+          value={String(traps)}
+          disabled={controlsLocked}
+          onDec={() => stepTraps(-1)}
+          onInc={() => stepTraps(1)}
+        />
+      </div>
 
-        {history.length > 0 && (
-          <div className="flex items-center gap-2">
-            <ul className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1" aria-label="Последние раунды">
-              {history.map((h) => (
-                <li
-                  key={h.id}
-                  className={cn(
-                    "shrink-0 rounded-full border-2 bg-background px-2.5 py-0.5 font-display text-xs font-extrabold tabular-nums",
-                    h.status === "bust" ? "border-[var(--ninja-red)]/60 text-muted-foreground" : h.payout > h.cost ? "border-primary text-primary" : "border-border text-foreground",
-                  )}
-                >
-                  {h.status === "bust" && h.payout === 0 ? "ловушка" : formatNinjaMultiplier(h.multiplier)}
-                </li>
-              ))}
-            </ul>
-            <span className={cn("shrink-0 text-xs font-bold tabular-nums", sessionNet >= 0 ? "text-primary" : "text-muted-foreground")}>
-              {sessionNet > 0 ? "+" : ""}
-              {formatMoney(sessionNet)} BYN за сессию
-            </span>
-          </div>
-        )}
-      </section>
-
-      <div className="ninja-action sticky bottom-0 z-20 -mx-3 flex flex-col px-3 pb-2 pt-3 sm:-mx-5 sm:px-5">
+      <div className="flex shrink-0 flex-col pb-[max(env(safe-area-inset-bottom),4px)]">
         {mode === "manual" ? (
           round && !finished ? (
             <button
               type="button"
               onClick={collect}
               disabled={busy || !active || (displayState?.revealed.length ?? 0) === 0}
-              className="h-14 rounded-2xl bg-[var(--ninja-gold)] font-display text-lg font-extrabold text-[var(--ninja-ink)] shadow-lg shadow-[var(--ninja-gold)]/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
+              className="h-12 rounded-2xl bg-[var(--ninja-gold)] font-display text-base font-extrabold text-[var(--ninja-ink)] shadow-lg shadow-[var(--ninja-gold)]/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
             >
               {(displayState?.revealed.length ?? 0) === 0 ? "Откройте первый свиток" : `Забрать ${formatMoney(payoutNow)} BYN`}
             </button>
@@ -418,7 +432,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
             <button
               type="button"
               onClick={reset}
-              className="h-14 rounded-2xl bg-primary font-display text-lg font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98]"
+              className="h-12 rounded-2xl bg-primary font-display text-base font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98]"
             >
               Новый раунд
             </button>
@@ -427,7 +441,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
               type="button"
               onClick={start}
               disabled={busy || !stakeValid || balance < roundCost}
-              className="h-14 rounded-2xl bg-primary font-display text-lg font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
+              className="h-12 rounded-2xl bg-primary font-display text-base font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
             >
               {busy
                 ? "Готовим поле…"
@@ -442,7 +456,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
           <button
             type="button"
             onClick={() => (stopRef.current = true)}
-            className="h-14 rounded-2xl bg-foreground font-display text-lg font-extrabold text-background transition active:scale-[0.98]"
+            className="h-12 rounded-2xl bg-foreground font-display text-base font-extrabold text-background transition active:scale-[0.98]"
           >
             Остановить · осталось {autoLeft}
           </button>
@@ -450,7 +464,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
           <button
             type="button"
             onClick={reset}
-            className="h-14 rounded-2xl bg-secondary font-display text-lg font-extrabold text-foreground ring-1 ring-border transition active:scale-[0.98]"
+            className="h-12 rounded-2xl bg-secondary font-display text-base font-extrabold text-foreground ring-1 ring-border transition active:scale-[0.98]"
           >
             Очистить поле
           </button>
@@ -459,15 +473,28 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
             type="button"
             onClick={startAuto}
             disabled={busy || !stakeValid || balance < stake || picks.length === 0 || (!!round && !finished)}
-            className="h-14 rounded-2xl bg-primary font-display text-lg font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
+            className="h-12 rounded-2xl bg-primary font-display text-base font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
           >
             {picks.length === 0 ? "Отметьте свитки на поле" : `Запустить ${autoCount} раундов · ${picks.length} ${pluralScrolls(picks.length)}`}
           </button>
         )}
       </div>
+    </div>
 
-      <section className="flex flex-col gap-5 rounded-3xl bg-card p-4 ring-1 ring-border sm:p-6">
-        {error && <Notice tone="error">{error}</Notice>}
+    {sheet && (
+      <div className="fixed inset-0 z-[90] flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="Настройки игры">
+        <button type="button" aria-label="Закрыть настройки" onClick={() => setSheet(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <section className="ninja-sheet relative flex max-h-[88%] flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-3xl bg-card p-4 pb-[max(env(safe-area-inset-bottom),16px)] ring-1 ring-border">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-lg font-black text-foreground">Настройки</h2>
+            <button
+              type="button"
+              onClick={() => setSheet(false)}
+              className="h-9 rounded-full bg-secondary px-4 text-sm font-bold text-foreground ring-1 ring-border active:scale-95"
+            >
+              Готово
+            </button>
+          </div>
 
         <Segmented
           label="Режим"
@@ -483,43 +510,6 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
           ]}
         />
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="ninja-stake" className="font-display text-base font-extrabold text-foreground">
-            Ставка, BYN
-          </label>
-          <div className="flex items-center gap-2 rounded-2xl bg-secondary p-1.5 ring-1 ring-border focus-within:ring-2 focus-within:ring-primary">
-            <input
-              id="ninja-stake"
-              inputMode="numeric"
-              value={stakeInput}
-              disabled={settingsLocked || autoRunning}
-              onChange={(e) => setStakeInput(e.target.value.replace(/\D/g, "").slice(0, 3))}
-              onBlur={() => setStakeInput(String(clampStake(Number(stakeInput) || NINJA_MIN_STAKE)))}
-              className="h-11 min-w-0 flex-1 bg-transparent px-3 font-display text-lg font-extrabold tabular-nums text-foreground outline-none"
-              aria-describedby="ninja-stake-hint"
-            />
-            <button
-              type="button"
-              disabled={settingsLocked || autoRunning}
-              onClick={() => setStakeInput(String(clampStake((stakeValid ? stake : 1) / 2)))}
-              className="h-11 rounded-xl bg-card px-4 font-display font-extrabold text-foreground ring-1 ring-border transition active:scale-95 disabled:opacity-50"
-            >
-              1/2
-            </button>
-            <button
-              type="button"
-              disabled={settingsLocked || autoRunning}
-              onClick={() => setStakeInput(String(clampStake((stakeValid ? stake : 1) * 2)))}
-              className="h-11 rounded-xl bg-card px-4 font-display font-extrabold text-foreground ring-1 ring-border transition active:scale-95 disabled:opacity-50"
-            >
-              x2
-            </button>
-          </div>
-          <p id="ninja-stake-hint" className="text-xs text-muted-foreground">
-            От {NINJA_MIN_STAKE} до {NINJA_MAX_STAKE} BYN. Выигрыш = ставка × множитель, до x5000.
-          </p>
-        </div>
-
         <Segmented
           label="Ловушки на поле"
           value={String(traps)}
@@ -528,6 +518,9 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
           dense
           options={TRAP_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
         />
+        <p className="-mt-2 text-xs text-muted-foreground">
+          Ставка от {NINJA_MIN_STAKE} до {NINJA_MAX_STAKE} BYN. Выигрыш = ставка × множитель, до x5000.
+        </p>
 
         {mode === "manual" ? (
           <div className="flex flex-col gap-2">
@@ -627,9 +620,91 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
             <li>Каждый раунд записывается с криптографическим сидом: результат воспроизводим и проверяем.</li>
           </ul>
         </details>
-      </section>
-    </div>
+
+        {history.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="font-display text-base font-extrabold text-foreground">Последние раунды</p>
+              <span className={cn("text-xs font-bold tabular-nums", sessionNet >= 0 ? "text-primary" : "text-muted-foreground")}>
+                {sessionNet > 0 ? "+" : ""}
+                {formatMoney(sessionNet)} BYN за сессию
+              </span>
+            </div>
+            <ul className="flex flex-wrap gap-1.5" aria-label="Последние раунды">
+              {history.map((h) => (
+                <li
+                  key={h.id}
+                  className={cn(
+                    "rounded-full border-2 bg-background px-2.5 py-0.5 font-display text-xs font-extrabold tabular-nums",
+                    h.status === "bust" ? "border-[var(--ninja-red)]/60 text-muted-foreground" : h.payout > h.cost ? "border-primary text-primary" : "border-border text-foreground",
+                  )}
+                >
+                  {h.status === "bust" && h.payout === 0 ? "ловушка" : formatNinjaMultiplier(h.multiplier)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        </section>
+      </div>
+    )}
     </NinjaShell>
+  )
+}
+
+function Stepper({
+  label,
+  unit,
+  value,
+  disabled,
+  onDec,
+  onInc,
+  onInput,
+  onBlur,
+  inputId,
+}: {
+  label: string
+  unit?: string
+  value: string
+  disabled?: boolean
+  onDec: () => void
+  onInc: () => void
+  onInput?: (value: string) => void
+  onBlur?: () => void
+  inputId?: string
+}) {
+  const btn = "flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 font-display text-xl font-black text-foreground ring-1 ring-white/15 transition active:scale-95 disabled:opacity-40"
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-2xl bg-card/80 p-1.5 ring-1 ring-border backdrop-blur">
+      <p className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+        {unit ? <span className="normal-case tracking-normal"> · {unit}</span> : null}
+      </p>
+      <div className="flex items-center gap-1">
+        <button type="button" onClick={onDec} disabled={disabled} aria-label={`${label}: меньше`} className={btn}>
+          −
+        </button>
+        {onInput ? (
+          <input
+            id={inputId}
+            inputMode="numeric"
+            aria-label={label}
+            value={value}
+            disabled={disabled}
+            onChange={(e) => onInput(e.target.value)}
+            onBlur={onBlur}
+            className="h-10 min-w-0 flex-1 bg-transparent text-center font-display text-xl font-black tabular-nums text-foreground outline-none disabled:opacity-60"
+          />
+        ) : (
+          <output aria-label={label} className="flex h-10 min-w-0 flex-1 items-center justify-center font-display text-xl font-black tabular-nums text-foreground">
+            {value}
+          </output>
+        )}
+        <button type="button" onClick={onInc} disabled={disabled} aria-label={`${label}: больше`} className={btn}>
+          +
+        </button>
+      </div>
+    </div>
   )
 }
 

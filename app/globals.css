@@ -669,9 +669,13 @@ html {
   --ring: #f5b942;
   color-scheme: dark;
 }
-/* Sticky action bar fades into the stage so content scrolls under it. */
-.ninja-action {
-  background: linear-gradient(to top, var(--ninja-ink) 55%, rgba(14, 20, 36, 0));
+/* Settings sheet slides up from the bottom edge of the stage. */
+@keyframes ninja-sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.ninja-sheet {
+  animation: ninja-sheet-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 /* Ambient chakra sparks drifting upwards behind the stage. */
 @keyframes ninja-spark {

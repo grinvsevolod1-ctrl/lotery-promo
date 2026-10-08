@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { ArrowLeft, Maximize2, Minimize2 } from "lucide-react"
+import { ArrowLeft, Maximize2, Minimize2, SlidersHorizontal } from "lucide-react"
 import { NINJA_GAME_NAME } from "@/lib/games/ninja"
 import { cn } from "@/lib/utils"
 
@@ -21,7 +21,17 @@ const formatMoney = (value: number) => value.toLocaleString("ru-RU", { minimumFr
  * Immersive stage: covers the whole viewport above the site chrome and, where
  * the browser allows it, switches to native fullscreen on the first tap.
  */
-export function NinjaShell({ balance, children }: { balance: number; children: ReactNode }) {
+export function NinjaShell({
+  balance,
+  onSettings,
+  settingsOpen,
+  children,
+}: {
+  balance: number
+  onSettings: () => void
+  settingsOpen: boolean
+  children: ReactNode
+}) {
   const shellRef = useRef<HTMLDivElement>(null)
   const requested = useRef(false)
   const [native, setNative] = useState(false)
@@ -69,26 +79,36 @@ export function NinjaShell({ balance, children }: { balance: number; children: R
         ))}
       </div>
 
-      <header className="flex shrink-0 items-center justify-between gap-3 px-3 pb-2 pt-[max(env(safe-area-inset-top),12px)] sm:px-5">
-        <Link
-          href="/play"
-          className="inline-flex h-10 items-center gap-2 rounded-full bg-white/10 px-3.5 text-sm font-bold text-white ring-1 ring-white/15 backdrop-blur transition hover:bg-white/15 active:scale-95"
-        >
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Все игры</span>
-          <span className="sr-only sm:hidden">Все игры</span>
-        </Link>
-        <h1 className="min-w-0 truncate font-display text-base font-black uppercase tracking-[0.18em] text-[var(--ninja-gold)]">{NINJA_GAME_NAME}</h1>
-        <div className="flex items-center gap-2">
-          <p className="rounded-full bg-white/10 px-3.5 py-2 font-display text-sm font-extrabold tabular-nums ring-1 ring-white/15 backdrop-blur" aria-live="polite">
-            {formatMoney(balance)} <span className="text-[11px] font-bold text-white/70">BYN</span>
+      <header className="flex shrink-0 items-center justify-between gap-2 px-2 pb-1.5 pt-[max(env(safe-area-inset-top),8px)] sm:px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            href="/play"
+            aria-label="Все игры"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15 backdrop-blur transition hover:bg-white/15 active:scale-95"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+          </Link>
+          <h1 className="min-w-0 truncate font-display text-sm font-black uppercase tracking-[0.18em] text-[var(--ninja-gold)]">{NINJA_GAME_NAME}</h1>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <p className="rounded-full bg-white/10 px-3 py-1.5 font-display text-sm font-extrabold tabular-nums ring-1 ring-white/15 backdrop-blur" aria-live="polite">
+            {formatMoney(balance)} <span className="text-[10px] font-bold text-white/70">BYN</span>
           </p>
+          <button
+            type="button"
+            onClick={onSettings}
+            aria-label="Настройки игры"
+            aria-expanded={settingsOpen}
+            className="inline-flex size-9 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15 backdrop-blur transition hover:bg-white/15 active:scale-95"
+          >
+            <SlidersHorizontal className="size-4" aria-hidden="true" />
+          </button>
           {supported && (
             <button
               type="button"
               onClick={toggle}
               aria-label={native ? "Выйти из полноэкранного режима" : "На весь экран"}
-              className="inline-flex size-10 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15 backdrop-blur transition hover:bg-white/15 active:scale-95"
+              className="inline-flex size-9 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15 backdrop-blur transition hover:bg-white/15 active:scale-95"
             >
               {native ? <Minimize2 className="size-4" aria-hidden="true" /> : <Maximize2 className="size-4" aria-hidden="true" />}
             </button>
@@ -96,8 +116,8 @@ export function NinjaShell({ balance, children }: { balance: number; children: R
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[max(env(safe-area-inset-bottom),20px)] sm:px-5">
-        <div className="mx-auto w-full max-w-xl">{children}</div>
+      <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-1 sm:px-4">
+        <div className="mx-auto flex h-full w-full max-w-2xl flex-col">{children}</div>
       </main>
     </div>
   )
