@@ -14,6 +14,7 @@ import {
 import { Notice } from "@/components/cabinet/panel"
 import { NinjaBoard, type NinjaBoardHandle } from "@/components/games/ninja/ninja-board"
 import { LadderStrip, RankBar } from "@/components/games/ninja/ninja-ranks"
+import { NinjaShell } from "@/components/games/ninja/ninja-shell"
 import {
   NINJA_AWAKENINGS,
   NINJA_CELLS,
@@ -84,6 +85,13 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
   const [rankUp, setRankUp] = useState<{ id: NinjaRankId; refund: number; key: number } | null>(null)
   const [history, setHistory] = useState<Outcome[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [dealKey, setDealKey] = useState(0)
+  const [burstKey, setBurstKey] = useState(0)
+
+  const celebrate = (multiplier: number) => {
+    win(multiplier)
+    if (multiplier > 1) setBurstKey(Date.now())
+  }
 
   const stake = Number.parseInt(stakeInput, 10)
   const stakeValid = Number.isInteger(stake) && stake >= NINJA_MIN_STAKE && stake <= NINJA_MAX_STAKE
@@ -157,8 +165,10 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
       prevRank.current = null
       setRound(res.round)
       setShown(0)
+      setDealKey(res.round.id)
       tap()
       focusBoard()
+      await sleep(REVEAL_STEP_MS)
       for (let i = 0; i < res.preRevealed.length; i++) {
         await boardRef.current?.throwKunai(res.preRevealed[i])
         tick()
@@ -193,7 +203,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
         if (res.event?.type === "safe" && res.event.sharingan) setTimeout(tap, 300)
         if (res.round.state.status === "complete") {
           setTrapCells(res.round.trapCells)
-          win(currentMultiplier(res.round.state))
+          celebrate(currentMultiplier(res.round.state))
         }
       }
       if (res.balance !== null) setBalance(res.balance)
@@ -219,7 +229,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
       setRound(res.round)
       setTrapCells(res.round.trapCells)
       if (res.balance !== null) setBalance(res.balance)
-      win(currentMultiplier(res.round.state))
+      celebrate(currentMultiplier(res.round.state))
       record(res.round)
     } catch {
       setError("Не удалось забрать выигрыш. Проверьте соединение.")
@@ -232,8 +242,10 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
     setRound(null)
     setTrapCells(null)
     setShown(Number.POSITIVE_INFINITY)
+    setDealKey(Date.now())
     prevRank.current = null
     setError(null)
+    tap()
   }
 
   const togglePick = (cell: number) => {
@@ -255,6 +267,8 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
     prevRank.current = null
     setRound(view)
     setShown(0)
+    setDealKey(view.id)
+    await sleep(REVEAL_STEP_MS)
     let safe = 0
     for (const event of events) {
       await boardRef.current?.throwKunai(event.cell)
@@ -270,7 +284,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
     }
     setShown(Number.POSITIVE_INFINITY)
     setTrapCells(view.trapCells)
-    win(currentMultiplier(view.state))
+    celebrate(currentMultiplier(view.state))
     await sleep(500)
   }
 
@@ -312,8 +326,9 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
   const maxReveals = NINJA_CELLS - effectiveTraps
 
   return (
-    <div className="ninja flex flex-col gap-5">
-      <section ref={stageRef} className="flex scroll-mt-24 flex-col gap-4 overflow-hidden rounded-3xl bg-card p-4 ring-1 ring-border sm:p-6">
+    <NinjaShell balance={balance}>
+    <div className="ninja flex flex-col gap-4 pt-1">
+      <section ref={stageRef} className="flex scroll-mt-2 flex-col gap-4 overflow-hidden rounded-3xl bg-card p-3 ring-1 ring-border sm:p-5">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
@@ -350,6 +365,8 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
           onTogglePick={togglePick}
           tsukuyomi={tsukuyomi}
           rankUp={rankUp}
+          dealKey={dealKey}
+          burstKey={burstKey}
         />
 
         <RankBar
@@ -386,7 +403,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
         )}
       </section>
 
-      <section className="flex flex-col gap-5 rounded-3xl bg-card p-4 ring-1 ring-border sm:p-6">
+      <div className="ninja-action sticky bottom-0 z-20 -mx-3 flex flex-col px-3 pb-2 pt-3 sm:-mx-5 sm:px-5">
         {mode === "manual" ? (
           round && !finished ? (
             <button
@@ -447,7 +464,9 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
             {picks.length === 0 ? "Отметьте свитки на поле" : `Запустить ${autoCount} раундов · ${picks.length} ${pluralScrolls(picks.length)}`}
           </button>
         )}
+      </div>
 
+      <section className="flex flex-col gap-5 rounded-3xl bg-card p-4 ring-1 ring-border sm:p-6">
         {error && <Notice tone="error">{error}</Notice>}
 
         <Segmented
@@ -610,6 +629,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
         </details>
       </section>
     </div>
+    </NinjaShell>
   )
 }
 

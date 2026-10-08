@@ -23,7 +23,17 @@ type Props = {
   /** True for ~1.5 s after a bust: the field inverts into the Tsukuyomi world. */
   tsukuyomi: boolean
   rankUp: { id: NinjaRankId; refund: number; key: number } | null
+  /** Changes whenever the field is reset; remounts the grid so tiles deal in again. */
+  dealKey: number | string
+  /** Changes on every win; fires a gold spark burst. 0 = nothing. */
+  burstKey: number
 }
+
+const BURST = Array.from({ length: 18 }, (_, i) => ({
+  angle: `${i * 20}deg`,
+  radius: `${120 + (i % 3) * 50}px`,
+  delay: `${(i % 4) * 40}ms`,
+}))
 
 const ART: Record<Exclude<TileKind, "closed">, string> = {
   safe: "/games/ninja/chakra.webp",
@@ -44,7 +54,7 @@ export function tileKind(state: NinjaState | null, trapCells: number[] | null, c
 const KUNAI_MS = 260
 
 export const NinjaBoard = forwardRef<NinjaBoardHandle, Props>(function NinjaBoard(
-  { state, trapCells, disabled, onOpen, pickMode, picks, onTogglePick, tsukuyomi, rankUp },
+  { state, trapCells, disabled, onOpen, pickMode, picks, onTogglePick, tsukuyomi, rankUp, dealKey, burstKey },
   ref,
 ) {
   const boardRef = useRef<HTMLDivElement>(null)
@@ -99,7 +109,7 @@ export const NinjaBoard = forwardRef<NinjaBoardHandle, Props>(function NinjaBoar
   return (
     <div
       ref={boardRef}
-      className="ninja relative isolate overflow-hidden rounded-3xl p-2.5 sm:p-3"
+      className={cn("ninja relative isolate overflow-hidden rounded-3xl p-2.5 sm:p-3", state?.status === "active" && "ninja-aura")}
       style={{ background: "var(--ninja-ink)" }}
     >
       <Image
@@ -112,7 +122,13 @@ export const NinjaBoard = forwardRef<NinjaBoardHandle, Props>(function NinjaBoar
       />
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-[#0e1424]/30 via-transparent to-[#0e1424]/80" aria-hidden="true" />
 
-      <div className={cn("grid gap-2 sm:gap-2.5", tsukuyomi && "ninja-tsukuyomi-world")} style={{ gridTemplateColumns: `repeat(${NINJA_SIZE}, minmax(0, 1fr))` }} role="grid" aria-label="Поле свитков">
+      <div
+        key={dealKey}
+        className={cn("ninja-deal grid gap-2 sm:gap-2.5", tsukuyomi && "ninja-tsukuyomi-world")}
+        style={{ gridTemplateColumns: `repeat(${NINJA_SIZE}, minmax(0, 1fr))` }}
+        role="grid"
+        aria-label="Поле свитков"
+      >
         {Array.from({ length: NINJA_CELLS }, (_, cell) => {
           const kind = tileKind(state, trapCells, cell)
           const open = kind !== "closed"
@@ -129,6 +145,7 @@ export const NinjaBoard = forwardRef<NinjaBoardHandle, Props>(function NinjaBoar
               disabled={!canTap}
               onClick={() => (pickMode ? onTogglePick(cell) : onOpen(cell))}
               aria-label={labelFor(kind, cell, pickIndex)}
+              style={{ ["--deal" as string]: `${(Math.floor(cell / NINJA_SIZE) + (cell % NINJA_SIZE)) * 45}ms` }}
               className={cn(
                 "ninja-tile group relative aspect-square rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--ninja-gold)]",
                 open && "is-open",
@@ -181,6 +198,14 @@ export const NinjaBoard = forwardRef<NinjaBoardHandle, Props>(function NinjaBoar
       <div ref={kunaiRef} className="pointer-events-none absolute left-0 top-0 z-20 -ml-3 -mt-6 opacity-0 will-change-transform" aria-hidden="true">
         <Kunai />
       </div>
+
+      {burstKey > 0 && (
+        <div key={burstKey} className="pointer-events-none absolute inset-0 z-30" aria-hidden="true">
+          {BURST.map((b, i) => (
+            <span key={i} className="ninja-burst" style={{ ["--a" as string]: b.angle, ["--r" as string]: b.radius, ["--bd" as string]: b.delay }} />
+          ))}
+        </div>
+      )}
 
       {tsukuyomi && (
         <div className="ninja-tsukuyomi-veil z-30 flex items-center justify-center" aria-hidden="true">
