@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useRouter } from "next/navigation"
 import { tap, tick, win } from "@/lib/feedback"
 import {
@@ -45,6 +45,7 @@ const AUTO_COUNTS = [5, 10, 25, 50] as const
 const REVEAL_STEP_MS = 230
 const TSUKUYOMI_MS = 1500
 const REFRESH_DELAY_MS = 1200
+const CTA = "ninja-cta h-12 rounded-2xl font-display text-base font-extrabold active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
 
 const roundMoney = (value: number) => Math.round(value * 100) / 100
 const formatMoney = (value: number) => roundMoney(value).toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -333,17 +334,13 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
   return (
     <NinjaShell balance={balance} onSettings={() => setSheet(true)} settingsOpen={sheet}>
     <div ref={stageRef} className="ninja flex h-full min-h-0 flex-col gap-2">
-      <div className="flex shrink-0 items-center justify-between gap-3 px-1">
-        <div className="min-w-0">
-          <p className="truncate text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ninja-gold)]">
-            {round ? `Раунд № ${String(round.id).padStart(6, "0")}` : mode === "auto" ? "Авто-режим" : "Новый путь"}
-          </p>
-          <p className="truncate font-display text-xs font-extrabold text-muted-foreground">
-            {effectiveTraps} {pluralTraps(effectiveTraps)} ·{" "}
-            {finished ? "раунд завершён" : active ? `дальше ${formatNinjaMultiplier(nextMult)}` : `первый ${formatNinjaMultiplier(nextMult)}`}
-          </p>
-        </div>
-        <div className="flex items-baseline gap-2 text-right" aria-live="polite">
+      <div className="ninja-rise flex shrink-0 items-end justify-between gap-3 px-1" style={{ "--rise": "40ms" } as CSSProperties}>
+        <p className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground">
+          {round ? `№ ${String(round.id).padStart(6, "0")} · ` : ""}
+          {effectiveTraps} {pluralTraps(effectiveTraps)} ·{" "}
+          {finished ? "завершён" : active ? `дальше ${formatNinjaMultiplier(nextMult)}` : `первый ${formatNinjaMultiplier(nextMult)}`}
+        </p>
+        <div className="flex shrink-0 items-baseline gap-2 whitespace-nowrap text-right" aria-live="polite">
           <p
             key={`${multiplierShown}-${displayState?.status ?? "idle"}`}
             className={cn(
@@ -353,11 +350,13 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
           >
             {displayState && displayState.revealed.length > 0 ? formatNinjaMultiplier(multiplierShown) : "x0"}
           </p>
-          <p className="text-xs font-bold tabular-nums text-muted-foreground">{formatMoney(payoutNow)} BYN</p>
+          <p key={payoutNow} className="ninja-tick text-xs font-semibold tabular-nums text-muted-foreground">
+            {formatMoney(payoutNow)} BYN
+          </p>
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1 [container-type:size]">
+      <div className="ninja-rise relative min-h-0 flex-1 [container-type:size]" style={{ "--rise": "90ms" } as CSSProperties}>
         <div className="mx-auto w-[min(100%,100cqh)]">
           <NinjaBoard
             ref={boardRef}
@@ -381,13 +380,13 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
           </div>
         )}
         {error && (
-          <div className="absolute inset-x-2 top-2 z-40">
+          <div className="ninja-drop absolute inset-x-2 top-2 z-40">
             <Notice tone="error">{error}</Notice>
           </div>
         )}
       </div>
 
-      <div className="shrink-0">
+      <div className="ninja-rise shrink-0" style={{ "--rise": "140ms" } as CSSProperties}>
         <RankBar
           reveals={displayState?.revealed.length ?? 0}
           rank={displayState?.rank ?? null}
@@ -396,7 +395,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
         />
       </div>
 
-      <div className="flex shrink-0 items-stretch gap-2">
+      <div className="ninja-rise flex shrink-0 items-stretch gap-2" style={{ "--rise": "190ms" } as CSSProperties}>
         <Stepper
           label="Ставка"
           unit="BYN"
@@ -417,23 +416,21 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
         />
       </div>
 
-      <div className="flex shrink-0 flex-col pb-[max(env(safe-area-inset-bottom),4px)]">
+      <div className="ninja-rise flex shrink-0 flex-col pb-[max(env(safe-area-inset-bottom),4px)]" style={{ "--rise": "240ms" } as CSSProperties}>
         {mode === "manual" ? (
           round && !finished ? (
             <button
               type="button"
               onClick={collect}
               disabled={busy || !active || (displayState?.revealed.length ?? 0) === 0}
-              className="h-12 rounded-2xl bg-[var(--ninja-gold)] font-display text-base font-extrabold text-[var(--ninja-ink)] shadow-lg shadow-[var(--ninja-gold)]/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
+              className={cn(CTA, "ninja-cta-gold bg-[var(--ninja-gold)] text-[var(--ninja-ink)]")}
             >
-              {(displayState?.revealed.length ?? 0) === 0 ? "Откройте первый свиток" : `Забрать ${formatMoney(payoutNow)} BYN`}
+              <span key={payoutNow} className="ninja-tick inline-block">
+                {(displayState?.revealed.length ?? 0) === 0 ? "Откройте первый свиток" : `Забрать ${formatMoney(payoutNow)} BYN`}
+              </span>
             </button>
           ) : finished ? (
-            <button
-              type="button"
-              onClick={reset}
-              className="h-12 rounded-2xl bg-primary font-display text-base font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98]"
-            >
+            <button type="button" onClick={reset} className={cn(CTA, "bg-foreground text-background")}>
               Новый раунд
             </button>
           ) : (
@@ -441,31 +438,23 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
               type="button"
               onClick={start}
               disabled={busy || !stakeValid || balance < roundCost}
-              className="h-12 rounded-2xl bg-primary font-display text-base font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
+              className={cn(CTA, "ninja-cta-ready bg-primary text-primary-foreground")}
             >
               {busy
                 ? "Готовим поле…"
                 : balance < roundCost
                   ? "Недостаточно средств"
                   : awakening > 0
-                    ? `Пробуждение за ${formatMoney(roundCost)} BYN`
-                    : `Начать путь за ${formatMoney(roundCost)} BYN`}
+                    ? `Пробуждение · ${formatMoney(roundCost)} BYN`
+                    : `Начать путь · ${formatMoney(roundCost)} BYN`}
             </button>
           )
         ) : autoRunning ? (
-          <button
-            type="button"
-            onClick={() => (stopRef.current = true)}
-            className="h-12 rounded-2xl bg-foreground font-display text-base font-extrabold text-background transition active:scale-[0.98]"
-          >
+          <button type="button" onClick={() => (stopRef.current = true)} className={cn(CTA, "bg-foreground text-background")}>
             Остановить · осталось {autoLeft}
           </button>
         ) : finished && round ? (
-          <button
-            type="button"
-            onClick={reset}
-            className="h-12 rounded-2xl bg-secondary font-display text-base font-extrabold text-foreground ring-1 ring-border transition active:scale-[0.98]"
-          >
+          <button type="button" onClick={reset} className={cn(CTA, "bg-white/10 text-foreground")}>
             Очистить поле
           </button>
         ) : (
@@ -473,7 +462,7 @@ export function NinjaGame({ initialBalance, initialRound }: { initialBalance: nu
             type="button"
             onClick={startAuto}
             disabled={busy || !stakeValid || balance < stake || picks.length === 0 || (!!round && !finished)}
-            className="h-12 rounded-2xl bg-primary font-display text-base font-extrabold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
+            className={cn(CTA, "ninja-cta-ready bg-primary text-primary-foreground")}
           >
             {picks.length === 0 ? "Отметьте свитки на поле" : `Запустить ${autoCount} раундов · ${picks.length} ${pluralScrolls(picks.length)}`}
           </button>
@@ -673,10 +662,11 @@ function Stepper({
   onBlur?: () => void
   inputId?: string
 }) {
-  const btn = "flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 font-display text-xl font-black text-foreground ring-1 ring-white/15 transition active:scale-95 disabled:opacity-40"
+  const btn =
+    "flex size-10 shrink-0 items-center justify-center rounded-xl font-display text-xl font-black text-muted-foreground transition hover:bg-white/10 hover:text-foreground active:scale-90 disabled:opacity-30 disabled:hover:bg-transparent"
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-2xl bg-card/80 p-1.5 ring-1 ring-border backdrop-blur">
-      <p className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+    <div className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-2xl bg-white/[0.06] p-1.5">
+      <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {label}
         {unit ? <span className="normal-case tracking-normal"> · {unit}</span> : null}
       </p>
@@ -697,7 +687,9 @@ function Stepper({
           />
         ) : (
           <output aria-label={label} className="flex h-10 min-w-0 flex-1 items-center justify-center font-display text-xl font-black tabular-nums text-foreground">
-            {value}
+            <span key={value} className="ninja-tick inline-block">
+              {value}
+            </span>
           </output>
         )}
         <button type="button" onClick={onInc} disabled={disabled} aria-label={`${label}: больше`} className={btn}>
@@ -731,8 +723,8 @@ function ResultCard({ view, state }: { view: NinjaRoundView; state: NinjaState }
   return (
     <div
       className={cn(
-        "animate-pop flex flex-col gap-1 rounded-2xl p-4",
-        won ? "bg-primary text-primary-foreground" : "bg-[var(--ninja-ink)] text-white",
+        "animate-pop flex flex-col gap-1 rounded-2xl p-4 backdrop-blur-md",
+        won ? "bg-[var(--ninja-gold)] text-[var(--ninja-ink)]" : "bg-[var(--ninja-ink)]/90 text-white ring-1 ring-white/10",
       )}
       role="status"
     >

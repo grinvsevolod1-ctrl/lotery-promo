@@ -92,7 +92,10 @@ export function NinjaShell({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <p className="rounded-full bg-white/10 px-3 py-1.5 font-display text-sm font-extrabold tabular-nums ring-1 ring-white/15 backdrop-blur" aria-live="polite">
-            {formatMoney(balance)} <span className="text-[10px] font-bold text-white/70">BYN</span>
+            <span key={balance} className="ninja-bump inline-block">
+              {formatMoney(balance)}
+            </span>{" "}
+            <span className="text-[10px] font-bold text-white/70">BYN</span>
           </p>
           <button
             type="button"

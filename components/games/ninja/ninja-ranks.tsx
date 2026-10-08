@@ -25,7 +25,10 @@ export function RankBar({ reveals, rank, refund, maxReveals }: { reveals: number
       <div className="relative mx-5 h-11">
         <div className="absolute inset-x-0 top-3.5 h-1.5 -translate-y-1/2 rounded-full bg-muted" />
         <div
-          className="absolute left-0 top-3.5 h-1.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary to-[var(--ninja-gold)] transition-[width] duration-500 ease-out"
+          className={cn(
+            "absolute left-0 top-3.5 h-1.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-[var(--ninja-chakra)] to-[var(--ninja-gold)] transition-[width] duration-500 ease-out",
+            progress > 0 && "ninja-progress-head",
+          )}
           style={{ width: `${progress * 100}%` }}
         />
         <ol className="absolute inset-x-0 top-0 flex">
