@@ -1,6 +1,7 @@
 import { Clover as CloverMark } from "lucide-react"
 import { ScratchSymbolBadge } from "@/components/games/scratch/scratch-symbol"
 import type { ScratchSymbol } from "@/lib/games/scratch"
+import { NINJA_RANKS, formatNinjaMultiplier, type NinjaRankId } from "@/lib/games/ninja"
 import { BallRow } from "@/components/lotto-ball"
 import { formatDateTime } from "@/lib/format"
 import { parseNumbers } from "@/lib/lottery"
@@ -16,16 +17,43 @@ const STATUS: Record<string, { label: string; cls: string }> = {
 type GameDetailsData =
   | { kind: "plinko"; rows: number; risk: string; multiplier: number }
   | { kind: "scratch"; fields: ScratchSymbol[]; matches: number; multiplier: number; winningSymbol: ScratchSymbol | null }
+  | {
+      kind: "ninja"
+      traps: number
+      awakening: number
+      result: "cashed" | "bust" | "complete"
+      reveals: number
+      rank: NinjaRankId | null
+      multiplier: number
+      sharingan: number[]
+    }
 
 const RISK_LABELS: Record<string, string> = { low: "Минимум", medium: "Средний", high: "Высокий" }
 
 function readDetails(value: unknown): GameDetailsData | null {
   if (!value || typeof value !== "object") return null
   const kind = (value as { kind?: unknown }).kind
-  return kind === "plinko" || kind === "scratch" ? (value as GameDetailsData) : null
+  return kind === "plinko" || kind === "scratch" || kind === "ninja" ? (value as GameDetailsData) : null
 }
 
 function GameDetails({ details, cost }: { details: GameDetailsData; cost: number }) {
+  if (details.kind === "ninja") {
+    const rank = details.rank ? NINJA_RANKS.find((r) => r.id === details.rank) : null
+    const result = details.result === "bust" ? "Ловушка" : details.result === "complete" ? "Путь пройден" : "Забрал"
+    return (
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <span className="rounded-full bg-foreground/10 px-2.5 py-1">Ставка {cost} BYN</span>
+        <span className="rounded-full bg-foreground/10 px-2.5 py-1">{details.traps} ловуш.</span>
+        <span className="rounded-full bg-foreground/10 px-2.5 py-1">
+          {result} · {details.reveals} свитк.
+        </span>
+        {rank && <span className="rounded-full bg-foreground/10 px-2.5 py-1">Ранг {rank.label}</span>}
+        {details.awakening > 0 && <span className="rounded-full bg-foreground/10 px-2.5 py-1">Пробуждение</span>}
+        {details.sharingan.length > 0 && <span className="rounded-full bg-foreground/10 px-2.5 py-1">Шаринган ×{details.sharingan.length}</span>}
+        <span className="rounded-full bg-primary/15 px-2.5 py-1 font-bold text-primary">{formatNinjaMultiplier(details.multiplier)}</span>
+      </div>
+    )
+  }
   if (details.kind === "plinko") {
     return (
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -84,7 +112,7 @@ export function TicketCard({ ticket }: { ticket: TicketRow }) {
           <div className="min-w-0">
             <p className="font-display text-base font-extrabold text-foreground">{ticket.game}</p>
             <p className="text-xs text-muted-foreground">
-              {details?.kind === "plinko" ? "Plinko" : details?.kind === "scratch" ? "Скретч-билет" : "Моментальный"} ·{" "}
+              {details?.kind === "plinko" ? "Plinko" : details?.kind === "scratch" ? "Скретч-билет" : details?.kind === "ninja" ? "Путь ниндзя" : "Моментальный"} ·{" "}
               {formatDateTime(ticket.createdAt)}
             </p>
           </div>

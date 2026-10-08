@@ -461,6 +461,42 @@ export const bonusClaim = pgTable(
   (table) => [uniqueIndex("bonus_claim_once").on(table.userId, table.code)],
 )
 
+/**
+ * «Путь ниндзя» rounds. A round spans several requests (open scroll, open
+ * scroll, collect), so the hidden layout lives here until it is settled;
+ * then a `ticket` row is written like for every other game.
+ */
+export const ninjaRound = pgTable(
+  "ninja_round",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    stake: integer("stake").notNull(),
+    traps: integer("traps").notNull(),
+    /** Total charged: the stake, or the Awakening price that includes it. */
+    cost: money("cost").notNull(),
+    /** Safe scrolls opened before the first move (0, 3 or 6). */
+    awakening: integer("awakening").notNull().default(0),
+    seed: text("seed").notNull(),
+    /** Secret: trap cells, Sharingan cells and the trap seal order. */
+    layout: jsonb("layout").notNull(),
+    /** Public progress (see NinjaState in lib/games/ninja.ts). */
+    state: jsonb("state").notNull(),
+    status: text("status").notNull().default("active"), // active | cashed | bust | complete
+    payout: money("payout").notNull().default(0),
+    ticketId: integer("ticketId").references(() => ticket.id),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    settledAt: timestamp("settledAt"),
+  },
+  (table) => [
+    index("ninja_round_user_idx").on(table.userId, table.createdAt),
+    // One open round per player at a time.
+    uniqueIndex("ninja_round_active_once").on(table.userId).where(sql`${table.status} = 'active'`),
+  ],
+)
+
 /** Promotional bonus campaigns managed from the admin "Бонусы" tab. */
 export const bonusOffer = pgTable("bonus_offer", {
   id: serial("id").primaryKey(),

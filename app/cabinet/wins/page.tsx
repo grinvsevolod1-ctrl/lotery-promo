@@ -1,13 +1,14 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { and, count, desc, eq, gt, inArray, like, notLike, or, sql, sum, max, type SQL } from "drizzle-orm"
-import { Coins, Dices, Gift, LayoutGrid, Sparkles, Ticket, Trophy } from "lucide-react"
+import { Coins, Dices, Gift, LayoutGrid, Sparkles, Swords, Ticket, Trophy } from "lucide-react"
 import { db } from "@/lib/db"
 import { transaction } from "@/lib/db/schema"
 import { PageHeading } from "@/components/account/page-heading"
 import { EmptyState } from "@/components/cabinet/panel"
 import { Pagination } from "@/components/cabinet/pagination"
 import { PLINKO_GAME_NAME } from "@/lib/games/plinko"
+import { NINJA_GAME_NAME } from "@/lib/games/ninja"
 import { requireSession } from "@/lib/require-session"
 import { cn } from "@/lib/utils"
 
@@ -19,6 +20,7 @@ const FILTERS = [
   { id: "all", label: "Все", icon: LayoutGrid },
   { id: "lottery", label: "Лотерея", icon: Ticket },
   { id: "plinko", label: "Плинко", icon: Dices },
+  { id: "ninja", label: "Ниндзя", icon: Swords },
   { id: "scratch", label: "Скретч", icon: Sparkles },
   { id: "wheel", label: "Колесо", icon: Coins },
   { id: "bonus", label: "Бонусы", icon: Gift },
@@ -28,6 +30,7 @@ type FilterId = (typeof FILTERS)[number]["id"]
 
 const LOTTERY_PREFIX = "Выигрыш: билет%"
 const PLINKO_PATTERN = `Выигрыш: ${PLINKO_GAME_NAME}%`
+const NINJA_PATTERN = `Выигрыш: ${NINJA_GAME_NAME}%`
 
 function filterCondition(id: FilterId): SQL {
   const prize = eq(transaction.type, "prize")
@@ -36,8 +39,15 @@ function filterCondition(id: FilterId): SQL {
       return and(prize, like(transaction.description, LOTTERY_PREFIX))!
     case "plinko":
       return and(prize, like(transaction.description, PLINKO_PATTERN))!
+    case "ninja":
+      return and(prize, like(transaction.description, NINJA_PATTERN))!
     case "scratch":
-      return and(prize, notLike(transaction.description, LOTTERY_PREFIX), notLike(transaction.description, PLINKO_PATTERN))!
+      return and(
+        prize,
+        notLike(transaction.description, LOTTERY_PREFIX),
+        notLike(transaction.description, PLINKO_PATTERN),
+        notLike(transaction.description, NINJA_PATTERN),
+      )!
     case "wheel":
       return eq(transaction.type, "spin")
     case "bonus":
@@ -48,11 +58,13 @@ function filterCondition(id: FilterId): SQL {
 }
 
 function categoryOf(type: string, description: string): (typeof FILTERS)[number] {
-  if (type === "spin") return FILTERS[4]
-  if (type !== "prize") return FILTERS[5]
-  if (description.startsWith("Выигрыш: билет")) return FILTERS[1]
-  if (description.startsWith(`Выигрыш: ${PLINKO_GAME_NAME}`)) return FILTERS[2]
-  return FILTERS[3]
+  const byId = (id: FilterId) => FILTERS.find((f) => f.id === id)!
+  if (type === "spin") return byId("wheel")
+  if (type !== "prize") return byId("bonus")
+  if (description.startsWith("Выигрыш: билет")) return byId("lottery")
+  if (description.startsWith(`Выигрыш: ${PLINKO_GAME_NAME}`)) return byId("plinko")
+  if (description.startsWith(`Выигрыш: ${NINJA_GAME_NAME}`)) return byId("ninja")
+  return byId("scratch")
 }
 
 const dateFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow" })

@@ -10,12 +10,22 @@ import { hasAnyDeposit } from "@/lib/crypto/deposits"
 import { BANNER_LIVE, BANNER_SLOTS, GRID_LIVE, LIVE_COUNT, ROW_SLOTS, ROW_TOP, SLOTS_COUNT } from "@/lib/games/showcase"
 import { formatMultiplier, plinkoMultipliers, PLINKO_MAX_ROWS } from "@/lib/games/plinko"
 import { SCRATCH_GAME_NAME, SCRATCH_TIERS } from "@/lib/games/scratch"
+import { NINJA_GAME_NAME, NINJA_MAX_MULTIPLIER } from "@/lib/games/ninja"
 import { requireSession } from "@/lib/require-session"
 import { HeroSlider, type HeroSlide } from "@/components/play/hero-slider"
 import { SoundToggle } from "@/components/play/sound-toggle"
 import { WinsTicker } from "@/components/play/wins-ticker"
 
 const HERO_SLIDES: HeroSlide[] = [
+  {
+    id: "ninja",
+    href: "/play/ninja",
+    eyebrow: "Новинка",
+    title: "Путь ниндзя — свитки, кунаи, ранги",
+    text: "Открывайте свитки, страхуйте выигрыш рангом и ловите Шаринган. До x5000.",
+    image: "/games/hero/ninja.webp",
+    cta: "Пройти путь",
+  },
   {
     id: "slots",
     href: "/play/games/slots",
@@ -73,6 +83,15 @@ export default async function PlayPage() {
       category: "lottery",
     },
     {
+      id: "ninja",
+      href: "/play/ninja",
+      kicker: "Свитки и ловушки",
+      title: NINJA_GAME_NAME,
+      cover: "/games/covers/ninja.webp",
+      badge: `до x${NINJA_MAX_MULTIPLIER.toLocaleString("ru-RU")}`,
+      category: "instant",
+    },
+    {
       id: "plinko",
       href: "/play/plinko",
       kicker: "Шарик и пины",
@@ -122,7 +141,7 @@ export default async function PlayPage() {
 
       <CategoryBanner
         title="Фирменные игры"
-        subtitle="Лотерея, Скретч, Plinko, Колесо — результат сразу"
+        subtitle="Путь ниндзя, Plinko, Лотерея, Скретч, Колесо — результат сразу"
         href="#catalog"
         games={games}
         live

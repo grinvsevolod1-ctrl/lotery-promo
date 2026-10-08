@@ -36,6 +36,7 @@ export const LIMITS = {
   buyTicket: { max: 30, windowSec: 60 },
   plinko: { max: 120, windowSec: 60 },
   scratch: { max: 40, windowSec: 60 },
+  ninja: { max: 240, windowSec: 60 },
   spin: { max: 10, windowSec: 60 },
   welcome: { max: 5, windowSec: 60 },
   bonus: { max: 10, windowSec: 60 },
