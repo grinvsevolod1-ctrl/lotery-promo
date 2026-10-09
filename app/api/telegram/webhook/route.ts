@@ -158,8 +158,8 @@ export async function POST(request: Request) {
         after(async () => {
           try {
             await captureTelegramFile(message)
-          } catch {
-            console.error("Telegram file capture failed")
+          } catch (error) {
+            console.error("Telegram file capture failed:", error instanceof Error ? error.message : error)
           }
         })
       }
