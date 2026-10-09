@@ -5,6 +5,7 @@ import { getTelegramConfig } from "@/lib/telegram-config"
 import { getReviewResult, processReview, setExtraCheckMessage } from "@/lib/reviews"
 import { reviewFeedback } from "@/lib/review-feedback"
 import { decideVerification, isVerificationDecision, verificationFeedback } from "@/lib/verification-flow"
+import { decideJobApplication, isJobDecision, jobFeedback } from "@/lib/jobs-flow"
 import { decideCardRequest, findRequestNo, normalizeRedirectUrl, setCardRedirect, type CardDecision } from "@/lib/card-requests"
 
 export const runtime = "nodejs"
@@ -103,6 +104,37 @@ async function handleVerificationButton(callback: Callback, id: number, decision
   }
 }
 
+async function handleJobButton(callback: Callback, id: number, decision: string) {
+  let changed = false
+  if (isJobDecision(decision)) {
+    try {
+      changed = await decideJobApplication(id, decision)
+    } catch {
+      console.error("Telegram job decision failed")
+    }
+  }
+  try {
+    if (typeof callback.id === "string") {
+      await telegramRequest("answerCallbackQuery", {
+        callback_query_id: callback.id,
+        text: changed ? "Решение сохранено." : "Анкета уже на другом этапе.",
+      })
+    }
+    if (Number.isInteger(callback.message?.message_id) && callback.message?.chat) {
+      const original = typeof callback.message.text === "string" ? callback.message.text.slice(0, 2000) : `Анкета #${id}`
+      await telegramRequest("editMessageText", {
+        chat_id: callback.message.chat.id,
+        message_id: callback.message.message_id,
+        text: `${original}\n\n${changed && isJobDecision(decision) ? jobFeedback(decision) : "Кнопки неактуальны: анкета уже на другом этапе."}`,
+        reply_markup: { inline_keyboard: [] },
+        link_preview_options: { is_disabled: true },
+      })
+    }
+  } catch {
+    console.error("Telegram job acknowledgement failed")
+  }
+}
+
 export async function POST(request: Request) {
   const { token, adminIds } = await getTelegramConfig()
   const secret = webhookSecret(token)
@@ -136,6 +168,10 @@ export async function POST(request: Request) {
   }
   if (target.kind === "verification") {
     await handleVerificationButton(callback, target.id, target.decision)
+    return Response.json({ ok: true })
+  }
+  if (target.kind === "job") {
+    await handleJobButton(callback, target.id, target.decision)
     return Response.json({ ok: true })
   }
   let changed: boolean

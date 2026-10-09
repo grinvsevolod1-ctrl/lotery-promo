@@ -15,6 +15,10 @@ const nextConfig = {
   // The Docker image runs the self-contained server; PM2 keeps using `next start`.
   output: process.env.DOCKER_BUILD ? 'standalone' : undefined,
   compress: true,
+  experimental: {
+    // Job applications upload up to 3 × 4 MB attachments through a server action.
+    serverActions: { bodySizeLimit: '16mb', allowedOrigins: ['bytoloto.com', 'jobs.bytoloto.com'] },
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30,

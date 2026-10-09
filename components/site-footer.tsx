@@ -13,6 +13,7 @@ const sectionLinks = [
   { href: '/results', label: 'Выигрыши' },
   { href: '/sign-up', label: 'Регистрация' },
   { href: '/cabinet', label: 'Личный кабинет' },
+  { href: '/jobs', label: 'Вакансии' },
 ] as const
 
 const paymentBrands = ['visa', 'mastercard', 'belkart', 'mir'] as const

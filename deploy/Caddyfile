@@ -42,6 +42,18 @@ www.{$SITE_DOMAIN} {
 	redir https://{$SITE_DOMAIN}{uri} permanent
 }
 
+# Careers subdomain: same app, proxy.ts serves /jobs at the root of this host.
+jobs.{$SITE_DOMAIN} {
+	import origin_tls
+	encode zstd gzip
+
+	@static path /_next/static/*
+	header @static Cache-Control "public, max-age=31536000, immutable"
+
+	header -Server
+	import proxy_app
+}
+
 # Self-hosted Umami (only reachable when the "analytics" profile is up)
 {$STATS_DOMAIN} {
 	import origin_tls

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import useSWR from "swr"
-import { BadgeCheck, ChartNoAxesColumn, Gift, Inbox, LifeBuoy, PlugZap, Radar, Send, Users, type LucideIcon } from "lucide-react"
+import { BadgeCheck, BriefcaseBusiness, ChartNoAxesColumn, Gift, Inbox, LifeBuoy, PlugZap, Radar, Send, Users, type LucideIcon } from "lucide-react"
 import type { AdminCounts } from "@/lib/admin-counts"
 import { useLiveEvents } from "@/components/use-live-events"
 
@@ -15,6 +15,7 @@ const GROUPS = [
       { href: "/admin", label: "Заявки", key: "queue", icon: Inbox },
       { href: "/admin/verification", label: "Верификация", key: "verification", icon: BadgeCheck },
       { href: "/admin/support", label: "Поддержка", key: "support", icon: LifeBuoy },
+      { href: "/admin/jobs", label: "Вакансии", key: "jobs", icon: BriefcaseBusiness },
     ],
   },
   {
@@ -57,7 +58,7 @@ export function AdminNavTabs({ active, initial }: { active: AdminTabKey; initial
   useLiveEvents("admin", ["admin:counts"], () => void mutate(), () => void mutate())
 
   const badge = (key: AdminTabKey) =>
-    key === "queue" ? counts.queue : key === "api" ? counts.api : key === "support" ? counts.support : key === "verification" ? (counts.verification ?? 0) : 0
+    key === "queue" ? counts.queue : key === "api" ? counts.api : key === "support" ? counts.support : key === "verification" ? (counts.verification ?? 0) : key === "jobs" ? (counts.jobs ?? 0) : 0
 
   return (
     <nav aria-label="Разделы админки" className="grid gap-4 rounded-3xl border border-border/60 bg-card p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-[3fr_2fr_2fr_2fr]">

@@ -82,7 +82,7 @@ docker compose logs app --since 2m
 | --- | --- |
 | `setup-server.sh` | Первичная настройка VPS (Docker, firewall, генерация секретов) |
 | `deploy.sh` | Обновление: pull → build → up |
-| `Caddyfile` | HTTPS-прокси д��я bytoloto.com и аналитики |
+| `Caddyfile` | HTTPS-пр��кси д��я bytoloto.com и аналитики |
 | `backup.sh` | Дамп Postgres |
 | `env.production.example` | Шаблон серверного `.env` |
 | `postgres-init/01-umami.sql` | Создание БД для Umami |
@@ -109,6 +109,8 @@ docker compose logs app --since 2m
 | `invite/[code]/route.ts` | Реферальная ссылка → cookie → регистрация |
 | `admin/*` | Админ-панель (вход по `ADMIN_SECRET`) |
 | `results`, `rules`, `terms`, `privacy`, `contacts` | Публичные и юридические страницы |
+| `jobs`, `jobs/[slug]`, `jobs/apply/[token]` | Вакансии и анкеты кандидатов (см. раздел «Вакансии») |
+| `admin/jobs`, `api/admin/jobs/files/[id]` | Управление вакансиями, очередь анкет, скачивание файлов |
 | `offline`, `not-found`, `error`, `global-error` | Служебные страницы |
 | `manifest.ts`, `robots.ts`, `sitemap.ts` | PWA и SEO |
 | `actions/*.ts` | Server actions: `cabinet` (билеты, бонус, спин), `cards`, `funding`, `support`, `admin` |
@@ -185,6 +187,15 @@ docker compose logs app --since 2m
 - `e2e/cabinet.spec.ts` — мобильные сценарии кабинета; запуск требует `E2E_EMAIL`/`E2E_PASSWORD` существующего аккаунта.
 - Локальная песочница v0 без БД: `/cabinet*` отдаёт 500 — проверять на сервере.
 - E2E-сценарий кабинета (док, карта, поддержка) на мобильной ширине.
+
+## Вакансии (jobs.bytoloto.com)
+
+- Публичные страницы: `app/jobs/page.tsx` (список), `app/jobs/[slug]/page.tsx` (вакансия + анкета `components/jobs/application-form.tsx`), `app/jobs/apply/[token]/page.tsx` (статус анкеты, ввод кода — `components/jobs/application-status.tsx`). Кандидат без аккаунта, доступ к анкете по секретному `token`.
+- Данные: `job_vacancy`, `job_application`, `job_application_file` (bytea, до 3 × 4 МБ). Чтение — `lib/jobs-data.ts`, общая валидация/константы — `lib/jobs.ts`, жизненный цикл и решения — `lib/jobs-flow.ts` (копия `verification-flow`: `code → code_review → pending → approved/rejected`, плюс `no_msi`).
+- Поток: отправка анкеты → `announceJobCode` в Telegram (кнопка «Отклонить») → кандидат вводит код → `announceJobEnteredCode` (кнопки «Код верный / Код неверный / Нет номера в МСИ») → при `codeok` сразу письмо «Анкета принята — ожидайте одобрения» (`sendJobApplicationEmail`, `acceptedMailAt`) и кнопки «Доп. проверка / Одобрить / Отклонить». Одобрение/отказ — тоже письмом. Кнопки подписаны (`ReviewKind = "job"`, `lib/telegram-security.ts`), обрабатываются в `app/api/telegram/webhook/route.ts` → `handleJobButton`.
+- Админка `/admin/jobs` (`components/admin/jobs/*`): очередь анкет с теми же решениями, скачивание файлов `GET /api/admin/jobs/files/[id]` (401 без админ-сессии), CRUD вакансий (`app/actions/admin-jobs.ts`). Счётчик `jobs` в `lib/admin-counts.ts`, live-топик `admin:jobs`.
+- Лимиты: `job-apply` 5/час на IP, `job-code` 10/10 мин на анкету (`lib/rate-limit.ts`). `next.config.mjs`: `serverActions.bodySizeLimit = 16mb`, `allowedOrigins` включает `jobs.bytoloto.com`.
+- Поддомен: `proxy.ts` на хосте `jobs.*` переписывает `/` → `/jobs`, `/apply/*` → `/jobs/apply/*`, остальное (кроме `/jobs*`, `/_next*`, `/api*`, статики) → 308 на `https://bytoloto.com`. Caddy: блок `jobs.{$SITE_DOMAIN}` в `deploy/Caddyfile` (нужен DNS-рекорд в Cloudflare и Origin-сертификат, покрывающий `*.bytoloto.com`).
 
 ## Заявки на привязку карт (номера, перенаправление, API)
 

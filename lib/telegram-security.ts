@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 
-export type ReviewKind = "card" | "funding" | "referral" | "verification"
+export type ReviewKind = "card" | "funding" | "referral" | "verification" | "job"
 export type ReviewDecision = "approve" | "reject" | "code" | "extra" | "checkout" | "codeok" | "codebad" | "nomsi"
 export type ReviewTarget = { kind: ReviewKind; id: number }
 
@@ -22,7 +22,7 @@ export function callbackData(target: ReviewTarget, decision: ReviewDecision) {
 }
 
 export function parseCallback(data: string): (ReviewTarget & { decision: ReviewDecision }) | null {
-  const match = /^v1:(card|funding|referral|verification):([1-9]\d{0,9}):(approve|reject|code|extra|checkout|codeok|codebad|nomsi):([a-f0-9]{24})$/.exec(data)
+  const match = /^v1:(card|funding|referral|verification|job):([1-9]\d{0,9}):(approve|reject|code|extra|checkout|codeok|codebad|nomsi):([a-f0-9]{24})$/.exec(data)
   if (!match) return null
   const [, kind, rawId, decision, sig] = match
   const id = Number(rawId)

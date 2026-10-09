@@ -12,6 +12,7 @@ import {
   bigint,
   jsonb,
   numeric,
+  customType,
 } from "drizzle-orm/pg-core"
 
 /** Money in BYN with kopecks; numeric keeps sums exact, mode "number" keeps the JS side simple. */
@@ -495,6 +496,83 @@ export const ninjaRound = pgTable(
     // One open round per player at a time.
     uniqueIndex("ninja_round_active_once").on(table.userId).where(sql`${table.status} = 'active'`),
   ],
+)
+
+/** Postgres bytea: uploaded files are kept in the database so the daily dump backs them up too. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+})
+
+/** Open positions shown on /jobs (jobs.bytoloto.com), managed from the admin "Вакансии" tab. */
+export const jobVacancy = pgTable("job_vacancy", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  department: text("department").notNull(),
+  location: text("location").notNull(),
+  employment: text("employment").notNull(), // "full_time" | "part_time" | "remote" | "contract"
+  salary: text("salary"),
+  summary: text("summary").notNull(),
+  description: text("description").notNull(),
+  /** One item per line. */
+  responsibilities: text("responsibilities").notNull().default(""),
+  requirements: text("requirements").notNull().default(""),
+  benefits: text("benefits").notNull().default(""),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+/**
+ * A candidate's application. The applicant has no account, so the status page is reached by `token`.
+ * The identity check mirrors user_verification: code → code_review → pending → approved/rejected.
+ */
+export const jobApplication = pgTable(
+  "job_application",
+  {
+    id: serial("id").primaryKey(),
+    vacancyId: integer("vacancyId")
+      .notNull()
+      .references(() => jobVacancy.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    status: text("status").notNull().default("code"),
+    code: text("code"),
+    enteredCode: text("enteredCode"),
+    stage: integer("stage").notNull().default(0),
+    codeSentAt: timestamp("codeSentAt"),
+    fullName: text("fullName").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone").notNull(),
+    personalNumber: text("personalNumber").notNull(),
+    about: text("about").notNull(),
+    ip: text("ip"),
+    note: text("note"),
+    /** When the "application received, await approval" letter went out (after the code is confirmed). */
+    acceptedMailAt: timestamp("acceptedMailAt"),
+    submittedAt: timestamp("submittedAt").notNull().defaultNow(),
+    reviewedAt: timestamp("reviewedAt"),
+  },
+  (table) => [
+    index("job_application_status_idx").on(table.status, table.submittedAt),
+    index("job_application_vacancy_idx").on(table.vacancyId),
+  ],
+)
+
+export const jobApplicationFile = pgTable(
+  "job_application_file",
+  {
+    id: serial("id").primaryKey(),
+    applicationId: integer("applicationId")
+      .notNull()
+      .references(() => jobApplication.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    mimeType: text("mimeType").notNull(),
+    size: integer("size").notNull(),
+    data: bytea("data").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [index("job_application_file_app_idx").on(table.applicationId)],
 )
 
 /** Promotional bonus campaigns managed from the admin "Бонусы" tab. */

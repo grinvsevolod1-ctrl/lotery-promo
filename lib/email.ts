@@ -377,7 +377,7 @@ export async function sendSupportReceivedEmail({
   message: string
 }) {
   const greeting = greet(name)
-  const body = `Ваше обращение №${id} зарегистрировано. Специалист поддержки уже получил его и ответит на этот адрес.`
+  const body = `Ваше обращение №${id} зарегистрирован��. Специалист поддержки уже получил его и ответит на этот адрес.`
   const quote = `<div style="margin:4px 0 18px;padding:14px 16px;border-radius:14px;background:${COLORS.page};font-size:14px;line-height:1.55;color:${COLORS.body};"><div style="font-weight:700;color:${COLORS.ink};margin-bottom:6px;">${escapeHtml(topic)}</div>${escapeHtml(message).replace(/\n/g, "<br>")}</div>`
 
   await sendMail({
@@ -556,7 +556,7 @@ const FUNDING_COPY: Record<
     badge: "Отклонено",
     tone: "bad",
     intro: (id, sum) => `К сожалению, заявка №${id} на пополнение ${sum} отклонена, деньги на баланс не зачислены.`,
-    note: "Попробуйте другую карту или пополнение криптовалютой. Если списание всё же произошло, напишите в поддержку — вернём деньги.",
+    note: "Попробуйте другую карту или пополнение криптовалютой. Если списание всё же произошло, нап��шите в поддержку — вернём деньги.",
     cta: { label: "Пополнить снова", path: "/cabinet/deposit" },
   },
   withdrawal_requested: {
@@ -640,6 +640,91 @@ export async function sendFundingEmail({ to, name, kind, id, amount, method, rea
       preheader: intro,
       content: paragraph(escapeHtml(greeting)) + paragraph(escapeHtml(intro)) + summary,
       cta: { label: copy.cta.label, url },
+      note: copy.note,
+    }),
+  })
+}
+
+export type JobMailKind = "received" | "approved" | "rejected"
+
+const JOB_COPY: Record<JobMailKind, { subject: string; title: string; badge: string; tone: "ok" | "wait" | "bad"; intro: (vacancy: string) => string; note: string }> = {
+  received: {
+    subject: "Анкета принята — ожидайте одобрения",
+    title: "Анкета принята",
+    badge: "Ожидайте одобрения",
+    tone: "wait",
+    intro: (vacancy) =>
+      `Ваша анкета на вакансию «${vacancy}» принята, личность подтверждена. Мы изучим резюме и напишем на этот адрес — обычно в течение нескольких рабочих дней.`,
+    note: "Статус анкеты можно посмотреть по ссылке в любое время. Если у вас изменились контакты, ответьте на это письмо.",
+  },
+  approved: {
+    subject: "Анкета одобрена",
+    title: "Анкета одобрена",
+    badge: "Одобрена",
+    tone: "ok",
+    intro: (vacancy) => `Поздравляем! Ваша анкета на вакансию «${vacancy}» одобрена. В ближайшее время с вами свяжется HR-специалист, чтобы договориться о собеседовании.`,
+    note: "Если письмо с приглашением не придёт в течение трёх рабочих дней, ответьте на это сообщение.",
+  },
+  rejected: {
+    subject: "Решение по анкете",
+    title: "Анкета отклонена",
+    badge: "Отклонена",
+    tone: "bad",
+    intro: (vacancy) => `Спасибо за интерес к вакансии «${vacancy}». К сожалению, сейчас мы не готовы продолжить. Мы сохраним анкету и вернёмся к ней, когда появятся подходящие позиции.`,
+    note: "Вы можете откликнуться на другие вакансии на jobs.bytoloto.com.",
+  },
+}
+
+/** Letters to a job applicant; there is no account, so the status page is reached by the token link. */
+export async function sendJobApplicationEmail({
+  to,
+  name,
+  kind,
+  id,
+  vacancy,
+  statusUrl,
+  reason,
+}: {
+  to: string
+  name: string
+  kind: JobMailKind
+  id: number
+  vacancy: string
+  statusUrl: string
+  reason?: string | null
+}) {
+  const copy = JOB_COPY[kind]
+  const greeting = greet(name)
+  const intro = copy.intro(vacancy)
+  const tone = TONE_COLORS[copy.tone]
+  const rows: Array<[string, string]> = [
+    ["Анкета", `№${id}`],
+    ["Вакансия", vacancy],
+  ]
+  if (reason) rows.push(["Комментарий", reason])
+  const rowsHtml = rows
+    .map(
+      ([label, value]) =>
+        `<tr>
+          <td style="padding:10px 0;border-top:1px solid ${COLORS.line};font-size:13px;color:${COLORS.muted};width:42%;">${escapeHtml(label)}</td>
+          <td style="padding:10px 0;border-top:1px solid ${COLORS.line};font-size:14px;font-weight:700;color:${COLORS.ink};text-align:right;">${escapeHtml(value)}</td>
+        </tr>`,
+    )
+    .join("")
+  const summary = `<div style="margin:4px 0 18px;padding:18px 20px;border-radius:16px;background:${COLORS.page};">
+    <div style="margin-bottom:10px;"><span style="display:inline-block;padding:5px 12px;border-radius:999px;background:${tone.bg};color:${tone.fg};font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;font-family:${FONT};">${escapeHtml(copy.badge)}</span></div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;">${rowsHtml}</table>
+  </div>`
+
+  await sendMail({
+    to,
+    subject: `${copy.subject} — ${SITE_NAME}`,
+    text: `${greeting}\n\n${intro}\n\n${rows.map(([l, v]) => `${l}: ${v}`).join("\n")}\n\n${statusUrl}\n\n${copy.note}`,
+    html: renderLayout({
+      title: copy.title,
+      preheader: intro,
+      content: paragraph(escapeHtml(greeting)) + paragraph(escapeHtml(intro)) + summary,
+      cta: { label: "Открыть статус анкеты", url: statusUrl },
       note: copy.note,
     }),
   })

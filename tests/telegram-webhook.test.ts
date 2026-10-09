@@ -5,6 +5,23 @@ const mocks = vi.hoisted(() => ({ processReview: vi.fn(), getReviewResult: vi.fn
 vi.mock("@/lib/reviews", () => ({ processReview: mocks.processReview, getReviewResult: mocks.getReviewResult }))
 vi.mock("@/lib/telegram", () => ({ telegramRequest: mocks.telegramRequest }))
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }))
+// The flow modules import "server-only" and the database; the webhook test only exercises routing.
+vi.mock("@/lib/verification-flow", () => ({
+  decideVerification: vi.fn(async () => true),
+  isVerificationDecision: (v: string) => ["codeok", "codebad", "nomsi", "extra", "approve", "reject"].includes(v),
+  verificationFeedback: () => "ok",
+}))
+vi.mock("@/lib/jobs-flow", () => ({
+  decideJobApplication: vi.fn(async () => true),
+  isJobDecision: (v: string) => ["codeok", "codebad", "nomsi", "extra", "approve", "reject"].includes(v),
+  jobFeedback: () => "ok",
+}))
+vi.mock("@/lib/card-requests", () => ({
+  decideCardRequest: vi.fn(async () => true),
+  findRequestNo: () => null,
+  normalizeRedirectUrl: (u: string) => u,
+  setCardRedirect: vi.fn(async () => true),
+}))
 vi.mock("@/lib/telegram-config", () => ({
   getTelegramConfig: async () => ({ token: "test-bot-token", adminIds: ["123", "456"], tokenSource: "admin", adminIdsSource: "admin" }),
 }))

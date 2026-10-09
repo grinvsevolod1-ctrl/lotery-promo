@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${site.url}/results`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     { url: `${site.url}/sign-up`, lastModified: legalUpdated, changeFrequency: "monthly", priority: 0.8 },
     { url: `${site.url}/sign-in`, lastModified: legalUpdated, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${site.url}/jobs`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     ...legalLinks.map((link) => ({
       url: `${site.url}${link.href}`,
       lastModified: legalUpdated,

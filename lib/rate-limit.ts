@@ -50,6 +50,9 @@ export const LIMITS = {
   support: { max: 3, windowSec: 600 },
   verification: { max: 5, windowSec: 600 },
   "verification-code": { max: 10, windowSec: 600 },
+  /** Anonymous job applications are keyed by IP, codes by the application token. */
+  "job-apply": { max: 5, windowSec: 3600 },
+  "job-code": { max: 10, windowSec: 600 },
 } as const
 
 export async function allowUserAction(userId: string, action: keyof typeof LIMITS) {

@@ -9,6 +9,7 @@ export const topics = {
   adminUsers: "admin:users",
   adminCounts: "admin:counts",
   adminVerification: "admin:verification",
+  adminJobs: "admin:jobs",
   userCards: (userId: string) => `user:${userId}:cards`,
   userBalance: (userId: string) => `user:${userId}:balance`,
   userVerification: (userId: string) => `user:${userId}:verification`,
