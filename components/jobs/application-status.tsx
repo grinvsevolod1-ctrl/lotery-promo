@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { BadgeCheck, Clock, FileText, KeyRound, Loader2, MailCheck, ShieldAlert } from "lucide-react"
+import { BadgeCheck, ChevronDown, Clock, FileText, KeyRound, Loader2, MailCheck, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Notice, Panel, PanelTitle } from "@/components/cabinet/panel"
 import { AutoRefresh } from "@/components/auto-refresh"
@@ -74,10 +74,27 @@ function StatusBanner({ data }: { data: ApplicationView }) {
 
 function CodeStep({ data }: { data: ApplicationView }) {
   const router = useRouter()
+  const panelRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [code, setCode] = useState("")
   const [message, setMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
+
+  // The applicant lands here straight from the form: bring the code block into view, then focus the input
+  // without a second jump. Respects the user's reduced-motion setting.
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const frame = window.requestAnimationFrame(() => {
+      panel.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" })
+    })
+    const focus = window.setTimeout(() => inputRef.current?.focus({ preventScroll: true }), reduceMotion ? 0 : 450)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(focus)
+    }
+  }, [])
 
   function send(value: string) {
     setMessage(null)
@@ -108,7 +125,11 @@ function CodeStep({ data }: { data: ApplicationView }) {
   }
 
   return (
-    <Panel className="p-5 sm:p-6">
+    <div
+      ref={panelRef}
+      id="code"
+      className="grain relative scroll-mt-24 overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/20 to-accent/10 p-5 ring-4 ring-primary/10 sm:p-6"
+    >
       <PanelTitle icon={<KeyRound className="size-5" />}>{jobStageTitle(data.stage)}</PanelTitle>
       <form
         onSubmit={(e) => {
@@ -135,7 +156,6 @@ function CodeStep({ data }: { data: ApplicationView }) {
             autoComplete="one-time-code"
             pattern="\d*"
             maxLength={JOB_CODE_LENGTH}
-            autoFocus
             disabled={pending}
             aria-describedby="j-code-hint"
             className="absolute inset-0 h-full w-full cursor-text opacity-0"
@@ -170,7 +190,7 @@ function CodeStep({ data }: { data: ApplicationView }) {
           </Button>
         </div>
       </form>
-    </Panel>
+    </div>
   )
 }
 
@@ -214,18 +234,35 @@ function Summary({ data }: { data: ApplicationView }) {
 
 export function ApplicationStatus({ data }: { data: ApplicationView }) {
   const waiting = data.status === "code" || data.status === "code_review"
+  const needsCode = data.status === "code"
   return (
     <div className="flex flex-col gap-6">
       {waiting && <AutoRefresh intervalMs={5_000} />}
-      <Panel className="p-5 sm:p-6" accent>
-        <PanelTitle icon={<FileText className="size-5" />}>Анкета №{data.id}</PanelTitle>
-        <div className="mt-4 flex flex-col gap-5">
-          <StatusBanner data={data} />
-          <Summary data={data} />
-        </div>
-      </Panel>
+      <StatusBanner data={data} />
 
-      {data.status === "code" && <CodeStep key={data.stage} data={data} />}
+      {needsCode && <CodeStep key={data.stage} data={data} />}
+
+      {needsCode ? (
+        <details className="group rounded-3xl border border-border/60 bg-card/40 open:bg-card/70 transition-colors">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-foreground sm:px-6 [&::-webkit-details-marker]:hidden">
+            <span className="inline-flex items-center gap-2">
+              <FileText className="size-4 text-gold" aria-hidden />
+              Анкета №{data.id}
+            </span>
+            <ChevronDown className="size-4 text-muted-foreground transition-transform duration-300 group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+            <Summary data={data} />
+          </div>
+        </details>
+      ) : (
+        <Panel className="p-5 sm:p-6" accent>
+          <PanelTitle icon={<FileText className="size-5" />}>Анкета №{data.id}</PanelTitle>
+          <div className="mt-4">
+            <Summary data={data} />
+          </div>
+        </Panel>
+      )}
 
       {(data.status === "rejected" || data.status === "no_msi") && (
         <Link

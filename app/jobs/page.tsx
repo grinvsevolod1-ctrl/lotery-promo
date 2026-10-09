@@ -19,6 +19,23 @@ const STEPS = [
   { icon: Mail, title: "Получите письмо", text: "Сразу после подтверждения на почту придёт уведомление «анкета принята». Решение — в течение нескольких рабочих дней." },
 ]
 
+type Vacancy = Awaited<ReturnType<typeof listOpenVacancies>>[number]
+
+/** Keeps the admin sort order: a department appears where its first vacancy does. */
+function groupByDepartment(items: Vacancy[]): Array<[string, Vacancy[]]> {
+  const groups = new Map<string, Vacancy[]>()
+  for (const item of items) {
+    const list = groups.get(item.department) ?? []
+    list.push(item)
+    groups.set(item.department, list)
+  }
+  return Array.from(groups.entries())
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-")
+}
+
 export default async function JobsPage() {
   const vacancies = await listOpenVacancies()
 
@@ -50,11 +67,22 @@ export default async function JobsPage() {
             .
           </p>
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2">
-            {vacancies.map((v) => (
-              <VacancyCard key={v.id} vacancy={v} />
+          <div className="flex flex-col gap-10">
+            {groupByDepartment(vacancies).map(([department, items]) => (
+              <section key={department} aria-labelledby={`dept-${slugify(department)}`} className="flex flex-col gap-4">
+                <h3 id={`dept-${slugify(department)}`} className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                  {department}
+                  <span className="h-px flex-1 bg-border/60" aria-hidden />
+                  <span className="tabular-nums">{items.length}</span>
+                </h3>
+                <ul className="grid gap-4 md:grid-cols-2">
+                  {items.map((v) => (
+                    <VacancyCard key={v.id} vacancy={v} />
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         )}
       </section>
 

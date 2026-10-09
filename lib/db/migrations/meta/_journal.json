@@ -169,6 +169,13 @@
       "when": 1791800000000,
       "tag": "0023_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791810000000,
+      "tag": "0024_more_vacancies",
+      "breakpoints": true
     }
   ]
 }
