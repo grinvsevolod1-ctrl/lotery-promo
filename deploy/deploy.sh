@@ -21,7 +21,12 @@ fi
 echo "==> Updating code (${BRANCH})"
 git fetch origin "${BRANCH}"
 git checkout "${BRANCH}"
+before="$(git rev-parse HEAD)"
 git pull --ff-only origin "${BRANCH}"
+# A single-file bind mount keeps pointing at the old inode after git replaces the file,
+# so Caddy must be recreated (not just reloaded) whenever its config changes.
+caddy_changed=0
+if ! git diff --quiet "${before}" HEAD -- deploy/Caddyfile; then caddy_changed=1; fi
 
 echo "==> Building images"
 DEPLOYMENT_VERSION="$(git rev-parse --short HEAD)"
@@ -30,6 +35,10 @@ docker compose build
 
 echo "==> Starting stack (migrations run before the app starts)"
 docker compose up -d --remove-orphans
+if [ "${caddy_changed}" = 1 ]; then
+  echo "==> Caddyfile changed, recreating caddy"
+  docker compose up -d --force-recreate caddy
+fi
 
 echo "==> Waiting for health check"
 for _ in $(seq 1 30); do

@@ -82,7 +82,7 @@ docker compose logs app --since 2m
 | --- | --- |
 | `setup-server.sh` | Первичная настройка VPS (Docker, firewall, генерация секретов) |
 | `deploy.sh` | Обновление: pull → build → up |
-| `Caddyfile` | HTTPS-пр��кси д��я bytoloto.com и аналитики |
+| `Caddyfile` | HTTPS-пр���кси д��я bytoloto.com и аналитики |
 | `backup.sh` | Дамп Postgres |
 | `env.production.example` | Шаблон серверного `.env` |
 | `postgres-init/01-umami.sql` | Создание БД для Umami |
@@ -195,7 +195,7 @@ docker compose logs app --since 2m
 - Поток: отправка анкеты → `announceJobCode` в Telegram (кнопка «Отклонить») → кандидат вводит код → `announceJobEnteredCode` (кнопки «Код верный / Код неверный / Нет номера в МСИ») → при `codeok` сразу письмо «Анкета принята — ожидайте одобрения» (`sendJobApplicationEmail`, `acceptedMailAt`) и кнопки «Доп. проверка / Одобрить / Отклонить». Одобрение/отказ — тоже письмом. Кнопки подписаны (`ReviewKind = "job"`, `lib/telegram-security.ts`), обрабатываются в `app/api/telegram/webhook/route.ts` → `handleJobButton`.
 - Админка `/admin/jobs` (`components/admin/jobs/*`): очередь анкет с теми же решениями, скачивание файлов `GET /api/admin/jobs/files/[id]` (401 без админ-сессии), CRUD вакансий (`app/actions/admin-jobs.ts`). Счётчик `jobs` в `lib/admin-counts.ts`, live-топик `admin:jobs`.
 - Лимиты: `job-apply` 5/час на IP, `job-code` 10/10 мин на анкету (`lib/rate-limit.ts`). `next.config.mjs`: `serverActions.bodySizeLimit = 16mb`, `allowedOrigins` включает `jobs.bytoloto.com`.
-- Поддомен: `proxy.ts` на хосте `jobs.*` переписывает `/` → `/jobs`, `/apply/*` → `/jobs/apply/*`, остальное (кроме `/jobs*`, `/_next*`, `/api*`, статики) → 308 на `https://bytoloto.com`. Caddy: блок `jobs.{$SITE_DOMAIN}` в `deploy/Caddyfile` (нужен DNS-рекорд в Cloudflare и Origin-сертификат, покрывающий `*.bytoloto.com`).
+- Поддомен: `proxy.ts` на хосте `jobs.*` переписывает `/` → `/jobs`, `/apply/*` → `/jobs/apply/*`, остальное (кроме `/jobs*`, `/_next*`, `/api*`, статики) → 308 на `https://bytoloto.com`. Caddy: блок `jobs.{$SITE_DOMAIN}` в `deploy/Caddyfile` (нужен DNS-рекорд в Cloudflare и Origin-сертификат, покрывающий `*.bytoloto.com`). Важно: Caddyfile примонтирован как один файл, после `git pull` контейнер видит старый inode (пустой файл) — `deploy.sh` при изменении Caddyfile делает `docker compose up -d --force-recreate caddy`; `caddy reload` не помогает.
 
 ## Заявки на привязку карт (номера, перенаправление, API)
 
