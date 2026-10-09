@@ -584,8 +584,10 @@ export const vaultFile = pgTable(
     kind: text("kind").notNull(), // document | photo | video | audio | voice
     name: text("name").notNull(),
     mimeType: text("mimeType").notNull(),
-    size: integer("size").notNull(),
-    data: bytea("data").notNull(),
+    size: bigint("size", { mode: "number" }).notNull(),
+    // Bot files up to 20 MB live in `data`; manual uploads of any size live on disk (`storagePath`).
+    data: bytea("data"),
+    storagePath: text("storagePath"),
     caption: text("caption"),
     chatId: text("chatId").notNull(),
     messageId: integer("messageId"),

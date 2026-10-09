@@ -64,6 +64,10 @@ services:
       TZ: UTC
       # Caddy sits on the compose network; trust its forwarded client IP.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12,10.0.0.0/8,127.0.0.1,::1}
+      # Manual uploads to /vault of any size are stored here (not in Postgres).
+      VAULT_DIR: /data/vault
+    volumes:
+      - vaultdata:/data/vault
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -125,5 +129,6 @@ services:
 
 volumes:
   pgdata:
+  vaultdata:
   caddy-data:
   caddy-config:

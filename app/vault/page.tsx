@@ -4,6 +4,7 @@ import { listVaultFiles, vaultTotals } from "@/lib/vault-files"
 import { VaultLoginForm } from "@/components/vault/vault-login-form"
 import { VaultShell } from "@/components/vault/vault-shell"
 import { FileList } from "@/components/vault/file-list"
+import { UploadBox } from "@/components/vault/upload-box"
 
 export const dynamic = "force-dynamic"
 
@@ -30,7 +31,10 @@ export default async function VaultPage() {
   const [files, totals] = await Promise.all([listVaultFiles(), vaultTotals()])
   return (
     <VaultShell totals={totals}>
-      <FileList files={files.map((f) => ({ ...f, receivedAt: f.receivedAt.toISOString() }))} />
+      <div className="flex flex-col gap-8">
+        <UploadBox />
+        <FileList files={files.map((f) => ({ ...f, receivedAt: f.receivedAt.toISOString() }))} />
+      </div>
     </VaultShell>
   )
 }

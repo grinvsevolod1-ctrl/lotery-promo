@@ -183,6 +183,13 @@
       "when": 1791820000000,
       "tag": "0025_vault_files",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791830000000,
+      "tag": "0026_vault_disk_storage",
+      "breakpoints": true
     }
   ]
 }

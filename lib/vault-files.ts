@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { vaultFile } from "@/lib/db/schema"
 import { getTelegramConfig } from "@/lib/telegram-config"
 import { isForeignDeployment } from "@/lib/deployment-guard"
+import { removeStoredFile } from "@/lib/vault-storage"
 
 /** Telegram lets bots download files up to 20 MB through getFile. */
 export const VAULT_MAX_FILE_BYTES = 20 * 1024 * 1024
@@ -23,7 +24,7 @@ export type TelegramFileMessage = {
   voice?: TelegramFileRef
 }
 
-export type VaultKind = "document" | "photo" | "video" | "audio" | "voice"
+export type VaultKind = "document" | "photo" | "video" | "audio" | "voice" | "upload"
 
 /** A refusal whose message is safe to show to the person who sent the file. */
 export class VaultSkipError extends Error {}
@@ -43,6 +44,7 @@ function pickAttachment(message: TelegramFileMessage): { kind: VaultKind; file: 
 }
 
 const DEFAULT_NAMES: Record<VaultKind, (ext: string) => string> = {
+  upload: (ext) => `file${ext}`,
   document: (ext) => `file${ext}`,
   photo: () => "photo.jpg",
   video: () => "video.mp4",
@@ -51,6 +53,7 @@ const DEFAULT_NAMES: Record<VaultKind, (ext: string) => string> = {
 }
 
 const DEFAULT_MIME: Record<VaultKind, string> = {
+  upload: "application/octet-stream",
   document: "application/octet-stream",
   photo: "image/jpeg",
   video: "video/mp4",
@@ -167,7 +170,8 @@ export async function getVaultFile(id: number) {
 }
 
 export async function deleteVaultFile(id: number) {
-  const deleted = await db.delete(vaultFile).where(eq(vaultFile.id, id)).returning({ id: vaultFile.id })
+  const deleted = await db.delete(vaultFile).where(eq(vaultFile.id, id)).returning({ id: vaultFile.id, storagePath: vaultFile.storagePath })
+  if (deleted[0]?.storagePath) await removeStoredFile(deleted[0].storagePath)
   return deleted.length > 0
 }
 

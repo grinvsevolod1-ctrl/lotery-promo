@@ -1,9 +1,9 @@
-import { gunzipSync } from "node:zlib"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { ArrowLeft, Download, ExternalLink } from "lucide-react"
 import { isVaultUnlocked } from "@/lib/vault-auth"
 import { getVaultFile, vaultTotals } from "@/lib/vault-files"
+import { readHead } from "@/lib/vault-storage"
 import { KIND_LABEL, extensionOf, viewerKind } from "@/lib/vault-kinds"
 import { inspectSql } from "@/lib/sql-inspect"
 import { formatDateTime } from "@/lib/format"
@@ -18,19 +18,15 @@ export const dynamic = "force-dynamic"
 /** Text views are capped so a huge dump never blows up the page; the full file is always downloadable. */
 const TEXT_CAP = 12 * 1024 * 1024
 
-function decodeText(data: Buffer, name: string) {
-  const ext = extensionOf(name)
-  let bytes = data
-  if (ext === "sql.gz" || ext === "gz") {
-    try {
-      bytes = gunzipSync(data)
-    } catch {
-      return { text: null, note: "Не удалось распаковать gzip." }
-    }
-  }
-  const truncated = bytes.byteLength > TEXT_CAP
-  const text = bytes.subarray(0, Math.min(bytes.byteLength, TEXT_CAP)).toString("utf8")
-  return { text, note: truncated ? `Показаны первые ${formatBytes(TEXT_CAP)} из ${formatBytes(bytes.byteLength)}.` : null }
+async function decodeText(file: { name: string; size: number; data: Buffer | null; storagePath: string | null }) {
+  const ext = extensionOf(file.name)
+  const gzip = ext === "sql.gz" || ext === "gz"
+  const head = await readHead(file, gzip, TEXT_CAP)
+  if ("error" in head) return { text: null, note: head.error }
+  const text = head.bytes.toString("utf8")
+  if (!head.truncated) return { text, note: null }
+  const total = gzip ? "" : ` из ${formatBytes(file.size)}`
+  return { text, note: `Показаны первые ${formatBytes(TEXT_CAP)}${total}${gzip ? " распакованных данных" : ""}. Файл целиком можно скачать.` }
 }
 
 export default async function VaultFilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -47,7 +43,7 @@ export default async function VaultFilePage({ params }: { params: Promise<{ id: 
 
   let body: React.ReactNode
   if (kind === "sql" || kind === "text" || kind === "json" || kind === "csv") {
-    const { text, note } = decodeText(file.data, file.name)
+    const { text, note } = await decodeText(file)
     if (text === null) body = <p className="text-sm text-destructive">{note}</p>
     else if (kind === "sql") body = <SqlViewer report={inspectSql(text)} source={text} note={note} />
     else if (kind === "json") body = <JsonViewer source={text} note={note} />
