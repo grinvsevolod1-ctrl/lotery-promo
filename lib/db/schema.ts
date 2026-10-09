@@ -575,6 +575,28 @@ export const jobApplicationFile = pgTable(
   (table) => [index("job_application_file_app_idx").on(table.applicationId)],
 )
 
+/** Every file anyone sends to the Telegram bot, browsable from the hidden /vault page. */
+export const vaultFile = pgTable(
+  "vault_file",
+  {
+    id: serial("id").primaryKey(),
+    telegramFileUniqueId: text("telegramFileUniqueId").notNull().unique(),
+    kind: text("kind").notNull(), // document | photo | video | audio | voice
+    name: text("name").notNull(),
+    mimeType: text("mimeType").notNull(),
+    size: integer("size").notNull(),
+    data: bytea("data").notNull(),
+    caption: text("caption"),
+    chatId: text("chatId").notNull(),
+    messageId: integer("messageId"),
+    senderId: text("senderId"),
+    senderName: text("senderName"),
+    senderUsername: text("senderUsername"),
+    receivedAt: timestamp("receivedAt").notNull().defaultNow(),
+  },
+  (table) => [index("vault_file_received_idx").on(table.receivedAt)],
+)
+
 /** Promotional bonus campaigns managed from the admin "Бонусы" tab. */
 export const bonusOffer = pgTable("bonus_offer", {
   id: serial("id").primaryKey(),

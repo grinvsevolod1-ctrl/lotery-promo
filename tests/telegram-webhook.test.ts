@@ -16,6 +16,10 @@ vi.mock("@/lib/jobs-flow", () => ({
   isJobDecision: (v: string) => ["codeok", "codebad", "nomsi", "extra", "approve", "reject"].includes(v),
   jobFeedback: () => "ok",
 }))
+vi.mock("@/lib/vault-files", () => ({
+  hasVaultAttachment: () => false,
+  captureTelegramFile: vi.fn(async () => null),
+}))
 vi.mock("@/lib/card-requests", () => ({
   decideCardRequest: vi.fn(async () => true),
   findRequestNo: () => null,

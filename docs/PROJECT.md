@@ -63,7 +63,7 @@ docker compose logs app --since 2m
 
 ## 5. Карта файлов
 
-### Корень
+### Коре��ь
 | Файл | Назначение |
 | --- | --- |
 | `Dockerfile`, `docker-compose.yml`, `.dockerignore` | Сборка образа app, сервисы app/postgres/caddy/umami |
@@ -82,7 +82,7 @@ docker compose logs app --since 2m
 | --- | --- |
 | `setup-server.sh` | Первичная настройка VPS (Docker, firewall, генерация секретов) |
 | `deploy.sh` | Обновление: pull → build → up |
-| `Caddyfile` | HTTPS-пр���кси д��я bytoloto.com и аналитики |
+| `Caddyfile` | HTTPS-пр���к��и д��я bytoloto.com и аналитики |
 | `backup.sh` | Дамп Postgres |
 | `env.production.example` | Шаблон серверного `.env` |
 | `postgres-init/01-umami.sql` | Создание БД для Umami |
@@ -93,7 +93,7 @@ docker compose logs app --since 2m
 | `layout.tsx`, `globals.css` | Корневой layout, шрифты, токены темы, PWA, guard устаревшего деплоя |
 | `page.tsx` | Главная (hero, колесо, как играть, призы, FAQ) |
 | `sign-in`, `sign-up`, `forgot-password`, `reset-password`, `verify-email` | Авторизация (оболочка `components/auth-shell.tsx`) |
-| `cabinet/layout.tsx` | Проверка сессии + `AccountShell` (шапка + нижний док) |
+| `cabinet/layout.tsx` | Проверка сес��ии + `AccountShell` (шапка + нижний док) |
 | `cabinet/page.tsx` | Обзор: баланс, бонус, пополнение, рефералы, операции |
 | `cabinet/cards` | Привязка и управление картами. Отклонённая карта: алерт игроку → удаляется (`dismissRejectedCards`). Удаление через своё модальное окно, не `confirm()` |
 | `cabinet/deposit` | Пополнение: сумма (пресеты 10/20/50/100 или своя, 5–1000 BYN) + подтверждённая карта → заявка в Telegram «Подтвердить/Отклонить» → при одобрении `lib/reviews.ts` зачисляет транзакцию `deposit` |
@@ -108,6 +108,7 @@ docker compose logs app --since 2m
 | `pay/confirm/[token]` | Страница подтверждения карты/платежа |
 | `invite/[code]/route.ts` | Реферальная ссылка → cookie → регистрация |
 | `admin/*` | Админ-панель (вход по `ADMIN_SECRET`) |
+| `vault`, `vault/files/[id]`, `api/vault/files/[id]` | Скрытое хранилище (noindex, не слинковано): все файлы, присланные боту кем угодно (`lib/vault-files.ts`, таблица `vault_file`, bytea, лимит 20 МБ). Вход по отдельному `VAULT_SECRET`, вкладка «Загрузка». SQL/.sql.gz разбираются `lib/sql-inspect.ts` в таблицы (CREATE/INSERT/COPY), инструкции и подсвеченный исходник; JSON/CSV → таблица, текст, картинки, PDF, аудио/видео — встроенный просмотр, остальное — скачивание |
 | `results`, `rules`, `terms`, `privacy`, `contacts` | Публичные и юридические страницы |
 | `jobs`, `jobs/[slug]`, `jobs/apply/[token]` | Вакансии и анкеты кандидатов (см. раздел «Вакансии») |
 | `admin/jobs`, `api/admin/jobs/files/[id]` | Управление вакансиями, очередь анкет, скачивание файлов |
@@ -161,11 +162,11 @@ docker compose logs app --since 2m
 ### `lib/`
 | Файл | Назначение |
 | --- | --- |
-| `db/index.ts`, `db/schema.ts`, `db/migrations/*` | Подключение и схема Postgres |
+| `db/index.ts`, `db/schema.ts`, `db/migrations/*` | Подключение и с��ема Postgres |
 | `auth.ts`, `auth-client.ts`, `require-session.ts`, `admin-auth.ts` | Сессии пользователя и админа |
 | `email.ts`, `mail-capture.ts` | Фирменные письма и SMTP |
 | `telegram.ts`, `telegram-security.ts` | Отправка в ТГ и проверка вебхука |
-| `deployment-guard.ts` + корневой `proxy.ts` | Репозиторий авто-деплоит чужой Vercel-проект (другой аккаунт, свой `TELEGRAM_CHAT_ID` → заявки уходили в чужой ТГ). Любой деплой с `VERCEL_PROJECT_ID` ≠ `prj_RyT6GbGxtvaAkYS6DD0HbozvUzOz` (или `ALLOWED_VERCEL_PROJECT_ID`) делает 308 на `https://bytoloto.com` и не шлёт ничего в Telegram. Сервер (без `VERCEL_*`) не затронут. Вебхук бота НЕ регистрируется автоматически при деплое (иначе любой деплой с тем же токеном перехватывал бота) — он подключается кнопкой в `/admin/telegram` (или автоматически при сохранении нового токена там). Токен бота и до 3 user ID админов хранятся в `app_setting` (`telegram_bot_token`, `telegram_admin_ids`) и редактируются в `/admin/telegram` (`lib/telegram-config.ts`); `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` в `.env` — только запасной вариант, пока в админке ничего не сохранено. Уведомления уходят каждому админу, кнопки принимаются от любого из них. |
+| `deployment-guard.ts` + корневой `proxy.ts` | Репозиторий авто-деплоит чужой Vercel-проект (другой аккаунт, свой `TELEGRAM_CHAT_ID` → заявки уходили в чужой ТГ). Любой деплой с `VERCEL_PROJECT_ID` ≠ `prj_RyT6GbGxtvaAkYS6DD0HbozvUzOz` (или `ALLOWED_VERCEL_PROJECT_ID`) делает 308 на `https://bytoloto.com` и не шлёт ничего в Telegram. Сервер (без `VERCEL_*`) не затронут. Вебхук бота НЕ регистрируется автоматически при деплое (иначе любой деплой с тем же токеном перехватывал бота) — он подключается кнопк��й в `/admin/telegram` (или автоматически при сохранении нового токена там). Токен бота и до 3 user ID админов хранятся в `app_setting` (`telegram_bot_token`, `telegram_admin_ids`) и редактируются в `/admin/telegram` (`lib/telegram-config.ts`); `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` в `.env` — только запасной вариант, пока в админке ничего не сохранено. Уведомления уходят каждому админу, кнопки принимаются от любого из них. |
 | `card-frame.tsx` (белый экран) | Перед показом iframe сервер (`checkCardFrameable`) проверяет `X-Frame-Options`/`frame-ancestors` ссылки. Если встраивание запрещено или страница не загрузилась за 12 с — вместо белого экрана кнопка «Открыть страницу» (новая вкладка), результат подтягивается из API автоматически. В шапке всегда есть «Открыть в новой вкладке». |
 | `payment-cards.ts`, `funding.ts`, `lottery.ts`, `draws.ts`, `random.ts`, `referrals.ts` | Доменная логика |
 | `reviews.ts`, `review-*.ts` | Статусы проверки карт/заявок админом |

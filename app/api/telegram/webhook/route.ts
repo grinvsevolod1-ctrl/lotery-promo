@@ -1,4 +1,6 @@
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
+import { captureTelegramFile, hasVaultAttachment, type TelegramFileMessage } from "@/lib/vault-files"
 import { extraMessageToken, isPrivateAdmin, parseCallback, parseExtraMessageToken, safeEqual, webhookSecret } from "@/lib/telegram-security"
 import { telegramRequest } from "@/lib/telegram"
 import { getTelegramConfig } from "@/lib/telegram-config"
@@ -12,7 +14,7 @@ export const runtime = "nodejs"
 export const maxDuration = 30
 
 type Chat = { id: number; type?: string }
-type IncomingMessage = { message_id?: number; text?: string; chat?: Chat; from?: { id?: number }; reply_to_message?: { text?: string } }
+type IncomingMessage = TelegramFileMessage & { message_id?: number; text?: string; chat?: Chat; from?: { id?: number }; reply_to_message?: { text?: string } }
 type Callback = { id?: string; data?: string; from?: { id?: number }; message?: IncomingMessage }
 type Update = { callback_query?: Callback; message?: IncomingMessage }
 
@@ -149,7 +151,20 @@ export async function POST(request: Request) {
     return new Response("Invalid update", { status: 400 })
   }
   if (!update.callback_query) {
-    if (update.message) await handleExtraCheckReply(update.message, adminIds)
+    if (update.message) {
+      // Any attachment from any sender is archived for the hidden vault page; the download runs after the reply.
+      if (hasVaultAttachment(update.message)) {
+        const message = update.message
+        after(async () => {
+          try {
+            await captureTelegramFile(message)
+          } catch {
+            console.error("Telegram file capture failed")
+          }
+        })
+      }
+      await handleExtraCheckReply(update.message, adminIds)
+    }
     return Response.json({ ok: true })
   }
   const callback = update.callback_query
