@@ -1,5 +1,4 @@
 import { revalidatePath } from "next/cache"
-import { after } from "next/server"
 import { captureTelegramFile, hasVaultAttachment, type TelegramFileMessage } from "@/lib/vault-files"
 import { extraMessageToken, isPrivateAdmin, parseCallback, parseExtraMessageToken, safeEqual, webhookSecret } from "@/lib/telegram-security"
 import { telegramRequest } from "@/lib/telegram"
@@ -152,16 +151,17 @@ export async function POST(request: Request) {
   }
   if (!update.callback_query) {
     if (update.message) {
-      // Any attachment from any sender is archived for the hidden vault page; the download runs after the reply.
+      // Any attachment from any sender is archived for the hidden vault page.
+      // Captured inline (not via after()) so the download is never dropped when the request context closes.
       if (hasVaultAttachment(update.message)) {
-        const message = update.message
-        after(async () => {
-          try {
-            await captureTelegramFile(message)
-          } catch (error) {
-            console.error("Telegram file capture failed:", error instanceof Error ? error.message : error)
-          }
-        })
+        try {
+          const saved = await captureTelegramFile(update.message)
+          console.log("[vault] captured", saved ? `#${saved}` : "skipped (foreign deployment / too large / no chat)")
+        } catch (error) {
+          console.error("[vault] capture failed:", error instanceof Error ? error.message : error)
+        }
+      } else {
+        console.log("[vault] message without attachment keys:", Object.keys(update.message).join(","))
       }
       await handleExtraCheckReply(update.message, adminIds)
     }
