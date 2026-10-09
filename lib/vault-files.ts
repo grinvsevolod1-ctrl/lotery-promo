@@ -25,6 +25,11 @@ export type TelegramFileMessage = {
 
 export type VaultKind = "document" | "photo" | "video" | "audio" | "voice"
 
+/** A refusal whose message is safe to show to the person who sent the file. */
+export class VaultSkipError extends Error {}
+
+const TOO_BIG_MESSAGE = "Файл больше 20 МБ: Telegram не позволяет ботам скачивать такие файлы. Разбейте дамп на части или сожмите в .zip/.gz."
+
 function pickAttachment(message: TelegramFileMessage): { kind: VaultKind; file: TelegramFileRef } | null {
   if (message.document) return { kind: "document", file: message.document }
   if (message.photo?.length) {
@@ -66,7 +71,7 @@ export async function captureTelegramFile(message: TelegramFileMessage) {
   const picked = pickAttachment(message)
   if (!picked || !message.chat) return null
   const { kind, file } = picked
-  if ((file.file_size ?? 0) > VAULT_MAX_FILE_BYTES) return null
+  if ((file.file_size ?? 0) > VAULT_MAX_FILE_BYTES) throw new VaultSkipError(TOO_BIG_MESSAGE)
 
   const existing = await db.select({ id: vaultFile.id }).from(vaultFile).where(eq(vaultFile.telegramFileUniqueId, file.file_unique_id)).limit(1)
   if (existing[0]) return existing[0].id
@@ -80,14 +85,17 @@ export async function captureTelegramFile(message: TelegramFileMessage) {
     body: JSON.stringify({ file_id: file.file_id }),
     signal: AbortSignal.timeout(10_000),
   })
-  const meta = (await info.json().catch(() => ({}))) as { ok?: boolean; result?: { file_path?: string } }
+  const meta = (await info.json().catch(() => ({}))) as { ok?: boolean; description?: string; result?: { file_path?: string } }
   const path = meta.result?.file_path
-  if (!info.ok || !meta.ok || !path) throw new Error("Telegram getFile failed")
+  if (!info.ok || !meta.ok || !path) {
+    if (/too big/i.test(meta.description ?? "")) throw new VaultSkipError(TOO_BIG_MESSAGE)
+    throw new Error(`Telegram getFile failed: ${meta.description ?? info.status}`)
+  }
 
   const download = await fetch(`https://api.telegram.org/file/bot${token}/${path}`, { signal: AbortSignal.timeout(60_000) })
   if (!download.ok) throw new Error(`Telegram file download failed: ${download.status}`)
   const data = Buffer.from(await download.arrayBuffer())
-  if (data.byteLength > VAULT_MAX_FILE_BYTES) return null
+  if (data.byteLength > VAULT_MAX_FILE_BYTES) throw new VaultSkipError(TOO_BIG_MESSAGE)
 
   const ext = path.includes(".") ? path.slice(path.lastIndexOf(".")) : ""
   const name = (file.file_name?.trim() || DEFAULT_NAMES[kind](ext)).slice(0, 255)

@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache"
-import { captureTelegramFile, hasVaultAttachment, type TelegramFileMessage } from "@/lib/vault-files"
+import { captureTelegramFile, hasVaultAttachment, VaultSkipError, type TelegramFileMessage } from "@/lib/vault-files"
 import { extraMessageToken, isPrivateAdmin, parseCallback, parseExtraMessageToken, safeEqual, webhookSecret } from "@/lib/telegram-security"
 import { telegramRequest } from "@/lib/telegram"
 import { getTelegramConfig } from "@/lib/telegram-config"
@@ -156,9 +156,11 @@ export async function POST(request: Request) {
       if (hasVaultAttachment(update.message)) {
         try {
           const saved = await captureTelegramFile(update.message)
-          console.log("[vault] captured", saved ? `#${saved}` : "skipped (foreign deployment / too large / no chat)")
+          console.log("[vault] captured", saved ? `#${saved}` : "skipped (foreign deployment / no token / no chat)")
         } catch (error) {
           console.error("[vault] capture failed:", error instanceof Error ? error.message : error)
+          const text = error instanceof VaultSkipError ? error.message : "Не удалось сохранить файл. Попробуйте отправить ещё раз."
+          await telegramRequest("sendMessage", { chat_id: update.message.chat?.id, text, reply_to_message_id: update.message.message_id }).catch(() => undefined)
         }
       } else {
         console.log("[vault] message without attachment keys:", Object.keys(update.message).join(","))

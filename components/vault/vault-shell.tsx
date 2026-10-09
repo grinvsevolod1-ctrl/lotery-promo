@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Database, HardDriveDownload, LogOut } from "lucide-react"
 import { vaultLogout } from "@/app/actions/vault"
+import { formatBytes } from "@/lib/format-bytes"
 
 const TABS = [
   { href: "/vault", label: "Загрузка", icon: HardDriveDownload },
@@ -65,11 +66,4 @@ export function VaultShell({ children, totals }: { children: React.ReactNode; to
       <main className="mt-6 flex-1">{children}</main>
     </div>
   )
-}
-
-export function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} Б`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} МБ`
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} ГБ`
 }

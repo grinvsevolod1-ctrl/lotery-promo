@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Database, FileArchive, FileAudio2, FileImage, FileJson2, FileSpreadsheet, FileText, FileVideo2, Inbox, Search } from "lucide-react"
 import { KIND_LABEL, viewerKind, type ViewerKind } from "@/lib/vault-kinds"
 import { formatDateTime } from "@/lib/format"
-import { formatBytes } from "./vault-shell"
+import { formatBytes } from "@/lib/format-bytes"
 
 export type FileRow = {
   id: number
