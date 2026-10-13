@@ -63,7 +63,7 @@ export default async function NotificationsPage() {
                   <time dateTime={n.createdAt.toISOString()} className="normal-case tracking-normal">{when(n.createdAt)}</time>
                 </span>
                 <span className="mt-0.5 block font-bold leading-snug text-foreground text-pretty">{n.title}</span>
-                <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground text-pretty">{n.body}</span>
+                <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground text-pretty whitespace-pre-line">{n.body}</span>
               </span>
               {!n.readAt && <span className="mt-1.5 size-2.5 shrink-0 rounded-full bg-primary" aria-label="Новое" />}
               {n.href && n.readAt && <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" aria-hidden />}

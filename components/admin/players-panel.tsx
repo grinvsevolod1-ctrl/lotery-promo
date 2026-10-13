@@ -4,6 +4,7 @@ import { useActionState, useState } from "react"
 import { Ban, ChevronDown, ShieldCheck, Wallet } from "lucide-react"
 import {
   adjustPlayerBalance,
+  requestPlayerAdditionalVerification,
   requestPlayerVerification,
   setPlayerBlock,
   type ActionResult,
@@ -179,12 +180,33 @@ function BlockForm({ player }: { player: PlayerRow }) {
   )
 }
 
+function AdditionalVerificationForm({ userId }: { userId: string }) {
+  const [state, action, pending] = useActionState<ActionResult | null, FormData>(requestPlayerAdditionalVerification, null)
+  return (
+    <form action={action} className="flex flex-col gap-3">
+      <input type="hidden" name="userId" value={userId} />
+      <p className="text-sm text-muted-foreground">Пользователь уже прошёл верификацию.</p>
+      <label className={labelClass}>
+        Сообщение (необязательно)
+        <textarea name="note" rows={3} maxLength={500} placeholder="Например: подтвердите номер телефона" className={`${fieldClass} h-auto py-2`} />
+      </label>
+      <p className="text-xs text-muted-foreground">
+        Пользователь получит уведомление в кабинете и письмо на почту, ему выдадут новый код подтверждения.
+      </p>
+      <button type="submit" disabled={pending} className="h-10 rounded-full bg-foreground text-sm font-semibold text-background disabled:opacity-60">
+        {pending ? "Отправка…" : "Дополнительная верификация"}
+      </button>
+      <ActionMessage state={state} />
+    </form>
+  )
+}
+
 function VerificationForm({ userId, approved }: { userId: string; approved: boolean }) {
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(requestPlayerVerification, null)
   return (
     <Card icon={<ShieldCheck className="size-4 text-primary" aria-hidden />} title="Верификация">
       {approved ? (
-        <p className="text-sm text-muted-foreground">Пользователь уже прошёл верификацию.</p>
+        <AdditionalVerificationForm userId={userId} />
       ) : (
         <form action={action} className="flex flex-col gap-3">
           <input type="hidden" name="userId" value={userId} />

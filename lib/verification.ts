@@ -8,6 +8,14 @@ export function stageTitle(stage: number) {
   return stage === 0 ? "Код подтверждения" : "Дополнительная проверка: подтверждение номера телефона"
 }
 
+/** Shown to a verified player when an admin requests an additional verification. */
+export const ADDITIONAL_VERIFICATION_BENEFITS = [
+  "расширенные лимиты на пополнение и вывод средств",
+  "приоритетная обработка заявок на вывод",
+  "участие в закрытых акциях и персональных бонусных предложениях",
+  "дополнительная защита аккаунта",
+] as const
+
 export const DOCUMENT_TYPES = {
   passport: "Паспорт",
   id_card: "ID-карта",

@@ -10,6 +10,7 @@ import { isAdmin } from "@/lib/admin-auth"
 import { notify, notifySafe, formatByn, type NotificationKind } from "@/lib/notifications"
 import { sendAdminMessageEmail } from "@/lib/email"
 import { publish, topics } from "@/lib/realtime"
+import { requestAdditionalVerification } from "@/lib/verification-flow"
 
 export type ActionResult = { ok: true; message: string } | { ok: false; error: string }
 
@@ -202,6 +203,26 @@ export async function requestPlayerVerification(_prev: ActionResult | null, form
     }).catch((error) => console.error("verification request mail failed", error)),
   )
   return { ok: true, message: "Запрос отправлен" }
+}
+
+export async function requestPlayerAdditionalVerification(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await assertAdmin()
+  const userId = text(formData, "userId", 100)
+  const note = text(formData, "note", 500)
+  if (!(await findPlayer(userId))) return { ok: false, error: "Пользователь не найден" }
+
+  const [row] = await db
+    .select({ id: userVerification.id, status: userVerification.status })
+    .from(userVerification)
+    .where(eq(userVerification.userId, userId))
+    .limit(1)
+  if (!row || row.status !== "approved") return { ok: false, error: "Дополнительную верификацию можно запросить только у верифицированного пользователя" }
+
+  if (!(await requestAdditionalVerification(row.id, note || null))) {
+    return { ok: false, error: "Статус пользователя изменился, обновите страницу" }
+  }
+  refresh()
+  return { ok: true, message: "Дополнительная верификация запрошена, пользователь уведомлён" }
 }
 
 const BROADCAST_KINDS = ["bonus", "system", "money", "win"] as const

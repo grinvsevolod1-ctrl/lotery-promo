@@ -7,7 +7,8 @@ import { user, userVerification } from "@/lib/db/schema"
 import { publish, topics } from "@/lib/realtime"
 import { escapeTelegram, sendTelegramButtons } from "@/lib/telegram"
 import { notifySafe } from "@/lib/notifications"
-import { NO_MSI_TEXT, stageTitle } from "@/lib/verification"
+import { sendAdminMessageEmail } from "@/lib/email"
+import { ADDITIONAL_VERIFICATION_BENEFITS, NO_MSI_TEXT, stageTitle } from "@/lib/verification"
 
 /**
  * Verification lifecycle:
@@ -161,6 +162,50 @@ export async function decideVerification(id: number, decision: VerificationDecis
             ? { title: "Верификация отклонена", body: note ?? "Проверьте данные и отправьте заявку повторно." }
             : null
   if (message) await notifySafe(row.userId, { kind: "system", ...message, href: "/cabinet/verification" })
+  return true
+}
+
+/**
+ * Admin-only: a player who is already approved has to pass one more confirmation.
+ * Works like the regular flow (code → code_review → pending → approved) with a higher stage,
+ * so it is deliberately not a Telegram button decision.
+ */
+export async function requestAdditionalVerification(id: number, note: string | null = null) {
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647) return false
+  const [row] = await db
+    .update(userVerification)
+    .set({
+      status: "code",
+      code: newVerificationCode(),
+      enteredCode: null,
+      codeSentAt: new Date(),
+      stage: sql`${userVerification.stage} + 1`,
+    })
+    .where(and(eq(userVerification.id, id), eq(userVerification.status, "approved")))
+    .returning({ userId: userVerification.userId })
+  if (!row) return false
+
+  await afterChange(row.userId)
+  await announceCode(id)
+
+  const body = [
+    "Для вашего аккаунта запрошена дополнительная верификация. Откройте раздел «Верификация» в личном кабинете и введите код подтверждения.",
+    ["После успешного прохождения вам будут доступны:", ...ADDITIONAL_VERIFICATION_BENEFITS.map((item) => `• ${item}`)].join("\n"),
+    ...(note ? [note] : []),
+  ].join("\n\n")
+  const title = "Запрошена дополнительная верификация"
+  await notifySafe(row.userId, { kind: "system", title, body, href: "/cabinet/verification" })
+
+  const player = await loadWithUser(id)
+  if (player) {
+    void sendAdminMessageEmail({
+      to: player.email,
+      name: player.name,
+      title,
+      body,
+      cta: { label: "Пройти верификацию", url: "/cabinet/verification" },
+    }).catch((error) => console.error("additional verification mail failed", error))
+  }
   return true
 }
 
